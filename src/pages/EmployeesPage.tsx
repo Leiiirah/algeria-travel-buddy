@@ -225,7 +225,7 @@ const EmployeesPage = () => {
             <EmptyState
               title="Aucun employé"
               description="Ajoutez votre premier employé"
-              icon={<Users className="h-12 w-12" />}
+              icon={Users}
             />
           ) : (
             <Table>

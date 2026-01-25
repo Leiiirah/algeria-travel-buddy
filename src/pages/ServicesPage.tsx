@@ -199,7 +199,7 @@ const ServicesPage = () => {
         <EmptyState
           title="Aucun service"
           description="Créez votre premier service"
-          icon={<FileText className="h-12 w-12" />}
+          icon={FileText}
         />
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
