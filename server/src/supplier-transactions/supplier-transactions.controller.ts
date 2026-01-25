@@ -17,7 +17,7 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 export class SupplierTransactionsController {
   constructor(
     private readonly transactionsService: SupplierTransactionsService,
-  ) {}
+  ) { }
 
   @Get()
   findAll() {
@@ -30,7 +30,7 @@ export class SupplierTransactionsController {
   }
 
   @Post()
-  create(@Body() createDto: CreateSupplierTransactionDto, @Request() req) {
+  create(@Body() createDto: CreateSupplierTransactionDto, @Request() req: any) {
     return this.transactionsService.create(createDto, req.user.id);
   }
 

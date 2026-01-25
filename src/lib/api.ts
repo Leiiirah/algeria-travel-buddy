@@ -171,6 +171,11 @@ class ApiClient {
     });
 
     if (!response.ok) {
+      if (response.status === 401) {
+        this.setToken(null);
+        window.location.href = '/login';
+        throw new ApiError(401, 'Session expired');
+      }
       const errorData = await response.json().catch(() => ({}));
       throw new ApiError(response.status, errorData.message || `API Error: ${response.status}`);
     }
@@ -192,6 +197,11 @@ class ApiClient {
     });
 
     if (!response.ok) {
+      if (response.status === 401) {
+        this.setToken(null);
+        window.location.href = '/login';
+        throw new ApiError(401, 'Session expired');
+      }
       const errorData = await response.json().catch(() => ({}));
       throw new ApiError(response.status, errorData.message || `API Error: ${response.status}`);
     }
@@ -200,7 +210,7 @@ class ApiClient {
   }
 
   // ==================== AUTH ====================
-  
+
   login = (data: LoginDto): Promise<LoginResponse> =>
     this.request<LoginResponse>('/auth/login', {
       method: 'POST',
@@ -217,7 +227,7 @@ class ApiClient {
     this.request('/auth/me');
 
   // ==================== USERS ====================
-  
+
   getUsers = (): Promise<User[]> =>
     this.request('/users');
 
@@ -243,7 +253,7 @@ class ApiClient {
     this.request(`/users/${id}`, { method: 'DELETE' });
 
   // ==================== SERVICES ====================
-  
+
   getServices = (): Promise<Service[]> =>
     this.request('/services');
 
@@ -266,7 +276,7 @@ class ApiClient {
     this.request(`/services/${id}/status`, { method: 'PATCH' });
 
   // ==================== SUPPLIERS ====================
-  
+
   getSuppliers = (): Promise<Supplier[]> =>
     this.request('/suppliers');
 
@@ -292,7 +302,7 @@ class ApiClient {
     this.request(`/suppliers/${id}`, { method: 'DELETE' });
 
   // ==================== COMMANDS ====================
-  
+
   getCommands = (filters?: CommandFilters): Promise<PaginatedResponse<Command>> => {
     const params = new URLSearchParams();
     if (filters) {
@@ -309,9 +319,9 @@ class ApiClient {
   getCommand = (id: string): Promise<Command> =>
     this.request(`/commands/${id}`);
 
-  getCommandStats = (): Promise<{ 
-    totalPaid: number; 
-    totalRemaining: number; 
+  getCommandStats = (): Promise<{
+    totalPaid: number;
+    totalRemaining: number;
     totalProfit: number;
     byStatus: Record<string, number>;
   }> =>
@@ -339,7 +349,7 @@ class ApiClient {
     this.request(`/commands/${id}`, { method: 'DELETE' });
 
   // ==================== PAYMENTS ====================
-  
+
   getPayments = (search?: string): Promise<Payment[]> => {
     const query = search ? `?search=${encodeURIComponent(search)}` : '';
     return this.request(`/payments${query}`);
@@ -358,7 +368,7 @@ class ApiClient {
     this.request(`/payments/${id}`, { method: 'DELETE' });
 
   // ==================== SUPPLIER TRANSACTIONS ====================
-  
+
   getSupplierTransactions = (): Promise<SupplierTransaction[]> =>
     this.request('/supplier-transactions');
 
@@ -375,7 +385,7 @@ class ApiClient {
     this.request(`/supplier-transactions/${id}`, { method: 'DELETE' });
 
   // ==================== DOCUMENTS ====================
-  
+
   getDocuments = (category?: string): Promise<Document[]> => {
     const query = category ? `?category=${encodeURIComponent(category)}` : '';
     return this.request(`/documents${query}`);
@@ -402,24 +412,24 @@ class ApiClient {
     `${API_URL}/documents/${id}/download`;
 
   // ==================== ANALYTICS ====================
-  
+
   getDashboardStats = (): Promise<DashboardStats> =>
     this.request('/analytics/dashboard');
 
   getRevenueStats = (fromDate: string, toDate: string): Promise<{ date: string; revenue: number }[]> =>
     this.request(`/analytics/revenue?from=${fromDate}&to=${toDate}`);
 
-  getSupplierStats = (): Promise<{ 
-    supplierId: string; 
-    name: string; 
-    balance: SupplierBalance 
+  getSupplierStats = (): Promise<{
+    supplierId: string;
+    name: string;
+    balance: SupplierBalance
   }[]> =>
     this.request('/analytics/suppliers');
 
-  getServiceStats = (): Promise<{ 
-    serviceType: string; 
-    count: number; 
-    revenue: number 
+  getServiceStats = (): Promise<{
+    serviceType: string;
+    count: number;
+    revenue: number
   }[]> =>
     this.request('/analytics/services');
 }

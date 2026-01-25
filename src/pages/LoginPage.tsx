@@ -53,9 +53,9 @@ const LoginPage = () => {
       <Card className="w-full max-w-md shadow-soft">
         <CardHeader className="space-y-4 text-center">
           <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-2xl bg-primary/10 p-2">
-            <img 
-              src={logoElHikma} 
-              alt="El Hikma Tourisme Logo" 
+            <img
+              src={logoElHikma}
+              alt="El Hikma Tourisme Logo"
               className="h-full w-full object-contain"
             />
           </div>
@@ -120,10 +120,10 @@ const LoginPage = () => {
             </p>
             <div className="space-y-1 text-sm text-muted-foreground">
               <p>
-                <span className="font-medium">Admin :</span> admin@agence.dz
+                <span className="font-medium">Admin :</span> admin@elhikma.dz
               </p>
               <p>
-                <span className="font-medium">Employé :</span> sarah@agence.dz
+                <span className="font-medium">Employé :</span> sarah@elhikma.dz
               </p>
               <p>
                 <span className="font-medium">Mot de passe :</span> password123

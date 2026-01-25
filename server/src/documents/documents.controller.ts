@@ -11,7 +11,7 @@ import * as path from 'path';
 @Controller('documents')
 @UseGuards(JwtAuthGuard)
 export class DocumentsController {
-  constructor(private readonly documentsService: DocumentsService) {}
+  constructor(private readonly documentsService: DocumentsService) { }
 
   @Get()
   findAll(@Query('category') category?: string) {
@@ -28,7 +28,7 @@ export class DocumentsController {
       },
     }),
   }))
-  upload(@Body() dto: UploadDocumentDto, @UploadedFile() file: Express.Multer.File, @Request() req) {
+  upload(@Body() dto: UploadDocumentDto, @UploadedFile() file: Express.Multer.File, @Request() req: any) {
     return this.documentsService.upload(dto, file, req.user.id);
   }
 

@@ -16,7 +16,7 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 @Controller('payments')
 @UseGuards(JwtAuthGuard)
 export class PaymentsController {
-  constructor(private readonly paymentsService: PaymentsService) {}
+  constructor(private readonly paymentsService: PaymentsService) { }
 
   @Get()
   findAll(@Query('search') search?: string) {
@@ -29,7 +29,7 @@ export class PaymentsController {
   }
 
   @Post()
-  create(@Body() createPaymentDto: CreatePaymentDto, @Request() req) {
+  create(@Body() createPaymentDto: CreatePaymentDto, @Request() req: any) {
     return this.paymentsService.create(createPaymentDto, req.user.id);
   }
 

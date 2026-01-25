@@ -25,7 +25,7 @@ export class AuthController {
   @Post('refresh')
   @UseGuards(JwtAuthGuard)
   @HttpCode(HttpStatus.OK)
-  async refreshToken(@Request() req) {
+  async refreshToken(@Request() req: any) {
     return this.authService.refreshToken(req.user.id);
   }
 
@@ -38,7 +38,7 @@ export class AuthController {
 
   @Get('me')
   @UseGuards(JwtAuthGuard)
-  async getMe(@Request() req) {
+  async getMe(@Request() req: any) {
     return this.authService.getMe(req.user.id);
   }
 }

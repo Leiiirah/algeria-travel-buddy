@@ -18,7 +18,7 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 @Controller('commands')
 @UseGuards(JwtAuthGuard)
 export class CommandsController {
-  constructor(private readonly commandsService: CommandsService) {}
+  constructor(private readonly commandsService: CommandsService) { }
 
   @Get()
   findAll(@Query() filters: CommandFilters) {
@@ -36,7 +36,7 @@ export class CommandsController {
   }
 
   @Post()
-  create(@Body() createCommandDto: CreateCommandDto, @Request() req) {
+  create(@Body() createCommandDto: CreateCommandDto, @Request() req: any) {
     return this.commandsService.create(createCommandDto, req.user.id);
   }
 

@@ -4,7 +4,7 @@ import { User, Service, Supplier, Command, Document, Payment, SupplierTransactio
 export const mockUsers: User[] = [
   {
     id: '1',
-    email: 'admin@agence.dz',
+    email: 'admin@elhikma.dz',
     firstName: 'Ahmed',
     lastName: 'Benali',
     role: 'admin',
@@ -13,7 +13,7 @@ export const mockUsers: User[] = [
   },
   {
     id: '2',
-    email: 'sarah@agence.dz',
+    email: 'sarah@elhikma.dz',
     firstName: 'Sarah',
     lastName: 'Meziane',
     role: 'employee',
