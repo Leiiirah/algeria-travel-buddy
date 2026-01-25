@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { Plus, ArrowDownCircle, ArrowUpCircle, Wallet, TrendingDown, CreditCard } from 'lucide-react';
@@ -41,6 +42,7 @@ import { ErrorState } from '@/components/ui/error-state';
 import { EmptyState } from '@/components/ui/empty-state';
 
 const SupplierAccountingPage = () => {
+  const navigate = useNavigate();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [newTransaction, setNewTransaction] = useState({
     supplierId: '',
@@ -62,12 +64,12 @@ const SupplierAccountingPage = () => {
     if (!suppliers || !transactions) {
       return { totalPurchased: 0, totalPaid: 0, totalRemaining: 0 };
     }
-    
+
     // Simple calculation based on transactions
     const totalPaid = transactions
       .filter((t) => t.type === 'sortie')
       .reduce((sum, t) => sum + t.amount, 0);
-    
+
     const totalRefunds = transactions
       .filter((t) => t.type === 'entree')
       .reduce((sum, t) => sum + t.amount, 0);
@@ -82,7 +84,7 @@ const SupplierAccountingPage = () => {
   // Get supplier balances for the table
   const supplierBalances = useMemo(() => {
     if (!suppliers || !transactions) return [];
-    
+
     return suppliers.map((supplier) => {
       const supplierTransactions = transactions.filter((t) => t.supplierId === supplier.id);
       const totalPaid = supplierTransactions
@@ -91,7 +93,7 @@ const SupplierAccountingPage = () => {
       const totalRefunds = supplierTransactions
         .filter((t) => t.type === 'entree')
         .reduce((sum, t) => sum + t.amount, 0);
-      
+
       return {
         supplier,
         totalPurchased: 0,
@@ -104,7 +106,7 @@ const SupplierAccountingPage = () => {
   // Sort transactions by date (newest first)
   const sortedTransactions = useMemo(() => {
     if (!transactions) return [];
-    return [...transactions].sort((a, b) => 
+    return [...transactions].sort((a, b) =>
       new Date(b.date).getTime() - new Date(a.date).getTime()
     );
   }, [transactions]);
@@ -216,11 +218,30 @@ const SupplierAccountingPage = () => {
                       <SelectValue placeholder="Sélectionner un fournisseur" />
                     </SelectTrigger>
                     <SelectContent>
-                      {suppliers?.map((supplier) => (
-                        <SelectItem key={supplier.id} value={supplier.id}>
-                          {supplier.name}
-                        </SelectItem>
-                      ))}
+                      {suppliers?.length === 0 ? (
+                        <div className="flex flex-col items-center justify-center p-4 space-y-2">
+                          <p className="text-sm text-muted-foreground text-center">
+                            Aucun fournisseur disponible
+                          </p>
+                          <Button
+                            variant="secondary"
+                            size="sm"
+                            className="w-full"
+                            onClick={() => {
+                              setIsDialogOpen(false);
+                              navigate('/fournisseurs');
+                            }}
+                          >
+                            Ajouter un fournisseur
+                          </Button>
+                        </div>
+                      ) : (
+                        suppliers?.map((supplier) => (
+                          <SelectItem key={supplier.id} value={supplier.id}>
+                            {supplier.name}
+                          </SelectItem>
+                        ))
+                      )}
                     </SelectContent>
                   </Select>
                 </div>
@@ -462,11 +483,10 @@ const SupplierAccountingPage = () => {
                             </div>
                           </TableCell>
                           <TableCell
-                            className={`text-right font-medium ${
-                              transaction.type === 'sortie'
-                                ? 'text-destructive'
-                                : 'text-success'
-                            }`}
+                            className={`text-right font-medium ${transaction.type === 'sortie'
+                              ? 'text-destructive'
+                              : 'text-success'
+                              }`}
                           >
                             {transaction.type === 'sortie' ? '-' : '+'}
                             {formatDZD(transaction.amount)}

@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -53,6 +54,7 @@ import { ErrorState } from '@/components/ui/error-state';
 import { EmptyState } from '@/components/ui/empty-state';
 
 const CommandsPage = () => {
+  const navigate = useNavigate();
   const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
@@ -465,11 +467,30 @@ const CommandsPage = () => {
                           <SelectValue placeholder="Choisir un service" />
                         </SelectTrigger>
                         <SelectContent className="bg-popover">
-                          {services?.map((service) => (
-                            <SelectItem key={service.id} value={service.id}>
-                              {service.name}
-                            </SelectItem>
-                          ))}
+                          {services?.length === 0 ? (
+                            <div className="flex flex-col items-center justify-center p-4 space-y-2">
+                              <p className="text-sm text-muted-foreground text-center">
+                                Aucun service disponible
+                              </p>
+                              <Button
+                                variant="secondary"
+                                size="sm"
+                                className="w-full"
+                                onClick={() => {
+                                  setIsDialogOpen(false);
+                                  navigate('/services');
+                                }}
+                              >
+                                Ajouter un service
+                              </Button>
+                            </div>
+                          ) : (
+                            services?.map((service) => (
+                              <SelectItem key={service.id} value={service.id}>
+                                {service.name}
+                              </SelectItem>
+                            ))
+                          )}
                         </SelectContent>
                       </Select>
                     </div>
@@ -501,7 +522,7 @@ const CommandsPage = () => {
                         {/* Accounting fields */}
                         <div className="border-t pt-4 mt-4">
                           <h4 className="font-medium mb-3">Informations comptables</h4>
-                          
+
                           <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-2">
                               <Label>Prix de Vente (DZD)</Label>
@@ -543,11 +564,30 @@ const CommandsPage = () => {
                                   <SelectValue placeholder="Sélectionner" />
                                 </SelectTrigger>
                                 <SelectContent className="bg-popover">
-                                  {suppliers?.filter((s) => s.isActive).map((supplier) => (
-                                    <SelectItem key={supplier.id} value={supplier.id}>
-                                      {supplier.name}
-                                    </SelectItem>
-                                  ))}
+                                  {suppliers?.length === 0 ? (
+                                    <div className="flex flex-col items-center justify-center p-4 space-y-2">
+                                      <p className="text-sm text-muted-foreground text-center">
+                                        Aucun fournisseur disponible
+                                      </p>
+                                      <Button
+                                        variant="secondary"
+                                        size="sm"
+                                        className="w-full"
+                                        onClick={() => {
+                                          setIsDialogOpen(false);
+                                          navigate('/fournisseurs');
+                                        }}
+                                      >
+                                        Ajouter un fournisseur
+                                      </Button>
+                                    </div>
+                                  ) : (
+                                    suppliers?.filter((s) => s.isActive).map((supplier) => (
+                                      <SelectItem key={supplier.id} value={supplier.id}>
+                                        {supplier.name}
+                                      </SelectItem>
+                                    ))
+                                  )}
                                 </SelectContent>
                               </Select>
                             </div>
@@ -650,10 +690,10 @@ const CommandsPage = () => {
                                 command.status === 'termine'
                                   ? 'default'
                                   : command.status === 'en_cours'
-                                  ? 'secondary'
-                                  : command.status === 'annule'
-                                  ? 'destructive'
-                                  : 'outline'
+                                    ? 'secondary'
+                                    : command.status === 'annule'
+                                      ? 'destructive'
+                                      : 'outline'
                               }
                             >
                               {getCommandStatusLabel(command.status)}

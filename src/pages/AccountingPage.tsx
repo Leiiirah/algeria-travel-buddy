@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { StatsCard } from '@/components/dashboard/StatsCard';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -64,6 +65,7 @@ import { ErrorState } from '@/components/ui/error-state';
 import { EmptyState } from '@/components/ui/empty-state';
 
 const AccountingPage = () => {
+  const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedCommand, setSelectedCommand] = useState<string>('');
@@ -246,19 +248,38 @@ const AccountingPage = () => {
                               <SelectValue placeholder="Sélectionner une commande" />
                             </SelectTrigger>
                             <SelectContent className="bg-popover">
-                              {unpaidCommands.map((command) => {
-                                const remaining = calculateRemainingBalance(command.sellingPrice, command.amountPaid);
-                                return (
-                                  <SelectItem key={command.id} value={command.id}>
-                                    <div className="flex items-center justify-between gap-4">
-                                      <span>{getCommandLabel(command.id)}</span>
-                                      <span className="text-muted-foreground">
-                                        Reste: {formatDZD(remaining)}
-                                      </span>
-                                    </div>
-                                  </SelectItem>
-                                );
-                              })}
+                              {unpaidCommands.length === 0 ? (
+                                <div className="flex flex-col items-center justify-center p-4 space-y-2">
+                                  <p className="text-sm text-muted-foreground text-center">
+                                    Aucune commande impayée
+                                  </p>
+                                  <Button
+                                    variant="secondary"
+                                    size="sm"
+                                    className="w-full"
+                                    onClick={() => {
+                                      setIsDialogOpen(false);
+                                      navigate('/commandes');
+                                    }}
+                                  >
+                                    Ajouter une commande
+                                  </Button>
+                                </div>
+                              ) : (
+                                unpaidCommands.map((command) => {
+                                  const remaining = calculateRemainingBalance(command.sellingPrice, command.amountPaid);
+                                  return (
+                                    <SelectItem key={command.id} value={command.id}>
+                                      <div className="flex items-center justify-between gap-4">
+                                        <span>{getCommandLabel(command.id)}</span>
+                                        <span className="text-muted-foreground">
+                                          Reste: {formatDZD(remaining)}
+                                        </span>
+                                      </div>
+                                    </SelectItem>
+                                  );
+                                })
+                              )}
                             </SelectContent>
                           </Select>
                         </div>
