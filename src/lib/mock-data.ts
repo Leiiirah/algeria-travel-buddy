@@ -126,9 +126,19 @@ export const mockSuppliers: Supplier[] = [
     isActive: true,
     createdAt: new Date('2024-01-01'),
   },
+  {
+    id: '5',
+    name: 'Turkish Airlines',
+    contact: 'Ali Yilmaz',
+    phone: '+213 555 567 890',
+    email: 'reservations@turkishairlines.dz',
+    serviceTypes: ['ticket'],
+    isActive: true,
+    createdAt: new Date('2024-01-15'),
+  },
 ];
 
-// Mock Commands
+// Mock Commands with new accounting fields
 export const mockCommands: Command[] = [
   {
     id: '1',
@@ -137,16 +147,17 @@ export const mockCommands: Command[] = [
       type: 'visa',
       firstName: 'Youcef',
       lastName: 'Hamdi',
+      clientFullName: 'Youcef Hamdi',
       phone: '+213 555 111 222',
-      supplierId: '1',
-      state: 'En traitement',
-      price: 25000,
     },
     status: 'en_cours',
-    paymentStatus: 'partiel',
-    paidAmount: 15000,
+    destination: 'France',
+    sellingPrice: 25000,
+    amountPaid: 15000,
+    buyingPrice: 18000,
+    supplierId: '1',
     createdBy: '2',
-    createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000), // 2 hours ago
+    createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000),
     updatedAt: new Date(Date.now() - 2 * 60 * 60 * 1000),
   },
   {
@@ -157,13 +168,15 @@ export const mockCommands: Command[] = [
       hotelName: 'Sofitel Alger',
       clientFullName: 'Amina Cherif',
       phone: '+213 555 333 444',
-      price: 45000,
     },
     status: 'termine',
-    paymentStatus: 'paye',
-    paidAmount: 45000,
+    destination: 'Istanbul',
+    sellingPrice: 45000,
+    amountPaid: 45000,
+    buyingPrice: 35000,
+    supplierId: '3',
     createdBy: '3',
-    createdAt: new Date(Date.now() - 48 * 60 * 60 * 1000), // 48 hours ago
+    createdAt: new Date(Date.now() - 48 * 60 * 60 * 1000),
     updatedAt: new Date(Date.now() - 24 * 60 * 60 * 1000),
   },
   {
@@ -173,16 +186,17 @@ export const mockCommands: Command[] = [
       type: 'ticket',
       clientFullName: 'Omar Taleb',
       phone: '+213 555 555 666',
-      destination: 'Paris CDG',
       departureDate: '2025-02-15',
       returnDate: '2025-02-28',
-      price: 85000,
     },
     status: 'en_attente',
-    paymentStatus: 'non_paye',
-    paidAmount: 0,
+    destination: 'ALG-PAR-ALG',
+    sellingPrice: 85000,
+    amountPaid: 25000,
+    buyingPrice: 70000,
+    supplierId: '4',
     createdBy: '2',
-    createdAt: new Date(Date.now() - 1 * 60 * 60 * 1000), // 1 hour ago
+    createdAt: new Date(Date.now() - 1 * 60 * 60 * 1000),
     updatedAt: new Date(Date.now() - 1 * 60 * 60 * 1000),
   },
   {
@@ -192,16 +206,17 @@ export const mockCommands: Command[] = [
       type: 'visa',
       firstName: 'Leila',
       lastName: 'Mansouri',
+      clientFullName: 'Leila Mansouri',
       phone: '+213 555 777 888',
-      supplierId: '2',
-      state: 'Approuvé',
-      price: 35000,
     },
     status: 'termine',
-    paymentStatus: 'paye',
-    paidAmount: 35000,
+    destination: 'USA',
+    sellingPrice: 35000,
+    amountPaid: 35000,
+    buyingPrice: 28000,
+    supplierId: '2',
     createdBy: '3',
-    createdAt: new Date(Date.now() - 72 * 60 * 60 * 1000), // 72 hours ago
+    createdAt: new Date(Date.now() - 72 * 60 * 60 * 1000),
     updatedAt: new Date(Date.now() - 48 * 60 * 60 * 1000),
   },
   {
@@ -212,14 +227,36 @@ export const mockCommands: Command[] = [
       clientFullName: 'Mourad Bensalah',
       phone: '+213 555 999 000',
       description: 'Légalisation de documents pour études à l\'étranger',
-      price: 15000,
     },
     status: 'en_cours',
-    paymentStatus: 'paye',
-    paidAmount: 15000,
+    destination: '-',
+    sellingPrice: 15000,
+    amountPaid: 15000,
+    buyingPrice: 8000,
+    supplierId: '1',
     createdBy: '2',
-    createdAt: new Date(Date.now() - 12 * 60 * 60 * 1000), // 12 hours ago
+    createdAt: new Date(Date.now() - 12 * 60 * 60 * 1000),
     updatedAt: new Date(Date.now() - 6 * 60 * 60 * 1000),
+  },
+  {
+    id: '6',
+    serviceId: '4',
+    data: {
+      type: 'ticket',
+      clientFullName: 'Karim Boudiaf',
+      phone: '+213 555 222 333',
+      departureDate: '2025-03-01',
+      returnDate: '2025-03-15',
+    },
+    status: 'en_cours',
+    destination: 'ALG-IST-ALG',
+    sellingPrice: 65000,
+    amountPaid: 30000,
+    buyingPrice: 52000,
+    supplierId: '5',
+    createdBy: '2',
+    createdAt: new Date(Date.now() - 5 * 60 * 60 * 1000),
+    updatedAt: new Date(Date.now() - 5 * 60 * 60 * 1000),
   },
 ];
 
@@ -338,14 +375,14 @@ export const getCommandStatusLabel = (status: string): string => {
   return labels[status] || status;
 };
 
-// Get payment status label in French
-export const getPaymentStatusLabel = (status: string): string => {
-  const labels: Record<string, string> = {
-    non_paye: 'Non payé',
-    partiel: 'Partiel',
-    paye: 'Payé',
-  };
-  return labels[status] || status;
+// Get payment status label in French - derived from amounts
+export const getPaymentStatusFromAmounts = (sellingPrice: number, amountPaid: number): { status: string; label: string } => {
+  if (amountPaid >= sellingPrice) {
+    return { status: 'paye', label: 'Payé' };
+  } else if (amountPaid > 0) {
+    return { status: 'partiel', label: 'Partiel' };
+  }
+  return { status: 'non_paye', label: 'Non payé' };
 };
 
 // Get payment method label in French
@@ -368,4 +405,10 @@ export const getDocumentCategoryLabel = (category: string): string => {
     autre: 'Autre',
   };
   return labels[category] || category;
+};
+
+// Get supplier name by ID
+export const getSupplierName = (supplierId: string): string => {
+  const supplier = mockSuppliers.find(s => s.id === supplierId);
+  return supplier?.name || '-';
 };

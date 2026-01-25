@@ -5,41 +5,37 @@ import { Badge } from '@/components/ui/badge';
 import {
   Package,
   DollarSign,
-  Users,
-  TrendingUp,
   Clock,
   FileText,
   AlertCircle,
 } from 'lucide-react';
 import {
   mockCommands,
-  mockPayments,
   mockServices,
   formatDZD,
   getCommandStatusLabel,
-  getPaymentStatusLabel,
+  getPaymentStatusFromAmounts,
   getServiceTypeLabel,
 } from '@/lib/mock-data';
+import { calculateRemainingBalance } from '@/types';
 import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
   ResponsiveContainer,
   PieChart,
   Pie,
   Cell,
   LineChart,
   Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
 } from 'recharts';
 
 const DashboardPage = () => {
-  // Calculate stats
-  const totalRevenue = mockCommands.reduce((sum, cmd) => sum + cmd.paidAmount, 0);
+  // Calculate stats using new fields
+  const totalRevenue = mockCommands.reduce((sum, cmd) => sum + cmd.amountPaid, 0);
   const pendingAmount = mockCommands.reduce(
-    (sum, cmd) => sum + (cmd.data.price - cmd.paidAmount),
+    (sum, cmd) => sum + calculateRemainingBalance(cmd.sellingPrice, cmd.amountPaid),
     0
   );
   const todayCommands = mockCommands.filter(
@@ -50,7 +46,7 @@ const DashboardPage = () => {
   // Chart data
   const serviceData = mockServices.map((service) => {
     const commands = mockCommands.filter((cmd) => cmd.serviceId === service.id);
-    const revenue = commands.reduce((sum, cmd) => sum + cmd.paidAmount, 0);
+    const revenue = commands.reduce((sum, cmd) => sum + cmd.amountPaid, 0);
     return {
       name: service.name.split(' ')[0],
       commandes: commands.length,
@@ -233,6 +229,7 @@ const DashboardPage = () => {
             <div className="space-y-4">
               {recentCommands.map((command) => {
                 const service = mockServices.find((s) => s.id === command.serviceId);
+                const paymentInfo = getPaymentStatusFromAmounts(command.sellingPrice, command.amountPaid);
                 return (
                   <div
                     key={command.id}
@@ -243,15 +240,7 @@ const DashboardPage = () => {
                         <FileText className="h-5 w-5 text-primary" />
                       </div>
                       <div>
-                        <p className="font-medium">
-                          {command.data.type === 'visa'
-                            ? `${command.data.firstName} ${command.data.lastName}`
-                            : command.data.type === 'residence'
-                            ? command.data.hotelName
-                            : 'clientFullName' in command.data
-                            ? command.data.clientFullName
-                            : 'N/A'}
-                        </p>
+                        <p className="font-medium">{command.data.clientFullName}</p>
                         <p className="text-sm text-muted-foreground">
                           {service?.name} • {command.createdAt.toLocaleDateString('fr-FR')}
                         </p>
@@ -259,13 +248,13 @@ const DashboardPage = () => {
                     </div>
                     <div className="flex items-center gap-4">
                       <div className="text-right">
-                        <p className="font-medium">{formatDZD(command.data.price)}</p>
+                        <p className="font-medium">{formatDZD(command.sellingPrice)}</p>
                         <div className="flex gap-2">
                           <Badge variant={getStatusBadgeVariant(command.status)}>
                             {getCommandStatusLabel(command.status)}
                           </Badge>
-                          <Badge variant={getPaymentBadgeVariant(command.paymentStatus)}>
-                            {getPaymentStatusLabel(command.paymentStatus)}
+                          <Badge variant={getPaymentBadgeVariant(paymentInfo.status)}>
+                            {paymentInfo.label}
                           </Badge>
                         </div>
                       </div>

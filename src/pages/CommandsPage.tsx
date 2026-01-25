@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -36,7 +36,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Plus, Search, MoreHorizontal, Edit, Trash2, Eye, Lock, Unlock, Clock } from 'lucide-react';
+import { Plus, Search, MoreHorizontal, Edit, Trash2, Eye, Lock, Unlock, Banknote, CreditCard, TrendingUp } from 'lucide-react';
 import {
   mockCommands,
   mockServices,
@@ -44,9 +44,10 @@ import {
   formatDZD,
   isCommandEditable,
   getCommandStatusLabel,
-  getPaymentStatusLabel,
+  getPaymentStatusFromAmounts,
+  getSupplierName,
 } from '@/lib/mock-data';
-import { Command, CommandData, CommandStatus, VisaCommand, ResidenceCommand, TicketCommand, DossierCommand } from '@/types';
+import { Command, CommandData, calculateRemainingBalance, calculateNetProfit } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 
@@ -59,12 +60,53 @@ const CommandsPage = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedService, setSelectedService] = useState<string>('');
 
-  // Form states - using Record for flexible form data
-  const [formData, setFormData] = useState<Record<string, any>>({});
+  // Form states
+  const [formData, setFormData] = useState({
+    clientFullName: '',
+    phone: '',
+    destination: '',
+    sellingPrice: 0,
+    amountPaid: 0,
+    buyingPrice: 0,
+    supplierId: '',
+    // Service-specific fields
+    firstName: '',
+    lastName: '',
+    hotelName: '',
+    departureDate: '',
+    returnDate: '',
+    description: '',
+  });
+
+  // Calculate totals
+  const totals = useMemo(() => {
+    return commands.reduce(
+      (acc, cmd) => {
+        const remaining = calculateRemainingBalance(cmd.sellingPrice, cmd.amountPaid);
+        const profit = calculateNetProfit(cmd.sellingPrice, cmd.buyingPrice);
+        return {
+          totalPaid: acc.totalPaid + cmd.amountPaid,
+          totalRemaining: acc.totalRemaining + remaining,
+          totalProfit: acc.totalProfit + profit,
+        };
+      },
+      { totalPaid: 0, totalRemaining: 0, totalProfit: 0 }
+    );
+  }, [commands]);
+
+  // Real-time form calculations
+  const formCalculations = useMemo(() => {
+    return {
+      remaining: calculateRemainingBalance(formData.sellingPrice, formData.amountPaid),
+      profit: calculateNetProfit(formData.sellingPrice, formData.buyingPrice),
+    };
+  }, [formData.sellingPrice, formData.amountPaid, formData.buyingPrice]);
 
   const filteredCommands = commands.filter((command) => {
     const matchesSearch =
-      JSON.stringify(command.data).toLowerCase().includes(searchQuery.toLowerCase());
+      command.data.clientFullName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      command.destination.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      getSupplierName(command.supplierId).toLowerCase().includes(searchQuery.toLowerCase());
     const matchesStatus = statusFilter === 'all' || command.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
@@ -73,51 +115,65 @@ const CommandsPage = () => {
     return mockServices.find((s) => s.id === serviceId)?.type || 'visa';
   };
 
+  const resetForm = () => {
+    setFormData({
+      clientFullName: '',
+      phone: '',
+      destination: '',
+      sellingPrice: 0,
+      amountPaid: 0,
+      buyingPrice: 0,
+      supplierId: '',
+      firstName: '',
+      lastName: '',
+      hotelName: '',
+      departureDate: '',
+      returnDate: '',
+      description: '',
+    });
+  };
+
   const handleCreateCommand = () => {
     if (!selectedService || !user) return;
 
     const serviceType = getServiceType(selectedService);
     let data: CommandData;
 
+    const baseData = {
+      clientFullName: formData.clientFullName || `${formData.firstName} ${formData.lastName}`.trim(),
+      phone: formData.phone,
+    };
+
     switch (serviceType) {
       case 'visa':
         data = {
+          ...baseData,
           type: 'visa',
-          firstName: (formData as VisaCommand).firstName || '',
-          lastName: (formData as VisaCommand).lastName || '',
-          phone: (formData as VisaCommand).phone || '',
-          supplierId: (formData as VisaCommand).supplierId || '',
-          state: 'En attente',
-          price: Number((formData as VisaCommand).price) || 0,
+          firstName: formData.firstName,
+          lastName: formData.lastName,
+          clientFullName: `${formData.firstName} ${formData.lastName}`.trim(),
         };
         break;
       case 'residence':
         data = {
+          ...baseData,
           type: 'residence',
-          hotelName: (formData as ResidenceCommand).hotelName || '',
-          clientFullName: (formData as ResidenceCommand).clientFullName || '',
-          phone: (formData as ResidenceCommand).phone || '',
-          price: Number((formData as ResidenceCommand).price) || 0,
+          hotelName: formData.hotelName,
         };
         break;
       case 'ticket':
         data = {
+          ...baseData,
           type: 'ticket',
-          clientFullName: (formData as TicketCommand).clientFullName || '',
-          phone: (formData as TicketCommand).phone || '',
-          destination: (formData as TicketCommand).destination || '',
-          departureDate: (formData as TicketCommand).departureDate || '',
-          returnDate: (formData as TicketCommand).returnDate,
-          price: Number((formData as TicketCommand).price) || 0,
+          departureDate: formData.departureDate,
+          returnDate: formData.returnDate || undefined,
         };
         break;
       case 'dossier':
         data = {
+          ...baseData,
           type: 'dossier',
-          clientFullName: (formData as DossierCommand).clientFullName || '',
-          phone: (formData as DossierCommand).phone || '',
-          description: (formData as DossierCommand).description || '',
-          price: Number((formData as DossierCommand).price) || 0,
+          description: formData.description,
         };
         break;
       default:
@@ -129,8 +185,11 @@ const CommandsPage = () => {
       serviceId: selectedService,
       data,
       status: 'en_attente',
-      paymentStatus: 'non_paye',
-      paidAmount: 0,
+      destination: formData.destination,
+      sellingPrice: formData.sellingPrice,
+      amountPaid: formData.amountPaid,
+      buyingPrice: formData.buyingPrice,
+      supplierId: formData.supplierId,
       createdBy: user.id,
       createdAt: new Date(),
       updatedAt: new Date(),
@@ -139,7 +198,7 @@ const CommandsPage = () => {
     setCommands([newCommand, ...commands]);
     setIsDialogOpen(false);
     setSelectedService('');
-    setFormData({});
+    resetForm();
     toast({
       title: 'Commande créée',
       description: 'La commande a été enregistrée avec succès',
@@ -174,110 +233,50 @@ const CommandsPage = () => {
     return `${Math.round(remaining)}h restantes`;
   };
 
-  const renderFormFields = () => {
+  const renderServiceSpecificFields = () => {
     const serviceType = getServiceType(selectedService);
 
     switch (serviceType) {
       case 'visa':
         return (
-          <>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Prénom</Label>
-                <Input
-                  value={(formData as VisaCommand).firstName || ''}
-                  onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
-                  placeholder="Prénom du client"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Nom</Label>
-                <Input
-                  value={(formData as VisaCommand).lastName || ''}
-                  onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
-                  placeholder="Nom du client"
-                />
-              </div>
-            </div>
+          <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>Téléphone</Label>
+              <Label>Prénom</Label>
               <Input
-                value={(formData as VisaCommand).phone || ''}
-                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                placeholder="+213 555 123 456"
+                value={formData.firstName}
+                onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+                placeholder="Prénom du client"
               />
             </div>
             <div className="space-y-2">
-              <Label>Fournisseur</Label>
-              <Select
-                value={(formData as VisaCommand).supplierId || ''}
-                onValueChange={(value) => setFormData({ ...formData, supplierId: value })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Sélectionner un fournisseur" />
-                </SelectTrigger>
-                <SelectContent className="bg-popover">
-                  {mockSuppliers
-                    .filter((s) => s.serviceTypes.includes('visa'))
-                    .map((supplier) => (
-                      <SelectItem key={supplier.id} value={supplier.id}>
-                        {supplier.name}
-                      </SelectItem>
-                    ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label>Prix (DZD)</Label>
+              <Label>Nom</Label>
               <Input
-                type="number"
-                value={(formData as VisaCommand).price || ''}
-                onChange={(e) => setFormData({ ...formData, price: Number(e.target.value) })}
-                placeholder="25000"
+                value={formData.lastName}
+                onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+                placeholder="Nom du client"
               />
             </div>
-          </>
+          </div>
         );
 
       case 'residence':
         return (
           <>
             <div className="space-y-2">
-              <Label>Nom de l'hôtel</Label>
-              <Input
-                value={(formData as ResidenceCommand).hotelName || ''}
-                onChange={(e) => setFormData({ ...formData, hotelName: e.target.value })}
-                placeholder="Nom de l'hôtel"
-              />
-            </div>
-            <div className="space-y-2">
               <Label>Nom complet du client</Label>
               <Input
-                value={(formData as ResidenceCommand).clientFullName || ''}
+                value={formData.clientFullName}
                 onChange={(e) => setFormData({ ...formData, clientFullName: e.target.value })}
                 placeholder="Nom complet"
               />
             </div>
             <div className="space-y-2">
-              <Label>Téléphone</Label>
+              <Label>Nom de l'hôtel</Label>
               <Input
-                value={(formData as ResidenceCommand).phone || ''}
-                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                placeholder="+213 555 123 456"
+                value={formData.hotelName}
+                onChange={(e) => setFormData({ ...formData, hotelName: e.target.value })}
+                placeholder="Nom de l'hôtel"
               />
-            </div>
-            <div className="space-y-2">
-              <Label>Prix (DZD)</Label>
-              <Input
-                type="number"
-                value={(formData as ResidenceCommand).price || ''}
-                onChange={(e) => setFormData({ ...formData, price: Number(e.target.value) })}
-                placeholder="45000"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Pièce jointe (PDF)</Label>
-              <Input type="file" accept=".pdf" />
             </div>
           </>
         );
@@ -288,25 +287,9 @@ const CommandsPage = () => {
             <div className="space-y-2">
               <Label>Nom complet du client</Label>
               <Input
-                value={(formData as TicketCommand).clientFullName || ''}
+                value={formData.clientFullName}
                 onChange={(e) => setFormData({ ...formData, clientFullName: e.target.value })}
                 placeholder="Nom complet"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Téléphone</Label>
-              <Input
-                value={(formData as TicketCommand).phone || ''}
-                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                placeholder="+213 555 123 456"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Destination</Label>
-              <Input
-                value={(formData as TicketCommand).destination || ''}
-                onChange={(e) => setFormData({ ...formData, destination: e.target.value })}
-                placeholder="Paris CDG"
               />
             </div>
             <div className="grid grid-cols-2 gap-4">
@@ -314,7 +297,7 @@ const CommandsPage = () => {
                 <Label>Date de départ</Label>
                 <Input
                   type="date"
-                  value={(formData as TicketCommand).departureDate || ''}
+                  value={formData.departureDate}
                   onChange={(e) => setFormData({ ...formData, departureDate: e.target.value })}
                 />
               </div>
@@ -322,19 +305,10 @@ const CommandsPage = () => {
                 <Label>Date de retour</Label>
                 <Input
                   type="date"
-                  value={(formData as TicketCommand).returnDate || ''}
+                  value={formData.returnDate}
                   onChange={(e) => setFormData({ ...formData, returnDate: e.target.value })}
                 />
               </div>
-            </div>
-            <div className="space-y-2">
-              <Label>Prix (DZD)</Label>
-              <Input
-                type="number"
-                value={(formData as TicketCommand).price || ''}
-                onChange={(e) => setFormData({ ...formData, price: Number(e.target.value) })}
-                placeholder="85000"
-              />
             </div>
           </>
         );
@@ -345,35 +319,18 @@ const CommandsPage = () => {
             <div className="space-y-2">
               <Label>Nom complet du client</Label>
               <Input
-                value={(formData as DossierCommand).clientFullName || ''}
+                value={formData.clientFullName}
                 onChange={(e) => setFormData({ ...formData, clientFullName: e.target.value })}
                 placeholder="Nom complet"
               />
             </div>
             <div className="space-y-2">
-              <Label>Téléphone</Label>
-              <Input
-                value={(formData as DossierCommand).phone || ''}
-                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                placeholder="+213 555 123 456"
-              />
-            </div>
-            <div className="space-y-2">
               <Label>Description du dossier</Label>
               <Textarea
-                value={(formData as DossierCommand).description || ''}
+                value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                 placeholder="Décrivez le dossier à traiter..."
-                rows={3}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Prix (DZD)</Label>
-              <Input
-                type="number"
-                value={(formData as DossierCommand).price || ''}
-                onChange={(e) => setFormData({ ...formData, price: Number(e.target.value) })}
-                placeholder="15000"
+                rows={2}
               />
             </div>
           </>
@@ -386,6 +343,51 @@ const CommandsPage = () => {
 
   return (
     <DashboardLayout title="Commandes" subtitle="Gestion des commandes clients">
+      {/* Summary Cards */}
+      <div className="grid gap-4 md:grid-cols-3 mb-6">
+        <Card className="border-none shadow-sm bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950/50 dark:to-blue-900/30">
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Total Versements</p>
+                <p className="text-2xl font-bold text-blue-700 dark:text-blue-400">{formatDZD(totals.totalPaid)}</p>
+              </div>
+              <div className="h-12 w-12 rounded-full bg-blue-200/50 dark:bg-blue-800/50 flex items-center justify-center">
+                <Banknote className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="border-none shadow-sm bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-950/50 dark:to-orange-900/30">
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Total Crédit (Reste)</p>
+                <p className="text-2xl font-bold text-orange-700 dark:text-orange-400">{formatDZD(totals.totalRemaining)}</p>
+              </div>
+              <div className="h-12 w-12 rounded-full bg-orange-200/50 dark:bg-orange-800/50 flex items-center justify-center">
+                <CreditCard className="h-6 w-6 text-orange-600 dark:text-orange-400" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="border-none shadow-sm bg-gradient-to-br from-green-50 to-green-100 dark:from-green-950/50 dark:to-green-900/30">
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Total Bénéfice Net</p>
+                <p className="text-2xl font-bold text-green-700 dark:text-green-400">{formatDZD(totals.totalProfit)}</p>
+              </div>
+              <div className="h-12 w-12 rounded-full bg-green-200/50 dark:bg-green-800/50 flex items-center justify-center">
+                <TrendingUp className="h-6 w-6 text-green-600 dark:text-green-400" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
       <Card className="border-none shadow-sm">
         <CardHeader>
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -415,14 +417,20 @@ const CommandsPage = () => {
                   <SelectItem value="annule">Annulé</SelectItem>
                 </SelectContent>
               </Select>
-              <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+              <Dialog open={isDialogOpen} onOpenChange={(open) => {
+                setIsDialogOpen(open);
+                if (!open) {
+                  setSelectedService('');
+                  resetForm();
+                }
+              }}>
                 <DialogTrigger asChild>
                   <Button>
                     <Plus className="mr-2 h-4 w-4" />
                     Nouvelle commande
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="bg-card max-w-lg">
+                <DialogContent className="bg-card max-w-lg max-h-[90vh] overflow-y-auto">
                   <DialogHeader>
                     <DialogTitle>Créer une commande</DialogTitle>
                     <DialogDescription>
@@ -430,9 +438,13 @@ const CommandsPage = () => {
                     </DialogDescription>
                   </DialogHeader>
                   <div className="space-y-4 py-4">
+                    {/* Service Selection */}
                     <div className="space-y-2">
                       <Label>Service</Label>
-                      <Select value={selectedService} onValueChange={setSelectedService}>
+                      <Select value={selectedService} onValueChange={(value) => {
+                        setSelectedService(value);
+                        resetForm();
+                      }}>
                         <SelectTrigger>
                           <SelectValue placeholder="Choisir un service" />
                         </SelectTrigger>
@@ -447,7 +459,108 @@ const CommandsPage = () => {
                         </SelectContent>
                       </Select>
                     </div>
-                    {selectedService && renderFormFields()}
+
+                    {selectedService && (
+                      <>
+                        {/* Service-specific fields */}
+                        {renderServiceSpecificFields()}
+
+                        {/* Common fields */}
+                        <div className="space-y-2">
+                          <Label>Téléphone</Label>
+                          <Input
+                            value={formData.phone}
+                            onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                            placeholder="+213 555 123 456"
+                          />
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label>Destination</Label>
+                          <Input
+                            value={formData.destination}
+                            onChange={(e) => setFormData({ ...formData, destination: e.target.value })}
+                            placeholder="Ex: ALG-IST-ALG"
+                          />
+                        </div>
+
+                        {/* Accounting fields */}
+                        <div className="border-t pt-4 mt-4">
+                          <h4 className="font-medium mb-3">Informations comptables</h4>
+                          
+                          <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                              <Label>Prix de Vente (DZD)</Label>
+                              <Input
+                                type="number"
+                                value={formData.sellingPrice || ''}
+                                onChange={(e) => setFormData({ ...formData, sellingPrice: Number(e.target.value) })}
+                                placeholder="85000"
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label>Versement (DZD)</Label>
+                              <Input
+                                type="number"
+                                value={formData.amountPaid || ''}
+                                onChange={(e) => setFormData({ ...formData, amountPaid: Number(e.target.value) })}
+                                placeholder="25000"
+                              />
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-4 mt-4">
+                            <div className="space-y-2">
+                              <Label>Prix d'Achat (DZD)</Label>
+                              <Input
+                                type="number"
+                                value={formData.buyingPrice || ''}
+                                onChange={(e) => setFormData({ ...formData, buyingPrice: Number(e.target.value) })}
+                                placeholder="70000"
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label>Fournisseur</Label>
+                              <Select
+                                value={formData.supplierId}
+                                onValueChange={(value) => setFormData({ ...formData, supplierId: value })}
+                              >
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Sélectionner" />
+                                </SelectTrigger>
+                                <SelectContent className="bg-popover">
+                                  {mockSuppliers
+                                    .filter((s) => s.isActive)
+                                    .map((supplier) => (
+                                      <SelectItem key={supplier.id} value={supplier.id}>
+                                        {supplier.name}
+                                      </SelectItem>
+                                    ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          </div>
+
+                          {/* Real-time calculations display */}
+                          {(formData.sellingPrice > 0 || formData.buyingPrice > 0) && (
+                            <div className="mt-4 p-3 bg-muted/50 rounded-lg space-y-2">
+                              <div className="flex justify-between text-sm">
+                                <span className="text-muted-foreground">Reste à payer:</span>
+                                <span className={formCalculations.remaining > 0 ? 'text-red-600 font-bold' : 'text-green-600 font-semibold'}>
+                                  {formatDZD(formCalculations.remaining)}
+                                </span>
+                              </div>
+                              <div className="flex justify-between text-sm">
+                                <span className="text-muted-foreground">Bénéfice net:</span>
+                                <span className="text-green-600 font-semibold">
+                                  {formatDZD(formCalculations.profit)}
+                                </span>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </>
+                    )}
                   </div>
                   <DialogFooter>
                     <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
@@ -463,131 +576,118 @@ const CommandsPage = () => {
           </div>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Client / Détails</TableHead>
-                <TableHead>Service</TableHead>
-                <TableHead>Prix</TableHead>
-                <TableHead>Statut</TableHead>
-                <TableHead>Paiement</TableHead>
-                <TableHead>Modifiable</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredCommands.map((command) => {
-                const service = mockServices.find((s) => s.id === command.serviceId);
-                const canEdit = user ? isCommandEditable(command, user.id) : false;
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Service</TableHead>
+                  <TableHead>Client</TableHead>
+                  <TableHead>Destination</TableHead>
+                  <TableHead className="text-right">Prix</TableHead>
+                  <TableHead className="text-right">Versement</TableHead>
+                  <TableHead className="text-right">Reste</TableHead>
+                  <TableHead className="text-right">P. Achat</TableHead>
+                  <TableHead className="text-right">Bénéfice</TableHead>
+                  <TableHead>Fournisseur</TableHead>
+                  <TableHead>Statut</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredCommands.map((command) => {
+                  const service = mockServices.find((s) => s.id === command.serviceId);
+                  const canEdit = user ? isCommandEditable(command, user.id) : false;
+                  const remaining = calculateRemainingBalance(command.sellingPrice, command.amountPaid);
+                  const profit = calculateNetProfit(command.sellingPrice, command.buyingPrice);
+                  const paymentInfo = getPaymentStatusFromAmounts(command.sellingPrice, command.amountPaid);
 
-                return (
-                  <TableRow key={command.id}>
-                    <TableCell>
-                      <div>
-                        <p className="font-medium">
-                          {command.data.type === 'visa'
-                            ? `${command.data.firstName} ${command.data.lastName}`
-                            : command.data.type === 'residence'
-                            ? command.data.hotelName
-                            : 'clientFullName' in command.data
-                            ? command.data.clientFullName
-                            : 'N/A'}
-                        </p>
-                        <p className="text-sm text-muted-foreground">
-                          {command.data.phone}
-                        </p>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="outline">{service?.name}</Badge>
-                    </TableCell>
-                    <TableCell>
-                      <div>
-                        <p className="font-medium">{formatDZD(command.data.price)}</p>
-                        {command.paidAmount > 0 && command.paidAmount < command.data.price && (
-                          <p className="text-xs text-muted-foreground">
-                            Payé: {formatDZD(command.paidAmount)}
-                          </p>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge
-                        variant={
-                          command.status === 'termine'
-                            ? 'default'
-                            : command.status === 'en_cours'
-                            ? 'secondary'
-                            : command.status === 'annule'
-                            ? 'destructive'
-                            : 'outline'
-                        }
-                      >
-                        {getCommandStatusLabel(command.status)}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Badge
-                        variant={
-                          command.paymentStatus === 'paye'
-                            ? 'default'
-                            : command.paymentStatus === 'partiel'
-                            ? 'secondary'
-                            : 'destructive'
-                        }
-                      >
-                        {getPaymentStatusLabel(command.paymentStatus)}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        {canEdit ? (
-                          <>
-                            <Unlock className="h-4 w-4 text-success" />
-                            <span className="text-xs text-muted-foreground">
-                              {getTimeRemaining(command.createdAt)}
-                            </span>
-                          </>
-                        ) : (
-                          <Lock className="h-4 w-4 text-muted-foreground" />
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="bg-popover">
-                          <DropdownMenuItem>
-                            <Eye className="mr-2 h-4 w-4" />
-                            Voir détails
-                          </DropdownMenuItem>
-                          {canEdit && (
-                            <>
-                              <DropdownMenuItem>
-                                <Edit className="mr-2 h-4 w-4" />
-                                Modifier
-                              </DropdownMenuItem>
-                              <DropdownMenuItem
-                                className="text-destructive"
-                                onClick={() => handleDeleteCommand(command.id)}
-                              >
-                                <Trash2 className="mr-2 h-4 w-4" />
-                                Supprimer
-                              </DropdownMenuItem>
-                            </>
-                          )}
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
+                  return (
+                    <TableRow key={command.id}>
+                      <TableCell>
+                        <Badge variant="outline">{service?.name}</Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div>
+                          <p className="font-medium">{command.data.clientFullName}</p>
+                          <p className="text-xs text-muted-foreground">{command.data.phone}</p>
+                        </div>
+                      </TableCell>
+                      <TableCell className="font-medium">{command.destination}</TableCell>
+                      <TableCell className="text-right font-medium">{formatDZD(command.sellingPrice)}</TableCell>
+                      <TableCell className="text-right">{formatDZD(command.amountPaid)}</TableCell>
+                      <TableCell className="text-right">
+                        <span className={remaining > 0 ? 'text-red-600 font-bold' : 'text-green-600 font-semibold'}>
+                          {formatDZD(remaining)}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-right text-muted-foreground">{formatDZD(command.buyingPrice)}</TableCell>
+                      <TableCell className="text-right">
+                        <span className="text-green-600 font-semibold">{formatDZD(profit)}</span>
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">{getSupplierName(command.supplierId)}</TableCell>
+                      <TableCell>
+                        <div className="flex flex-col gap-1">
+                          <Badge
+                            variant={
+                              command.status === 'termine'
+                                ? 'default'
+                                : command.status === 'en_cours'
+                                ? 'secondary'
+                                : command.status === 'annule'
+                                ? 'destructive'
+                                : 'outline'
+                            }
+                          >
+                            {getCommandStatusLabel(command.status)}
+                          </Badge>
+                          <div className="flex items-center gap-1 text-xs">
+                            {canEdit ? (
+                              <>
+                                <Unlock className="h-3 w-3 text-green-600" />
+                                <span className="text-muted-foreground">{getTimeRemaining(command.createdAt)}</span>
+                              </>
+                            ) : (
+                              <Lock className="h-3 w-3 text-muted-foreground" />
+                            )}
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon">
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="bg-popover">
+                            <DropdownMenuItem>
+                              <Eye className="mr-2 h-4 w-4" />
+                              Voir détails
+                            </DropdownMenuItem>
+                            {canEdit && (
+                              <>
+                                <DropdownMenuItem>
+                                  <Edit className="mr-2 h-4 w-4" />
+                                  Modifier
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  className="text-destructive"
+                                  onClick={() => handleDeleteCommand(command.id)}
+                                >
+                                  <Trash2 className="mr-2 h-4 w-4" />
+                                  Supprimer
+                                </DropdownMenuItem>
+                              </>
+                            )}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </div>
         </CardContent>
       </Card>
     </DashboardLayout>

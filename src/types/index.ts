@@ -37,43 +37,33 @@ export interface Supplier {
 
 // Command Types
 export type CommandStatus = 'en_attente' | 'en_cours' | 'termine' | 'annule';
-export type PaymentStatus = 'non_paye' | 'partiel' | 'paye';
 
-export interface VisaCommand {
+export interface BaseCommandData {
+  clientFullName: string;
+  phone: string;
+}
+
+export interface VisaCommand extends BaseCommandData {
   type: 'visa';
   firstName: string;
   lastName: string;
-  phone: string;
-  supplierId: string;
-  state: string;
-  price: number;
 }
 
-export interface ResidenceCommand {
+export interface ResidenceCommand extends BaseCommandData {
   type: 'residence';
   hotelName: string;
-  clientFullName: string;
-  phone: string;
-  price: number;
   attachmentUrl?: string;
 }
 
-export interface TicketCommand {
+export interface TicketCommand extends BaseCommandData {
   type: 'ticket';
-  clientFullName: string;
-  phone: string;
-  destination: string;
   departureDate: string;
   returnDate?: string;
-  price: number;
 }
 
-export interface DossierCommand {
+export interface DossierCommand extends BaseCommandData {
   type: 'dossier';
-  clientFullName: string;
-  phone: string;
   description: string;
-  price: number;
 }
 
 export type CommandData = VisaCommand | ResidenceCommand | TicketCommand | DossierCommand;
@@ -83,12 +73,25 @@ export interface Command {
   serviceId: string;
   data: CommandData;
   status: CommandStatus;
-  paymentStatus: PaymentStatus;
-  paidAmount: number;
+  // New accounting fields
+  destination: string;           // Ex: "ALG-IST-ALG"
+  sellingPrice: number;          // Prix de vente (ce que paie le client)
+  amountPaid: number;            // Versement (montant déjà payé)
+  buyingPrice: number;           // Prix d'achat (coût fournisseur)
+  supplierId: string;            // Fournisseur lié
   createdBy: string;
   createdAt: Date;
   updatedAt: Date;
 }
+
+// Calculated fields (computed at runtime, not stored)
+export const calculateRemainingBalance = (sellingPrice: number, amountPaid: number): number => {
+  return sellingPrice - amountPaid;
+};
+
+export const calculateNetProfit = (sellingPrice: number, buyingPrice: number): number => {
+  return sellingPrice - buyingPrice;
+};
 
 // Document Types
 export type DocumentCategory = 'assurance' | 'cnas' | 'casnos' | 'autre';
