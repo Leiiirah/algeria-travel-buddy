@@ -1,0 +1,42 @@
+export const suppliersSeedData = [
+  {
+    name: 'VFS Global',
+    contact: 'Mohamed Kaci',
+    phone: '+213 21 54 67 89',
+    email: 'contact@vfsglobal.dz',
+    serviceTypes: ['visa'],
+    isActive: true,
+  },
+  {
+    name: 'TLS Contact',
+    contact: 'Fatima Zeroual',
+    phone: '+213 21 45 78 90',
+    email: 'info@tlscontact.dz',
+    serviceTypes: ['visa'],
+    isActive: true,
+  },
+  {
+    name: 'Booking Partner Algeria',
+    contact: 'Rachid Benmoussa',
+    phone: '+213 550 123 456',
+    email: 'rachid@bookingpartner.dz',
+    serviceTypes: ['residence'],
+    isActive: true,
+  },
+  {
+    name: 'Air Algérie',
+    contact: 'Samia Lounis',
+    phone: '+213 21 74 24 28',
+    email: 'agences@airalgerie.dz',
+    serviceTypes: ['ticket'],
+    isActive: true,
+  },
+  {
+    name: 'Turkish Airlines',
+    contact: 'Ali Yilmaz',
+    phone: '+213 21 69 24 24',
+    email: 'dz.sales@thy.com',
+    serviceTypes: ['ticket'],
+    isActive: true,
+  },
+];
