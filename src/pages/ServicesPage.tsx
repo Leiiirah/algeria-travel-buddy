@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -24,16 +24,17 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Plus, Settings, FileText, Plane, Hotel, Folder } from 'lucide-react';
-import { mockServices, getServiceTypeLabel } from '@/lib/mock-data';
-import { Service, ServiceType } from '@/types';
+import { getServiceTypeLabel } from '@/lib/mock-data';
+import { ServiceType } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
-import { useToast } from '@/hooks/use-toast';
 import { Navigate } from 'react-router-dom';
+import { useServices, useCreateService, useToggleServiceStatus } from '@/hooks/useServices';
+import { ServicesSkeleton } from '@/components/skeletons/ServicesSkeleton';
+import { ErrorState } from '@/components/ui/error-state';
+import { EmptyState } from '@/components/ui/empty-state';
 
 const ServicesPage = () => {
   const { isAdmin } = useAuth();
-  const { toast } = useToast();
-  const [services, setServices] = useState<Service[]>(mockServices);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [newService, setNewService] = useState({
     name: '',
@@ -45,6 +46,11 @@ const ServicesPage = () => {
   if (!isAdmin) {
     return <Navigate to="/dashboard" replace />;
   }
+
+  // React Query hooks
+  const { data: services, isLoading, isError, error, refetch } = useServices();
+  const createService = useCreateService();
+  const toggleStatus = useToggleServiceStatus();
 
   const getServiceIcon = (type: ServiceType) => {
     switch (type) {
@@ -63,44 +69,51 @@ const ServicesPage = () => {
 
   const handleAddService = () => {
     if (!newService.name || !newService.description) {
-      toast({
-        title: 'Erreur',
-        description: 'Veuillez remplir tous les champs',
-        variant: 'destructive',
-      });
       return;
     }
 
-    const service: Service = {
-      id: String(services.length + 1),
-      ...newService,
-      isActive: true,
-      createdAt: new Date(),
-    };
-
-    setServices([...services, service]);
-    setNewService({ name: '', type: 'visa', description: '' });
-    setIsDialogOpen(false);
-    toast({
-      title: 'Service ajouté',
-      description: `Le service "${service.name}" a été créé avec succès`,
-    });
+    createService.mutate(
+      {
+        name: newService.name,
+        type: newService.type,
+        description: newService.description,
+      },
+      {
+        onSuccess: () => {
+          setNewService({ name: '', type: 'visa', description: '' });
+          setIsDialogOpen(false);
+        },
+      }
+    );
   };
 
   const toggleServiceStatus = (serviceId: string) => {
-    setServices(
-      services.map((service) =>
-        service.id === serviceId ? { ...service, isActive: !service.isActive } : service
-      )
-    );
-    const service = services.find((s) => s.id === serviceId);
-    toast({
-      title: service?.isActive ? 'Service désactivé' : 'Service activé',
-      description: `Le service "${service?.name}" a été ${
-        service?.isActive ? 'désactivé' : 'activé'
-      }`,
-    });
+    toggleStatus.mutate(serviceId);
   };
+
+  if (isLoading) {
+    return (
+      <DashboardLayout
+        title="Configuration des services"
+        subtitle="Gérez les types de services proposés par l'agence"
+      >
+        <ServicesSkeleton />
+      </DashboardLayout>
+    );
+  }
+
+  if (isError) {
+    return (
+      <DashboardLayout
+        title="Configuration des services"
+        subtitle="Gérez les types de services proposés par l'agence"
+      >
+        <ErrorState message={error?.message} onRetry={refetch} />
+      </DashboardLayout>
+    );
+  }
+
+  const allServices = services ?? [];
 
   return (
     <DashboardLayout
@@ -110,8 +123,8 @@ const ServicesPage = () => {
       <div className="mb-6 flex items-center justify-between">
         <div>
           <p className="text-muted-foreground">
-            {services.filter((s) => s.isActive).length} services actifs sur{' '}
-            {services.length}
+            {allServices.filter((s) => s.isActive).length} services actifs sur{' '}
+            {allServices.length}
           </p>
         </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
@@ -174,61 +187,72 @@ const ServicesPage = () => {
               <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
                 Annuler
               </Button>
-              <Button onClick={handleAddService}>Créer le service</Button>
+              <Button onClick={handleAddService} disabled={createService.isPending}>
+                {createService.isPending ? 'Création...' : 'Créer le service'}
+              </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {services.map((service) => {
-          const IconComponent = getServiceIcon(service.type);
-          return (
-            <Card
-              key={service.id}
-              className={`border-none shadow-sm transition-opacity ${
-                !service.isActive ? 'opacity-60' : ''
-              }`}
-            >
-              <CardHeader className="pb-3">
-                <div className="flex items-start justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
-                      <IconComponent className="h-5 w-5 text-primary" />
+      {allServices.length === 0 ? (
+        <EmptyState
+          title="Aucun service"
+          description="Créez votre premier service"
+          icon={<FileText className="h-12 w-12" />}
+        />
+      ) : (
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {allServices.map((service) => {
+            const IconComponent = getServiceIcon(service.type);
+            return (
+              <Card
+                key={service.id}
+                className={`border-none shadow-sm transition-opacity ${
+                  !service.isActive ? 'opacity-60' : ''
+                }`}
+              >
+                <CardHeader className="pb-3">
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
+                        <IconComponent className="h-5 w-5 text-primary" />
+                      </div>
+                      <div>
+                        <CardTitle className="text-base">{service.name}</CardTitle>
+                        <Badge variant="outline" className="mt-1">
+                          {getServiceTypeLabel(service.type)}
+                        </Badge>
+                      </div>
                     </div>
-                    <div>
-                      <CardTitle className="text-base">{service.name}</CardTitle>
-                      <Badge variant="outline" className="mt-1">
-                        {getServiceTypeLabel(service.type)}
-                      </Badge>
-                    </div>
+                    <Switch
+                      checked={service.isActive}
+                      onCheckedChange={() => toggleServiceStatus(service.id)}
+                      disabled={toggleStatus.isPending}
+                    />
                   </div>
-                  <Switch
-                    checked={service.isActive}
-                    onCheckedChange={() => toggleServiceStatus(service.id)}
-                  />
-                </div>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground">{service.description}</p>
-                <div className="mt-4 flex items-center justify-between text-xs text-muted-foreground">
-                  <span>
-                    Créé le{' '}
-                    {service.createdAt.toLocaleDateString('fr-FR', {
-                      day: '2-digit',
-                      month: 'short',
-                      year: 'numeric',
-                    })}
-                  </span>
-                  <Button variant="ghost" size="sm">
-                    <Settings className="h-4 w-4" />
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          );
-        })}
-      </div>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-muted-foreground">{service.description}</p>
+                  <div className="mt-4 flex items-center justify-between text-xs text-muted-foreground">
+                    <span>
+                      Créé le{' '}
+                      {new Date(service.createdAt).toLocaleDateString('fr-FR', {
+                        day: '2-digit',
+                        month: 'short',
+                        year: 'numeric',
+                      })}
+                    </span>
+                    <Button variant="ghost" size="sm">
+                      <Settings className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+      )}
     </DashboardLayout>
   );
 };

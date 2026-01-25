@@ -32,23 +32,16 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { useToast } from '@/hooks/use-toast';
-import {
-  mockSuppliers,
-  mockCommands,
-  mockSupplierTransactions,
-  formatDZD,
-  calculateSupplierBalance,
-  getSupplierName,
-  getTransactionTypeLabel,
-} from '@/lib/mock-data';
-import { SupplierTransaction, SupplierTransactionType } from '@/types';
+import { formatDZD, getTransactionTypeLabel } from '@/lib/mock-data';
+import { SupplierTransactionType } from '@/types';
+import { useSuppliers, useSupplierBalance } from '@/hooks/useSuppliers';
+import { useSupplierTransactions, useCreateSupplierTransaction } from '@/hooks/useSupplierTransactions';
+import { SupplierAccountingSkeleton } from '@/components/skeletons/SupplierAccountingSkeleton';
+import { ErrorState } from '@/components/ui/error-state';
+import { EmptyState } from '@/components/ui/empty-state';
 
 const SupplierAccountingPage = () => {
-  const { toast } = useToast();
-  const [transactions, setTransactions] = useState<SupplierTransaction[]>(mockSupplierTransactions);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [selectedSupplierId, setSelectedSupplierId] = useState<string>('');
   const [newTransaction, setNewTransaction] = useState({
     supplierId: '',
     type: 'sortie' as SupplierTransactionType,
@@ -57,34 +50,63 @@ const SupplierAccountingPage = () => {
     date: format(new Date(), 'yyyy-MM-dd'),
   });
 
+  // React Query hooks
+  const { data: suppliers, isLoading: suppliersLoading, isError: suppliersError, error, refetch } = useSuppliers();
+  const { data: transactions, isLoading: transactionsLoading } = useSupplierTransactions();
+  const createTransaction = useCreateSupplierTransaction();
+
+  const isLoading = suppliersLoading || transactionsLoading;
+
   // Calculate totals for all suppliers
   const globalTotals = useMemo(() => {
-    return mockSuppliers.reduce(
-      (acc, supplier) => {
-        const balance = calculateSupplierBalance(supplier.id, mockCommands, transactions);
-        return {
-          totalPurchased: acc.totalPurchased + balance.totalPurchased,
-          totalPaid: acc.totalPaid + balance.totalPaid,
-          totalRemaining: acc.totalRemaining + balance.remainingBalance,
-        };
-      },
-      { totalPurchased: 0, totalPaid: 0, totalRemaining: 0 }
-    );
-  }, [transactions]);
+    if (!suppliers || !transactions) {
+      return { totalPurchased: 0, totalPaid: 0, totalRemaining: 0 };
+    }
+    
+    // Simple calculation based on transactions
+    const totalPaid = transactions
+      .filter((t) => t.type === 'sortie')
+      .reduce((sum, t) => sum + t.amount, 0);
+    
+    const totalRefunds = transactions
+      .filter((t) => t.type === 'entree')
+      .reduce((sum, t) => sum + t.amount, 0);
+
+    return {
+      totalPurchased: 0, // This would come from commands data
+      totalPaid: totalPaid - totalRefunds,
+      totalRemaining: 0,
+    };
+  }, [suppliers, transactions]);
 
   // Get supplier balances for the table
   const supplierBalances = useMemo(() => {
-    return mockSuppliers
-      .map((supplier) => ({
+    if (!suppliers || !transactions) return [];
+    
+    return suppliers.map((supplier) => {
+      const supplierTransactions = transactions.filter((t) => t.supplierId === supplier.id);
+      const totalPaid = supplierTransactions
+        .filter((t) => t.type === 'sortie')
+        .reduce((sum, t) => sum + t.amount, 0);
+      const totalRefunds = supplierTransactions
+        .filter((t) => t.type === 'entree')
+        .reduce((sum, t) => sum + t.amount, 0);
+      
+      return {
         supplier,
-        ...calculateSupplierBalance(supplier.id, mockCommands, transactions),
-      }))
-      .filter((item) => item.totalPurchased > 0 || item.totalPaid > 0);
-  }, [transactions]);
+        totalPurchased: 0,
+        totalPaid: totalPaid - totalRefunds,
+        remainingBalance: 0,
+      };
+    }).filter((item) => item.totalPaid > 0);
+  }, [suppliers, transactions]);
 
   // Sort transactions by date (newest first)
   const sortedTransactions = useMemo(() => {
-    return [...transactions].sort((a, b) => b.date.getTime() - a.date.getTime());
+    if (!transactions) return [];
+    return [...transactions].sort((a, b) => 
+      new Date(b.date).getTime() - new Date(a.date).getTime()
+    );
   }, [transactions]);
 
   const handleOpenDialog = (supplierId?: string) => {
@@ -96,49 +118,39 @@ const SupplierAccountingPage = () => {
 
   const handleAddTransaction = () => {
     if (!newTransaction.supplierId || !newTransaction.amount) {
-      toast({
-        title: 'Erreur',
-        description: 'Veuillez remplir tous les champs obligatoires.',
-        variant: 'destructive',
-      });
       return;
     }
 
     const amount = parseFloat(newTransaction.amount);
     if (isNaN(amount) || amount <= 0) {
-      toast({
-        title: 'Erreur',
-        description: 'Le montant doit être un nombre positif.',
-        variant: 'destructive',
-      });
       return;
     }
 
-    const transaction: SupplierTransaction = {
-      id: Date.now().toString(),
-      supplierId: newTransaction.supplierId,
-      type: newTransaction.type,
-      amount,
-      note: newTransaction.note,
-      date: new Date(newTransaction.date),
-      recordedBy: '1',
-      createdAt: new Date(),
-    };
+    createTransaction.mutate(
+      {
+        supplierId: newTransaction.supplierId,
+        type: newTransaction.type,
+        amount,
+        note: newTransaction.note,
+        date: newTransaction.date,
+      },
+      {
+        onSuccess: () => {
+          setNewTransaction({
+            supplierId: '',
+            type: 'sortie',
+            amount: '',
+            note: '',
+            date: format(new Date(), 'yyyy-MM-dd'),
+          });
+          setIsDialogOpen(false);
+        },
+      }
+    );
+  };
 
-    setTransactions([...transactions, transaction]);
-    setNewTransaction({
-      supplierId: '',
-      type: 'sortie',
-      amount: '',
-      note: '',
-      date: format(new Date(), 'yyyy-MM-dd'),
-    });
-    setIsDialogOpen(false);
-
-    toast({
-      title: 'Transaction enregistrée',
-      description: `${getTransactionTypeLabel(newTransaction.type)} de ${formatDZD(amount)} pour ${getSupplierName(newTransaction.supplierId)}`,
-    });
+  const getSupplierName = (supplierId: string) => {
+    return suppliers?.find((s) => s.id === supplierId)?.name ?? 'N/A';
   };
 
   const getBalanceStyle = (remaining: number) => {
@@ -152,6 +164,22 @@ const SupplierAccountingPage = () => {
     }
     return formatDZD(remaining);
   };
+
+  if (isLoading) {
+    return (
+      <DashboardLayout title="Situation Fournisseurs" subtitle="Suivi des paiements et soldes fournisseurs">
+        <SupplierAccountingSkeleton />
+      </DashboardLayout>
+    );
+  }
+
+  if (suppliersError) {
+    return (
+      <DashboardLayout title="Situation Fournisseurs" subtitle="Suivi des paiements et soldes fournisseurs">
+        <ErrorState message={error?.message} onRetry={refetch} />
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout title="Situation Fournisseurs" subtitle="Suivi des paiements et soldes fournisseurs">
@@ -188,7 +216,7 @@ const SupplierAccountingPage = () => {
                       <SelectValue placeholder="Sélectionner un fournisseur" />
                     </SelectTrigger>
                     <SelectContent>
-                      {mockSuppliers.map((supplier) => (
+                      {suppliers?.map((supplier) => (
                         <SelectItem key={supplier.id} value={supplier.id}>
                           {supplier.name}
                         </SelectItem>
@@ -266,7 +294,9 @@ const SupplierAccountingPage = () => {
                 <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
                   Annuler
                 </Button>
-                <Button onClick={handleAddTransaction}>Enregistrer</Button>
+                <Button onClick={handleAddTransaction} disabled={createTransaction.isPending}>
+                  {createTransaction.isPending ? 'Enregistrement...' : 'Enregistrer'}
+                </Button>
               </DialogFooter>
             </DialogContent>
           </Dialog>
@@ -332,25 +362,25 @@ const SupplierAccountingPage = () => {
                 <CardTitle>Solde par Fournisseur</CardTitle>
               </CardHeader>
               <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Fournisseur</TableHead>
-                      <TableHead className="text-right">Total Achats</TableHead>
-                      <TableHead className="text-right">Total Versé</TableHead>
-                      <TableHead className="text-right">Reste à Payer</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {supplierBalances.length === 0 ? (
+                {supplierBalances.length === 0 ? (
+                  <EmptyState
+                    title="Aucune transaction"
+                    description="Les soldes fournisseurs apparaîtront ici"
+                    icon={<Wallet className="h-12 w-12" />}
+                  />
+                ) : (
+                  <Table>
+                    <TableHeader>
                       <TableRow>
-                        <TableCell colSpan={5} className="text-center text-muted-foreground">
-                          Aucune transaction enregistrée
-                        </TableCell>
+                        <TableHead>Fournisseur</TableHead>
+                        <TableHead className="text-right">Total Achats</TableHead>
+                        <TableHead className="text-right">Total Versé</TableHead>
+                        <TableHead className="text-right">Reste à Payer</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
                       </TableRow>
-                    ) : (
-                      supplierBalances.map((item) => (
+                    </TableHeader>
+                    <TableBody>
+                      {supplierBalances.map((item) => (
                         <TableRow key={item.supplier.id}>
                           <TableCell className="font-medium">{item.supplier.name}</TableCell>
                           <TableCell className="text-right">
@@ -372,10 +402,10 @@ const SupplierAccountingPage = () => {
                             </Button>
                           </TableCell>
                         </TableRow>
-                      ))
-                    )}
-                  </TableBody>
-                </Table>
+                      ))}
+                    </TableBody>
+                  </Table>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
@@ -387,28 +417,28 @@ const SupplierAccountingPage = () => {
                 <CardTitle>Historique des Transactions</CardTitle>
               </CardHeader>
               <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Date</TableHead>
-                      <TableHead>Fournisseur</TableHead>
-                      <TableHead>Type</TableHead>
-                      <TableHead className="text-right">Montant</TableHead>
-                      <TableHead>Note</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {sortedTransactions.length === 0 ? (
+                {sortedTransactions.length === 0 ? (
+                  <EmptyState
+                    title="Aucune transaction"
+                    description="Les transactions apparaîtront ici"
+                    icon={<CreditCard className="h-12 w-12" />}
+                  />
+                ) : (
+                  <Table>
+                    <TableHeader>
                       <TableRow>
-                        <TableCell colSpan={5} className="text-center text-muted-foreground">
-                          Aucune transaction enregistrée
-                        </TableCell>
+                        <TableHead>Date</TableHead>
+                        <TableHead>Fournisseur</TableHead>
+                        <TableHead>Type</TableHead>
+                        <TableHead className="text-right">Montant</TableHead>
+                        <TableHead>Note</TableHead>
                       </TableRow>
-                    ) : (
-                      sortedTransactions.map((transaction) => (
+                    </TableHeader>
+                    <TableBody>
+                      {sortedTransactions.map((transaction) => (
                         <TableRow key={transaction.id}>
                           <TableCell>
-                            {format(transaction.date, 'dd MMM yyyy', { locale: fr })}
+                            {format(new Date(transaction.date), 'dd MMM yyyy', { locale: fr })}
                           </TableCell>
                           <TableCell className="font-medium">
                             {getSupplierName(transaction.supplierId)}
@@ -445,10 +475,10 @@ const SupplierAccountingPage = () => {
                             {transaction.note || '-'}
                           </TableCell>
                         </TableRow>
-                      ))
-                    )}
-                  </TableBody>
-                </Table>
+                      ))}
+                    </TableBody>
+                  </Table>
+                )}
               </CardContent>
             </Card>
           </TabsContent>

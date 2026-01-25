@@ -29,26 +29,32 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Plus, Search, UserCircle, Mail, Shield, UserCheck, UserX } from 'lucide-react';
-import { mockUsers } from '@/lib/mock-data';
-import { User, UserRole } from '@/types';
+import { Plus, Search, Mail, Shield, UserCheck, UserX, Users } from 'lucide-react';
+import { UserRole } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
-import { useToast } from '@/hooks/use-toast';
+import { useUsers, useCreateUser, useToggleUserStatus } from '@/hooks/useUsers';
+import { EmployeesSkeleton } from '@/components/skeletons/EmployeesSkeleton';
+import { ErrorState } from '@/components/ui/error-state';
+import { EmptyState } from '@/components/ui/empty-state';
 
 const EmployeesPage = () => {
   const { isAdmin } = useAuth();
-  const { toast } = useToast();
-  const [users, setUsers] = useState<User[]>(mockUsers);
   const [searchQuery, setSearchQuery] = useState('');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [newUser, setNewUser] = useState({
     firstName: '',
     lastName: '',
     email: '',
+    password: '',
     role: 'employee' as UserRole,
   });
 
-  const filteredUsers = users.filter(
+  // React Query hooks
+  const { data: users, isLoading, isError, error, refetch } = useUsers();
+  const createUser = useCreateUser();
+  const toggleStatus = useToggleUserStatus();
+
+  const filteredUsers = (users ?? []).filter(
     (user) =>
       user.firstName.toLowerCase().includes(searchQuery.toLowerCase()) ||
       user.lastName.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -56,45 +62,46 @@ const EmployeesPage = () => {
   );
 
   const handleAddUser = () => {
-    if (!newUser.firstName || !newUser.lastName || !newUser.email) {
-      toast({
-        title: 'Erreur',
-        description: 'Veuillez remplir tous les champs',
-        variant: 'destructive',
-      });
+    if (!newUser.firstName || !newUser.lastName || !newUser.email || !newUser.password) {
       return;
     }
 
-    const user: User = {
-      id: String(users.length + 1),
-      ...newUser,
-      createdAt: new Date(),
-      isActive: true,
-    };
-
-    setUsers([...users, user]);
-    setNewUser({ firstName: '', lastName: '', email: '', role: 'employee' });
-    setIsDialogOpen(false);
-    toast({
-      title: 'Employé ajouté',
-      description: `${user.firstName} ${user.lastName} a été ajouté avec succès`,
-    });
+    createUser.mutate(
+      {
+        firstName: newUser.firstName,
+        lastName: newUser.lastName,
+        email: newUser.email,
+        password: newUser.password,
+        role: newUser.role,
+      },
+      {
+        onSuccess: () => {
+          setNewUser({ firstName: '', lastName: '', email: '', password: '', role: 'employee' });
+          setIsDialogOpen(false);
+        },
+      }
+    );
   };
 
   const toggleUserStatus = (userId: string) => {
-    setUsers(
-      users.map((user) =>
-        user.id === userId ? { ...user, isActive: !user.isActive } : user
-      )
-    );
-    const user = users.find((u) => u.id === userId);
-    toast({
-      title: user?.isActive ? 'Compte désactivé' : 'Compte activé',
-      description: `Le compte de ${user?.firstName} ${user?.lastName} a été ${
-        user?.isActive ? 'désactivé' : 'activé'
-      }`,
-    });
+    toggleStatus.mutate(userId);
   };
+
+  if (isLoading) {
+    return (
+      <DashboardLayout title="Employés" subtitle="Gestion des comptes utilisateurs">
+        <EmployeesSkeleton />
+      </DashboardLayout>
+    );
+  }
+
+  if (isError) {
+    return (
+      <DashboardLayout title="Employés" subtitle="Gestion des comptes utilisateurs">
+        <ErrorState message={error?.message} onRetry={refetch} />
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout title="Employés" subtitle="Gestion des comptes utilisateurs">
@@ -104,7 +111,7 @@ const EmployeesPage = () => {
             <div>
               <CardTitle>Annuaire des employés</CardTitle>
               <CardDescription>
-                {users.length} employés enregistrés
+                {(users ?? []).length} employés enregistrés
               </CardDescription>
             </div>
             <div className="flex gap-3">
@@ -170,6 +177,18 @@ const EmployeesPage = () => {
                         />
                       </div>
                       <div className="space-y-2">
+                        <Label htmlFor="password">Mot de passe</Label>
+                        <Input
+                          id="password"
+                          type="password"
+                          value={newUser.password}
+                          onChange={(e) =>
+                            setNewUser({ ...newUser, password: e.target.value })
+                          }
+                          placeholder="Mot de passe"
+                        />
+                      </div>
+                      <div className="space-y-2">
                         <Label htmlFor="role">Rôle</Label>
                         <Select
                           value={newUser.role}
@@ -191,7 +210,9 @@ const EmployeesPage = () => {
                       <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
                         Annuler
                       </Button>
-                      <Button onClick={handleAddUser}>Ajouter</Button>
+                      <Button onClick={handleAddUser} disabled={createUser.isPending}>
+                        {createUser.isPending ? 'Ajout...' : 'Ajouter'}
+                      </Button>
                     </DialogFooter>
                   </DialogContent>
                 </Dialog>
@@ -200,78 +221,87 @@ const EmployeesPage = () => {
           </div>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Employé</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>Rôle</TableHead>
-                <TableHead>Statut</TableHead>
-                <TableHead>Date d'ajout</TableHead>
-                {isAdmin && <TableHead className="text-right">Actions</TableHead>}
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredUsers.map((user) => (
-                <TableRow key={user.id}>
-                  <TableCell>
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary">
-                        {user.firstName[0]}
-                        {user.lastName[0]}
-                      </div>
-                      <div>
-                        <p className="font-medium">
-                          {user.firstName} {user.lastName}
-                        </p>
-                      </div>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2 text-muted-foreground">
-                      <Mail className="h-4 w-4" />
-                      {user.email}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <Shield className="h-4 w-4 text-muted-foreground" />
-                      <span className="capitalize">
-                        {user.role === 'admin' ? 'Administrateur' : 'Employé'}
-                      </span>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant={user.isActive ? 'default' : 'secondary'}>
-                      {user.isActive ? 'Actif' : 'Inactif'}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    {user.createdAt.toLocaleDateString('fr-FR', {
-                      day: '2-digit',
-                      month: 'short',
-                      year: 'numeric',
-                    })}
-                  </TableCell>
-                  {isAdmin && (
-                    <TableCell className="text-right">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => toggleUserStatus(user.id)}
-                      >
-                        {user.isActive ? (
-                          <UserX className="h-4 w-4 text-destructive" />
-                        ) : (
-                          <UserCheck className="h-4 w-4 text-success" />
-                        )}
-                      </Button>
-                    </TableCell>
-                  )}
+          {filteredUsers.length === 0 ? (
+            <EmptyState
+              title="Aucun employé"
+              description="Ajoutez votre premier employé"
+              icon={<Users className="h-12 w-12" />}
+            />
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Employé</TableHead>
+                  <TableHead>Email</TableHead>
+                  <TableHead>Rôle</TableHead>
+                  <TableHead>Statut</TableHead>
+                  <TableHead>Date d'ajout</TableHead>
+                  {isAdmin && <TableHead className="text-right">Actions</TableHead>}
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {filteredUsers.map((user) => (
+                  <TableRow key={user.id}>
+                    <TableCell>
+                      <div className="flex items-center gap-3">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary">
+                          {user.firstName[0]}
+                          {user.lastName[0]}
+                        </div>
+                        <div>
+                          <p className="font-medium">
+                            {user.firstName} {user.lastName}
+                          </p>
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2 text-muted-foreground">
+                        <Mail className="h-4 w-4" />
+                        {user.email}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <Shield className="h-4 w-4 text-muted-foreground" />
+                        <span className="capitalize">
+                          {user.role === 'admin' ? 'Administrateur' : 'Employé'}
+                        </span>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={user.isActive ? 'default' : 'secondary'}>
+                        {user.isActive ? 'Actif' : 'Inactif'}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      {new Date(user.createdAt).toLocaleDateString('fr-FR', {
+                        day: '2-digit',
+                        month: 'short',
+                        year: 'numeric',
+                      })}
+                    </TableCell>
+                    {isAdmin && (
+                      <TableCell className="text-right">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => toggleUserStatus(user.id)}
+                          disabled={toggleStatus.isPending}
+                        >
+                          {user.isActive ? (
+                            <UserX className="h-4 w-4 text-destructive" />
+                          ) : (
+                            <UserCheck className="h-4 w-4 text-success" />
+                          )}
+                        </Button>
+                      </TableCell>
+                    )}
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
         </CardContent>
       </Card>
     </DashboardLayout>

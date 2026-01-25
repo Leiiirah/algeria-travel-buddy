@@ -24,13 +24,14 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Plus, Search, Building2, Phone, Mail, Edit, Trash2 } from 'lucide-react';
-import { mockSuppliers, getServiceTypeLabel } from '@/lib/mock-data';
-import { Supplier, ServiceType } from '@/types';
-import { useToast } from '@/hooks/use-toast';
+import { getServiceTypeLabel } from '@/lib/mock-data';
+import { ServiceType } from '@/types';
+import { useSuppliers, useCreateSupplier, useDeleteSupplier } from '@/hooks/useSuppliers';
+import { SuppliersSkeleton } from '@/components/skeletons/SuppliersSkeleton';
+import { ErrorState } from '@/components/ui/error-state';
+import { EmptyState } from '@/components/ui/empty-state';
 
 const SuppliersPage = () => {
-  const { toast } = useToast();
-  const [suppliers, setSuppliers] = useState<Supplier[]>(mockSuppliers);
   const [searchQuery, setSearchQuery] = useState('');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [newSupplier, setNewSupplier] = useState({
@@ -41,7 +42,12 @@ const SuppliersPage = () => {
     serviceTypes: [] as ServiceType[],
   });
 
-  const filteredSuppliers = suppliers.filter(
+  // React Query hooks
+  const { data: suppliers, isLoading, isError, error, refetch } = useSuppliers();
+  const createSupplier = useCreateSupplier();
+  const deleteSupplier = useDeleteSupplier();
+
+  const filteredSuppliers = (suppliers ?? []).filter(
     (supplier) =>
       supplier.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       supplier.contact.toLowerCase().includes(searchQuery.toLowerCase())
@@ -56,37 +62,28 @@ const SuppliersPage = () => {
 
   const handleAddSupplier = () => {
     if (!newSupplier.name || !newSupplier.contact || !newSupplier.phone) {
-      toast({
-        title: 'Erreur',
-        description: 'Veuillez remplir tous les champs obligatoires',
-        variant: 'destructive',
-      });
       return;
     }
 
-    const supplier: Supplier = {
-      id: String(suppliers.length + 1),
-      ...newSupplier,
-      isActive: true,
-      createdAt: new Date(),
-    };
-
-    setSuppliers([...suppliers, supplier]);
-    setNewSupplier({ name: '', contact: '', phone: '', email: '', serviceTypes: [] });
-    setIsDialogOpen(false);
-    toast({
-      title: 'Fournisseur ajouté',
-      description: `${supplier.name} a été ajouté avec succès`,
-    });
+    createSupplier.mutate(
+      {
+        name: newSupplier.name,
+        contact: newSupplier.contact,
+        phone: newSupplier.phone,
+        email: newSupplier.email,
+        serviceTypes: newSupplier.serviceTypes,
+      },
+      {
+        onSuccess: () => {
+          setNewSupplier({ name: '', contact: '', phone: '', email: '', serviceTypes: [] });
+          setIsDialogOpen(false);
+        },
+      }
+    );
   };
 
   const handleDeleteSupplier = (supplierId: string) => {
-    const supplier = suppliers.find((s) => s.id === supplierId);
-    setSuppliers(suppliers.filter((s) => s.id !== supplierId));
-    toast({
-      title: 'Fournisseur supprimé',
-      description: `${supplier?.name} a été supprimé`,
-    });
+    deleteSupplier.mutate(supplierId);
   };
 
   const toggleServiceType = (type: ServiceType) => {
@@ -98,6 +95,22 @@ const SuppliersPage = () => {
     }));
   };
 
+  if (isLoading) {
+    return (
+      <DashboardLayout title="Fournisseurs" subtitle="Gestion des partenaires et fournisseurs">
+        <SuppliersSkeleton />
+      </DashboardLayout>
+    );
+  }
+
+  if (isError) {
+    return (
+      <DashboardLayout title="Fournisseurs" subtitle="Gestion des partenaires et fournisseurs">
+        <ErrorState message={error?.message} onRetry={refetch} />
+      </DashboardLayout>
+    );
+  }
+
   return (
     <DashboardLayout title="Fournisseurs" subtitle="Gestion des partenaires et fournisseurs">
       <Card className="border-none shadow-sm">
@@ -106,7 +119,7 @@ const SuppliersPage = () => {
             <div>
               <CardTitle>Base de données fournisseurs</CardTitle>
               <CardDescription>
-                {suppliers.filter((s) => s.isActive).length} fournisseurs actifs
+                {(suppliers ?? []).filter((s) => s.isActive).length} fournisseurs actifs
               </CardDescription>
             </div>
             <div className="flex gap-3">
@@ -205,7 +218,9 @@ const SuppliersPage = () => {
                     <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
                       Annuler
                     </Button>
-                    <Button onClick={handleAddSupplier}>Ajouter</Button>
+                    <Button onClick={handleAddSupplier} disabled={createSupplier.isPending}>
+                      {createSupplier.isPending ? 'Ajout...' : 'Ajouter'}
+                    </Button>
                   </DialogFooter>
                 </DialogContent>
               </Dialog>
@@ -213,86 +228,95 @@ const SuppliersPage = () => {
           </div>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Fournisseur</TableHead>
-                <TableHead>Contact</TableHead>
-                <TableHead>Coordonnées</TableHead>
-                <TableHead>Services</TableHead>
-                <TableHead>Statut</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredSuppliers.map((supplier) => (
-                <TableRow key={supplier.id}>
-                  <TableCell>
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
-                        <Building2 className="h-5 w-5 text-primary" />
-                      </div>
-                      <div>
-                        <p className="font-medium">{supplier.name}</p>
-                        <p className="text-sm text-muted-foreground">
-                          Depuis{' '}
-                          {supplier.createdAt.toLocaleDateString('fr-FR', {
-                            month: 'short',
-                            year: 'numeric',
-                          })}
-                        </p>
-                      </div>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <p className="font-medium">{supplier.contact}</p>
-                  </TableCell>
-                  <TableCell>
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <Phone className="h-3 w-3" />
-                        {supplier.phone}
-                      </div>
-                      {supplier.email && (
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                          <Mail className="h-3 w-3" />
-                          {supplier.email}
-                        </div>
-                      )}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex flex-wrap gap-1">
-                      {supplier.serviceTypes.map((type) => (
-                        <Badge key={type} variant="outline" className="text-xs">
-                          {getServiceTypeLabel(type)}
-                        </Badge>
-                      ))}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant={supplier.isActive ? 'default' : 'secondary'}>
-                      {supplier.isActive ? 'Actif' : 'Inactif'}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex justify-end gap-2">
-                      <Button variant="ghost" size="icon">
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleDeleteSupplier(supplier.id)}
-                      >
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                      </Button>
-                    </div>
-                  </TableCell>
+          {filteredSuppliers.length === 0 ? (
+            <EmptyState
+              title="Aucun fournisseur"
+              description="Ajoutez votre premier fournisseur"
+              icon={<Building2 className="h-12 w-12" />}
+            />
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Fournisseur</TableHead>
+                  <TableHead>Contact</TableHead>
+                  <TableHead>Coordonnées</TableHead>
+                  <TableHead>Services</TableHead>
+                  <TableHead>Statut</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {filteredSuppliers.map((supplier) => (
+                  <TableRow key={supplier.id}>
+                    <TableCell>
+                      <div className="flex items-center gap-3">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
+                          <Building2 className="h-5 w-5 text-primary" />
+                        </div>
+                        <div>
+                          <p className="font-medium">{supplier.name}</p>
+                          <p className="text-sm text-muted-foreground">
+                            Depuis{' '}
+                            {new Date(supplier.createdAt).toLocaleDateString('fr-FR', {
+                              month: 'short',
+                              year: 'numeric',
+                            })}
+                          </p>
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <p className="font-medium">{supplier.contact}</p>
+                    </TableCell>
+                    <TableCell>
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <Phone className="h-3 w-3" />
+                          {supplier.phone}
+                        </div>
+                        {supplier.email && (
+                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                            <Mail className="h-3 w-3" />
+                            {supplier.email}
+                          </div>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex flex-wrap gap-1">
+                        {supplier.serviceTypes.map((type) => (
+                          <Badge key={type} variant="outline" className="text-xs">
+                            {getServiceTypeLabel(type)}
+                          </Badge>
+                        ))}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={supplier.isActive ? 'default' : 'secondary'}>
+                        {supplier.isActive ? 'Actif' : 'Inactif'}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex justify-end gap-2">
+                        <Button variant="ghost" size="icon">
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleDeleteSupplier(supplier.id)}
+                          disabled={deleteSupplier.isPending}
+                        >
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
         </CardContent>
       </Card>
     </DashboardLayout>

@@ -38,23 +38,22 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Plus, Search, MoreHorizontal, Edit, Trash2, Eye, Lock, Unlock, Banknote, CreditCard, TrendingUp } from 'lucide-react';
 import {
-  mockCommands,
-  mockServices,
-  mockSuppliers,
   formatDZD,
   isCommandEditable,
   getCommandStatusLabel,
   getPaymentStatusFromAmounts,
-  getSupplierName,
 } from '@/lib/mock-data';
-import { Command, CommandData, calculateRemainingBalance, calculateNetProfit } from '@/types';
+import { CommandData, calculateRemainingBalance, calculateNetProfit } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
-import { useToast } from '@/hooks/use-toast';
+import { useCommands, useCommandStats, useCreateCommand, useDeleteCommand } from '@/hooks/useCommands';
+import { useActiveServices } from '@/hooks/useServices';
+import { useSuppliers } from '@/hooks/useSuppliers';
+import { CommandsSkeleton } from '@/components/skeletons/CommandsSkeleton';
+import { ErrorState } from '@/components/ui/error-state';
+import { EmptyState } from '@/components/ui/empty-state';
 
 const CommandsPage = () => {
   const { user } = useAuth();
-  const { toast } = useToast();
-  const [commands, setCommands] = useState<Command[]>(mockCommands);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -69,7 +68,6 @@ const CommandsPage = () => {
     amountPaid: 0,
     buyingPrice: 0,
     supplierId: '',
-    // Service-specific fields
     firstName: '',
     lastName: '',
     hotelName: '',
@@ -78,8 +76,28 @@ const CommandsPage = () => {
     description: '',
   });
 
-  // Calculate totals
+  // React Query hooks
+  const { data: commandsData, isLoading, isError, error, refetch } = useCommands({
+    status: statusFilter !== 'all' ? statusFilter : undefined,
+    search: searchQuery || undefined,
+  });
+  const { data: statsData } = useCommandStats();
+  const { data: services } = useActiveServices();
+  const { data: suppliers } = useSuppliers();
+  const createCommand = useCreateCommand();
+  const deleteCommand = useDeleteCommand();
+
+  const commands = commandsData?.data ?? [];
+
+  // Use stats from API or calculate from current page
   const totals = useMemo(() => {
+    if (statsData) {
+      return {
+        totalPaid: statsData.totalPaid,
+        totalRemaining: statsData.totalRemaining,
+        totalProfit: statsData.totalProfit,
+      };
+    }
     return commands.reduce(
       (acc, cmd) => {
         const remaining = calculateRemainingBalance(cmd.sellingPrice, cmd.amountPaid);
@@ -92,7 +110,7 @@ const CommandsPage = () => {
       },
       { totalPaid: 0, totalRemaining: 0, totalProfit: 0 }
     );
-  }, [commands]);
+  }, [statsData, commands]);
 
   // Real-time form calculations
   const formCalculations = useMemo(() => {
@@ -102,17 +120,12 @@ const CommandsPage = () => {
     };
   }, [formData.sellingPrice, formData.amountPaid, formData.buyingPrice]);
 
-  const filteredCommands = commands.filter((command) => {
-    const matchesSearch =
-      command.data.clientFullName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      command.destination.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      getSupplierName(command.supplierId).toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesStatus = statusFilter === 'all' || command.status === statusFilter;
-    return matchesSearch && matchesStatus;
-  });
-
   const getServiceType = (serviceId: string) => {
-    return mockServices.find((s) => s.id === serviceId)?.type || 'visa';
+    return services?.find((s) => s.id === serviceId)?.type || 'visa';
+  };
+
+  const getSupplierName = (supplierId: string) => {
+    return suppliers?.find((s) => s.id === supplierId)?.name || 'N/A';
   };
 
   const resetForm = () => {
@@ -180,29 +193,24 @@ const CommandsPage = () => {
         return;
     }
 
-    const newCommand: Command = {
-      id: String(commands.length + 1),
-      serviceId: selectedService,
-      data,
-      status: 'en_attente',
-      destination: formData.destination,
-      sellingPrice: formData.sellingPrice,
-      amountPaid: formData.amountPaid,
-      buyingPrice: formData.buyingPrice,
-      supplierId: formData.supplierId,
-      createdBy: user.id,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
-
-    setCommands([newCommand, ...commands]);
-    setIsDialogOpen(false);
-    setSelectedService('');
-    resetForm();
-    toast({
-      title: 'Commande créée',
-      description: 'La commande a été enregistrée avec succès',
-    });
+    createCommand.mutate(
+      {
+        serviceId: selectedService,
+        data: data as unknown as Record<string, unknown>,
+        destination: formData.destination,
+        sellingPrice: formData.sellingPrice,
+        amountPaid: formData.amountPaid,
+        buyingPrice: formData.buyingPrice,
+        supplierId: formData.supplierId,
+      },
+      {
+        onSuccess: () => {
+          setIsDialogOpen(false);
+          setSelectedService('');
+          resetForm();
+        },
+      }
+    );
   };
 
   const handleDeleteCommand = (commandId: string) => {
@@ -210,23 +218,15 @@ const CommandsPage = () => {
     if (!command || !user) return;
 
     if (!isCommandEditable(command, user.id)) {
-      toast({
-        title: 'Action non autorisée',
-        description: 'Cette commande ne peut plus être supprimée (délai de 24h dépassé)',
-        variant: 'destructive',
-      });
       return;
     }
 
-    setCommands(commands.filter((c) => c.id !== commandId));
-    toast({
-      title: 'Commande supprimée',
-      description: 'La commande a été supprimée avec succès',
-    });
+    deleteCommand.mutate(commandId);
   };
 
-  const getTimeRemaining = (createdAt: Date): string => {
-    const hoursSinceCreation = (Date.now() - createdAt.getTime()) / (1000 * 60 * 60);
+  const getTimeRemaining = (createdAt: Date | string): string => {
+    const createdDate = typeof createdAt === 'string' ? new Date(createdAt) : createdAt;
+    const hoursSinceCreation = (Date.now() - createdDate.getTime()) / (1000 * 60 * 60);
     if (hoursSinceCreation >= 24) return 'Verrouillé';
     const remaining = 24 - hoursSinceCreation;
     if (remaining < 1) return `${Math.round(remaining * 60)} min restantes`;
@@ -341,6 +341,22 @@ const CommandsPage = () => {
     }
   };
 
+  if (isLoading) {
+    return (
+      <DashboardLayout title="Commandes" subtitle="Gestion des commandes clients">
+        <CommandsSkeleton />
+      </DashboardLayout>
+    );
+  }
+
+  if (isError) {
+    return (
+      <DashboardLayout title="Commandes" subtitle="Gestion des commandes clients">
+        <ErrorState message={error?.message} onRetry={refetch} />
+      </DashboardLayout>
+    );
+  }
+
   return (
     <DashboardLayout title="Commandes" subtitle="Gestion des commandes clients">
       {/* Summary Cards */}
@@ -393,7 +409,7 @@ const CommandsPage = () => {
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <CardTitle>Liste des commandes</CardTitle>
-              <CardDescription>{commands.length} commandes au total</CardDescription>
+              <CardDescription>{commandsData?.total ?? 0} commandes au total</CardDescription>
             </div>
             <div className="flex flex-wrap gap-3">
               <div className="relative">
@@ -449,13 +465,11 @@ const CommandsPage = () => {
                           <SelectValue placeholder="Choisir un service" />
                         </SelectTrigger>
                         <SelectContent className="bg-popover">
-                          {mockServices
-                            .filter((s) => s.isActive)
-                            .map((service) => (
-                              <SelectItem key={service.id} value={service.id}>
-                                {service.name}
-                              </SelectItem>
-                            ))}
+                          {services?.map((service) => (
+                            <SelectItem key={service.id} value={service.id}>
+                              {service.name}
+                            </SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
                     </div>
@@ -529,13 +543,11 @@ const CommandsPage = () => {
                                   <SelectValue placeholder="Sélectionner" />
                                 </SelectTrigger>
                                 <SelectContent className="bg-popover">
-                                  {mockSuppliers
-                                    .filter((s) => s.isActive)
-                                    .map((supplier) => (
-                                      <SelectItem key={supplier.id} value={supplier.id}>
-                                        {supplier.name}
-                                      </SelectItem>
-                                    ))}
+                                  {suppliers?.filter((s) => s.isActive).map((supplier) => (
+                                    <SelectItem key={supplier.id} value={supplier.id}>
+                                      {supplier.name}
+                                    </SelectItem>
+                                  ))}
                                 </SelectContent>
                               </Select>
                             </div>
@@ -566,8 +578,8 @@ const CommandsPage = () => {
                     <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
                       Annuler
                     </Button>
-                    <Button onClick={handleCreateCommand} disabled={!selectedService}>
-                      Créer
+                    <Button onClick={handleCreateCommand} disabled={!selectedService || createCommand.isPending}>
+                      {createCommand.isPending ? 'Création...' : 'Créer'}
                     </Button>
                   </DialogFooter>
                 </DialogContent>
@@ -576,118 +588,125 @@ const CommandsPage = () => {
           </div>
         </CardHeader>
         <CardContent>
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Service</TableHead>
-                  <TableHead>Client</TableHead>
-                  <TableHead>Destination</TableHead>
-                  <TableHead className="text-right">Prix</TableHead>
-                  <TableHead className="text-right">Versement</TableHead>
-                  <TableHead className="text-right">Reste</TableHead>
-                  <TableHead className="text-right">P. Achat</TableHead>
-                  <TableHead className="text-right">Bénéfice</TableHead>
-                  <TableHead>Fournisseur</TableHead>
-                  <TableHead>Statut</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredCommands.map((command) => {
-                  const service = mockServices.find((s) => s.id === command.serviceId);
-                  const canEdit = user ? isCommandEditable(command, user.id) : false;
-                  const remaining = calculateRemainingBalance(command.sellingPrice, command.amountPaid);
-                  const profit = calculateNetProfit(command.sellingPrice, command.buyingPrice);
-                  const paymentInfo = getPaymentStatusFromAmounts(command.sellingPrice, command.amountPaid);
+          {commands.length === 0 ? (
+            <EmptyState
+              title="Aucune commande"
+              description="Commencez par créer votre première commande"
+              icon={<CreditCard className="h-12 w-12" />}
+            />
+          ) : (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Service</TableHead>
+                    <TableHead>Client</TableHead>
+                    <TableHead>Destination</TableHead>
+                    <TableHead className="text-right">Prix</TableHead>
+                    <TableHead className="text-right">Versement</TableHead>
+                    <TableHead className="text-right">Reste</TableHead>
+                    <TableHead className="text-right">P. Achat</TableHead>
+                    <TableHead className="text-right">Bénéfice</TableHead>
+                    <TableHead>Fournisseur</TableHead>
+                    <TableHead>Statut</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {commands.map((command) => {
+                    const service = services?.find((s) => s.id === command.serviceId);
+                    const canEdit = user ? isCommandEditable(command, user.id) : false;
+                    const remaining = calculateRemainingBalance(command.sellingPrice, command.amountPaid);
+                    const profit = calculateNetProfit(command.sellingPrice, command.buyingPrice);
 
-                  return (
-                    <TableRow key={command.id}>
-                      <TableCell>
-                        <Badge variant="outline">{service?.name}</Badge>
-                      </TableCell>
-                      <TableCell>
-                        <div>
-                          <p className="font-medium">{command.data.clientFullName}</p>
-                          <p className="text-xs text-muted-foreground">{command.data.phone}</p>
-                        </div>
-                      </TableCell>
-                      <TableCell className="font-medium">{command.destination}</TableCell>
-                      <TableCell className="text-right font-medium">{formatDZD(command.sellingPrice)}</TableCell>
-                      <TableCell className="text-right">{formatDZD(command.amountPaid)}</TableCell>
-                      <TableCell className="text-right">
-                        <span className={remaining > 0 ? 'text-red-600 font-bold' : 'text-green-600 font-semibold'}>
-                          {formatDZD(remaining)}
-                        </span>
-                      </TableCell>
-                      <TableCell className="text-right text-muted-foreground">{formatDZD(command.buyingPrice)}</TableCell>
-                      <TableCell className="text-right">
-                        <span className="text-green-600 font-semibold">{formatDZD(profit)}</span>
-                      </TableCell>
-                      <TableCell className="text-muted-foreground">{getSupplierName(command.supplierId)}</TableCell>
-                      <TableCell>
-                        <div className="flex flex-col gap-1">
-                          <Badge
-                            variant={
-                              command.status === 'termine'
-                                ? 'default'
-                                : command.status === 'en_cours'
-                                ? 'secondary'
-                                : command.status === 'annule'
-                                ? 'destructive'
-                                : 'outline'
-                            }
-                          >
-                            {getCommandStatusLabel(command.status)}
-                          </Badge>
-                          <div className="flex items-center gap-1 text-xs">
-                            {canEdit ? (
-                              <>
-                                <Unlock className="h-3 w-3 text-green-600" />
-                                <span className="text-muted-foreground">{getTimeRemaining(command.createdAt)}</span>
-                              </>
-                            ) : (
-                              <Lock className="h-3 w-3 text-muted-foreground" />
-                            )}
+                    return (
+                      <TableRow key={command.id}>
+                        <TableCell>
+                          <Badge variant="outline">{service?.name}</Badge>
+                        </TableCell>
+                        <TableCell>
+                          <div>
+                            <p className="font-medium">{command.data.clientFullName}</p>
+                            <p className="text-xs text-muted-foreground">{command.data.phone}</p>
                           </div>
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon">
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end" className="bg-popover">
-                            <DropdownMenuItem>
-                              <Eye className="mr-2 h-4 w-4" />
-                              Voir détails
-                            </DropdownMenuItem>
-                            {canEdit && (
-                              <>
-                                <DropdownMenuItem>
-                                  <Edit className="mr-2 h-4 w-4" />
-                                  Modifier
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                  className="text-destructive"
-                                  onClick={() => handleDeleteCommand(command.id)}
-                                >
-                                  <Trash2 className="mr-2 h-4 w-4" />
-                                  Supprimer
-                                </DropdownMenuItem>
-                              </>
-                            )}
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
-          </div>
+                        </TableCell>
+                        <TableCell className="font-medium">{command.destination}</TableCell>
+                        <TableCell className="text-right font-medium">{formatDZD(command.sellingPrice)}</TableCell>
+                        <TableCell className="text-right">{formatDZD(command.amountPaid)}</TableCell>
+                        <TableCell className="text-right">
+                          <span className={remaining > 0 ? 'text-red-600 font-bold' : 'text-green-600 font-semibold'}>
+                            {formatDZD(remaining)}
+                          </span>
+                        </TableCell>
+                        <TableCell className="text-right text-muted-foreground">{formatDZD(command.buyingPrice)}</TableCell>
+                        <TableCell className="text-right">
+                          <span className="text-green-600 font-semibold">{formatDZD(profit)}</span>
+                        </TableCell>
+                        <TableCell className="text-muted-foreground">{getSupplierName(command.supplierId)}</TableCell>
+                        <TableCell>
+                          <div className="flex flex-col gap-1">
+                            <Badge
+                              variant={
+                                command.status === 'termine'
+                                  ? 'default'
+                                  : command.status === 'en_cours'
+                                  ? 'secondary'
+                                  : command.status === 'annule'
+                                  ? 'destructive'
+                                  : 'outline'
+                              }
+                            >
+                              {getCommandStatusLabel(command.status)}
+                            </Badge>
+                            <div className="flex items-center gap-1 text-xs">
+                              {canEdit ? (
+                                <>
+                                  <Unlock className="h-3 w-3 text-green-600" />
+                                  <span className="text-muted-foreground">{getTimeRemaining(command.createdAt)}</span>
+                                </>
+                              ) : (
+                                <Lock className="h-3 w-3 text-muted-foreground" />
+                              )}
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon">
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="bg-popover">
+                              <DropdownMenuItem>
+                                <Eye className="mr-2 h-4 w-4" />
+                                Voir détails
+                              </DropdownMenuItem>
+                              {canEdit && (
+                                <>
+                                  <DropdownMenuItem>
+                                    <Edit className="mr-2 h-4 w-4" />
+                                    Modifier
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem
+                                    className="text-destructive"
+                                    onClick={() => handleDeleteCommand(command.id)}
+                                  >
+                                    <Trash2 className="mr-2 h-4 w-4" />
+                                    Supprimer
+                                  </DropdownMenuItem>
+                                </>
+                              )}
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </div>
+          )}
         </CardContent>
       </Card>
     </DashboardLayout>
