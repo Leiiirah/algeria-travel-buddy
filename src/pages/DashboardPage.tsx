@@ -9,15 +9,7 @@ import {
   FileText,
   AlertCircle,
 } from 'lucide-react';
-import {
-  mockCommands,
-  mockServices,
-  formatDZD,
-  getCommandStatusLabel,
-  getPaymentStatusFromAmounts,
-  getServiceTypeLabel,
-} from '@/lib/mock-data';
-import { calculateRemainingBalance } from '@/types';
+import { formatDZD, getCommandStatusLabel, getPaymentStatusFromAmounts } from '@/lib/mock-data';
 import {
   ResponsiveContainer,
   PieChart,
@@ -30,48 +22,60 @@ import {
   CartesianGrid,
   Tooltip,
 } from 'recharts';
+import { useDashboardStats } from '@/hooks/useAnalytics';
+import { useCommands } from '@/hooks/useCommands';
+import { useServices } from '@/hooks/useServices';
+import { DashboardSkeleton } from '@/components/skeletons/DashboardSkeleton';
+import { ErrorState } from '@/components/ui/error-state';
 
 const DashboardPage = () => {
-  // Calculate stats using new fields
-  const totalRevenue = mockCommands.reduce((sum, cmd) => sum + cmd.amountPaid, 0);
-  const pendingAmount = mockCommands.reduce(
-    (sum, cmd) => sum + calculateRemainingBalance(cmd.sellingPrice, cmd.amountPaid),
-    0
-  );
-  const todayCommands = mockCommands.filter(
-    (cmd) => cmd.createdAt.toDateString() === new Date().toDateString()
-  ).length;
-  const inProgressCommands = mockCommands.filter((cmd) => cmd.status === 'en_cours').length;
+  const { data: stats, isLoading: statsLoading, isError: statsError, error, refetch: refetchStats } = useDashboardStats();
+  const { data: commandsData, isLoading: commandsLoading } = useCommands({ limit: 5 });
+  const { data: services } = useServices();
+
+  const isLoading = statsLoading || commandsLoading;
+
+  if (isLoading) {
+    return (
+      <DashboardLayout title="Tableau de bord" subtitle="Vue d'ensemble de votre agence">
+        <DashboardSkeleton />
+      </DashboardLayout>
+    );
+  }
+
+  if (statsError) {
+    return (
+      <DashboardLayout title="Tableau de bord" subtitle="Vue d'ensemble de votre agence">
+        <ErrorState message={error?.message} onRetry={refetchStats} />
+      </DashboardLayout>
+    );
+  }
+
+  // Extract stats with defaults
+  const totalRevenue = stats?.totalRevenue ?? 0;
+  const pendingAmount = stats?.pendingAmount ?? 0;
+  const todayCommands = stats?.todayCommands ?? 0;
+  const inProgressCommands = stats?.inProgressCommands ?? 0;
 
   // Chart data
-  const serviceData = mockServices.map((service) => {
-    const commands = mockCommands.filter((cmd) => cmd.serviceId === service.id);
-    const revenue = commands.reduce((sum, cmd) => sum + cmd.amountPaid, 0);
-    return {
-      name: service.name.split(' ')[0],
-      commandes: commands.length,
-      revenue: revenue / 1000,
-    };
-  });
-
-  const pieData = [
+  const pieData = stats?.serviceData ?? [
     { name: 'Visa', value: 45, color: 'hsl(var(--chart-1))' },
     { name: 'Résidence', value: 25, color: 'hsl(var(--chart-2))' },
     { name: 'Billets', value: 20, color: 'hsl(var(--chart-3))' },
     { name: 'Dossiers', value: 10, color: 'hsl(var(--chart-4))' },
   ];
 
-  const weeklyData = [
-    { jour: 'Lun', revenus: 45000 },
-    { jour: 'Mar', revenus: 62000 },
-    { jour: 'Mer', revenus: 38000 },
-    { jour: 'Jeu', revenus: 71000 },
-    { jour: 'Ven', revenus: 55000 },
-    { jour: 'Sam', revenus: 89000 },
-    { jour: 'Dim', revenus: 23000 },
+  const weeklyData = stats?.weeklyData ?? [
+    { name: 'Lun', revenue: 45000 },
+    { name: 'Mar', revenue: 62000 },
+    { name: 'Mer', revenue: 38000 },
+    { name: 'Jeu', revenue: 71000 },
+    { name: 'Ven', revenue: 55000 },
+    { name: 'Sam', revenue: 89000 },
+    { name: 'Dim', revenue: 23000 },
   ];
 
-  const recentCommands = mockCommands.slice(0, 5);
+  const recentCommands = commandsData?.data ?? [];
 
   const getStatusBadgeVariant = (status: string) => {
     switch (status) {
@@ -147,7 +151,7 @@ const DashboardPage = () => {
             <ResponsiveContainer width="100%" height={300}>
               <LineChart data={weeklyData}>
                 <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                <XAxis dataKey="jour" className="text-xs" />
+                <XAxis dataKey="name" className="text-xs" />
                 <YAxis className="text-xs" tickFormatter={(v) => `${v / 1000}k`} />
                 <Tooltip
                   formatter={(value: number) => [formatDZD(value), 'Revenus']}
@@ -159,7 +163,7 @@ const DashboardPage = () => {
                 />
                 <Line
                   type="monotone"
-                  dataKey="revenus"
+                  dataKey="revenue"
                   stroke="hsl(var(--primary))"
                   strokeWidth={2}
                   dot={{ fill: 'hsl(var(--primary))' }}
@@ -227,41 +231,45 @@ const DashboardPage = () => {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {recentCommands.map((command) => {
-                const service = mockServices.find((s) => s.id === command.serviceId);
-                const paymentInfo = getPaymentStatusFromAmounts(command.sellingPrice, command.amountPaid);
-                return (
-                  <div
-                    key={command.id}
-                    className="flex items-center justify-between rounded-lg border bg-card p-4"
-                  >
-                    <div className="flex items-center gap-4">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
-                        <FileText className="h-5 w-5 text-primary" />
+              {recentCommands.length === 0 ? (
+                <p className="text-center text-muted-foreground py-8">Aucune commande récente</p>
+              ) : (
+                recentCommands.map((command) => {
+                  const service = services?.find((s) => s.id === command.serviceId);
+                  const paymentInfo = getPaymentStatusFromAmounts(command.sellingPrice, command.amountPaid);
+                  return (
+                    <div
+                      key={command.id}
+                      className="flex items-center justify-between rounded-lg border bg-card p-4"
+                    >
+                      <div className="flex items-center gap-4">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
+                          <FileText className="h-5 w-5 text-primary" />
+                        </div>
+                        <div>
+                          <p className="font-medium">{command.data.clientFullName}</p>
+                          <p className="text-sm text-muted-foreground">
+                            {service?.name} • {new Date(command.createdAt).toLocaleDateString('fr-FR')}
+                          </p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="font-medium">{command.data.clientFullName}</p>
-                        <p className="text-sm text-muted-foreground">
-                          {service?.name} • {command.createdAt.toLocaleDateString('fr-FR')}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-4">
-                      <div className="text-right">
-                        <p className="font-medium">{formatDZD(command.sellingPrice)}</p>
-                        <div className="flex gap-2">
-                          <Badge variant={getStatusBadgeVariant(command.status)}>
-                            {getCommandStatusLabel(command.status)}
-                          </Badge>
-                          <Badge variant={getPaymentBadgeVariant(paymentInfo.status)}>
-                            {paymentInfo.label}
-                          </Badge>
+                      <div className="flex items-center gap-4">
+                        <div className="text-right">
+                          <p className="font-medium">{formatDZD(command.sellingPrice)}</p>
+                          <div className="flex gap-2">
+                            <Badge variant={getStatusBadgeVariant(command.status)}>
+                              {getCommandStatusLabel(command.status)}
+                            </Badge>
+                            <Badge variant={getPaymentBadgeVariant(paymentInfo.status)}>
+                              {paymentInfo.label}
+                            </Badge>
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </div>
-                );
-              })}
+                  );
+                })
+              )}
             </div>
           </CardContent>
         </Card>

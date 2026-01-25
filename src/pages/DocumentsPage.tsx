@@ -5,7 +5,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Dialog,
   DialogContent,
@@ -34,20 +33,28 @@ import {
   Building,
   HelpCircle,
 } from 'lucide-react';
-import { mockDocuments, getDocumentCategoryLabel } from '@/lib/mock-data';
-import { Document, DocumentCategory } from '@/types';
-import { useToast } from '@/hooks/use-toast';
+import { getDocumentCategoryLabel } from '@/lib/mock-data';
+import { DocumentCategory } from '@/types';
+import { useDocuments, useUploadDocument, useDeleteDocument, getDocumentDownloadUrl } from '@/hooks/useDocuments';
+import { DocumentsSkeleton } from '@/components/skeletons/DocumentsSkeleton';
+import { ErrorState } from '@/components/ui/error-state';
+import { EmptyState } from '@/components/ui/empty-state';
 
 const DocumentsPage = () => {
-  const { toast } = useToast();
-  const [documents, setDocuments] = useState<Document[]>(mockDocuments);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [newDocument, setNewDocument] = useState({
     name: '',
     category: 'autre' as DocumentCategory,
   });
+
+  // React Query hooks
+  const categoryFilter = selectedCategory === 'all' ? undefined : selectedCategory;
+  const { data: documents, isLoading, isError, error, refetch } = useDocuments(categoryFilter);
+  const uploadDocument = useUploadDocument();
+  const deleteDocument = useDeleteDocument();
 
   const categories: { value: string; label: string; icon: React.ElementType }[] = [
     { value: 'all', label: 'Tous', icon: FolderOpen },
@@ -57,10 +64,9 @@ const DocumentsPage = () => {
     { value: 'autre', label: 'Autre', icon: HelpCircle },
   ];
 
-  const filteredDocuments = documents.filter((doc) => {
+  const filteredDocuments = (documents ?? []).filter((doc) => {
     const matchesSearch = doc.name.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesCategory = selectedCategory === 'all' || doc.category === selectedCategory;
-    return matchesSearch && matchesCategory;
+    return matchesSearch;
   });
 
   const getCategoryIcon = (category: DocumentCategory) => {
@@ -76,47 +82,55 @@ const DocumentsPage = () => {
   };
 
   const handleUpload = () => {
-    if (!newDocument.name) {
-      toast({
-        title: 'Erreur',
-        description: 'Veuillez remplir le nom du document',
-        variant: 'destructive',
-      });
+    if (!newDocument.name || !selectedFile) {
       return;
     }
 
-    const doc: Document = {
-      id: String(documents.length + 1),
-      name: newDocument.name,
-      category: newDocument.category,
-      fileUrl: `/documents/${newDocument.name.toLowerCase().replace(/\s+/g, '-')}.pdf`,
-      uploadedBy: '1',
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
-
-    setDocuments([...documents, doc]);
-    setNewDocument({ name: '', category: 'autre' });
-    setIsDialogOpen(false);
-    toast({
-      title: 'Document ajouté',
-      description: `"${doc.name}" a été téléversé avec succès`,
-    });
+    uploadDocument.mutate(
+      {
+        name: newDocument.name,
+        category: newDocument.category,
+        file: selectedFile,
+      },
+      {
+        onSuccess: () => {
+          setNewDocument({ name: '', category: 'autre' });
+          setSelectedFile(null);
+          setIsDialogOpen(false);
+        },
+      }
+    );
   };
 
   const handleDelete = (docId: string) => {
-    const doc = documents.find((d) => d.id === docId);
-    setDocuments(documents.filter((d) => d.id !== docId));
-    toast({
-      title: 'Document supprimé',
-      description: `"${doc?.name}" a été supprimé`,
-    });
+    deleteDocument.mutate(docId);
+  };
+
+  const handleDownload = (docId: string) => {
+    const url = getDocumentDownloadUrl(docId);
+    window.open(url, '_blank');
   };
 
   const documentsByCategory = categories.slice(1).map((cat) => ({
     ...cat,
-    count: documents.filter((d) => d.category === cat.value).length,
+    count: (documents ?? []).filter((d) => d.category === cat.value).length,
   }));
+
+  if (isLoading) {
+    return (
+      <DashboardLayout title="Bibliothèque de documents" subtitle="Gestion électronique des documents (GED)">
+        <DocumentsSkeleton />
+      </DashboardLayout>
+    );
+  }
+
+  if (isError) {
+    return (
+      <DashboardLayout title="Bibliothèque de documents" subtitle="Gestion électronique des documents (GED)">
+        <ErrorState message={error?.message} onRetry={refetch} />
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout title="Bibliothèque de documents" subtitle="Gestion électronique des documents (GED)">
@@ -228,9 +242,14 @@ const DocumentsPage = () => {
                         <div className="text-center">
                           <Upload className="mx-auto h-10 w-10 text-muted-foreground" />
                           <p className="mt-2 text-sm text-muted-foreground">
-                            Glissez-déposez ou cliquez pour sélectionner
+                            {selectedFile ? selectedFile.name : 'Glissez-déposez ou cliquez pour sélectionner'}
                           </p>
-                          <Input type="file" accept=".pdf" className="mt-4" />
+                          <Input 
+                            type="file" 
+                            accept=".pdf" 
+                            className="mt-4"
+                            onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
+                          />
                         </div>
                       </div>
                     </div>
@@ -239,7 +258,9 @@ const DocumentsPage = () => {
                     <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
                       Annuler
                     </Button>
-                    <Button onClick={handleUpload}>Téléverser</Button>
+                    <Button onClick={handleUpload} disabled={uploadDocument.isPending}>
+                      {uploadDocument.isPending ? 'Téléversement...' : 'Téléverser'}
+                    </Button>
                   </DialogFooter>
                 </DialogContent>
               </Dialog>
@@ -247,63 +268,67 @@ const DocumentsPage = () => {
           </div>
         </CardHeader>
         <CardContent>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {filteredDocuments.map((doc) => {
-              const Icon = getCategoryIcon(doc.category);
-              return (
-                <Card
-                  key={doc.id}
-                  className="group border shadow-sm transition-all hover:shadow-md"
-                >
-                  <CardContent className="p-4">
-                    <div className="flex items-start gap-3">
-                      <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-destructive/10">
-                        <FileText className="h-6 w-6 text-destructive" />
+          {filteredDocuments.length === 0 ? (
+            <EmptyState
+              title="Aucun document trouvé"
+              description="Téléversez un document pour commencer"
+              icon={<FolderOpen className="h-12 w-12" />}
+            />
+          ) : (
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {filteredDocuments.map((doc) => {
+                const Icon = getCategoryIcon(doc.category);
+                return (
+                  <Card
+                    key={doc.id}
+                    className="group border shadow-sm transition-all hover:shadow-md"
+                  >
+                    <CardContent className="p-4">
+                      <div className="flex items-start gap-3">
+                        <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-destructive/10">
+                          <FileText className="h-6 w-6 text-destructive" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium truncate">{doc.name}</p>
+                          <Badge variant="outline" className="mt-1">
+                            {getDocumentCategoryLabel(doc.category)}
+                          </Badge>
+                          <p className="mt-2 text-xs text-muted-foreground">
+                            Mis à jour le{' '}
+                            {new Date(doc.updatedAt).toLocaleDateString('fr-FR', {
+                              day: '2-digit',
+                              month: 'short',
+                              year: 'numeric',
+                            })}
+                          </p>
+                        </div>
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium truncate">{doc.name}</p>
-                        <Badge variant="outline" className="mt-1">
-                          {getDocumentCategoryLabel(doc.category)}
-                        </Badge>
-                        <p className="mt-2 text-xs text-muted-foreground">
-                          Mis à jour le{' '}
-                          {doc.updatedAt.toLocaleDateString('fr-FR', {
-                            day: '2-digit',
-                            month: 'short',
-                            year: 'numeric',
-                          })}
-                        </p>
+                      <div className="mt-4 flex gap-2 opacity-0 transition-opacity group-hover:opacity-100">
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="flex-1"
+                          onClick={() => handleDownload(doc.id)}
+                        >
+                          <Download className="mr-2 h-4 w-4" />
+                          Télécharger
+                        </Button>
+                        <Button variant="outline" size="sm">
+                          <Replace className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleDelete(doc.id)}
+                          disabled={deleteDocument.isPending}
+                        >
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
                       </div>
-                    </div>
-                    <div className="mt-4 flex gap-2 opacity-0 transition-opacity group-hover:opacity-100">
-                      <Button variant="outline" size="sm" className="flex-1">
-                        <Download className="mr-2 h-4 w-4" />
-                        Télécharger
-                      </Button>
-                      <Button variant="outline" size="sm">
-                        <Replace className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleDelete(doc.id)}
-                      >
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              );
-            })}
-          </div>
-
-          {filteredDocuments.length === 0 && (
-            <div className="flex flex-col items-center justify-center py-12 text-center">
-              <FolderOpen className="h-12 w-12 text-muted-foreground" />
-              <p className="mt-4 text-lg font-medium">Aucun document trouvé</p>
-              <p className="text-sm text-muted-foreground">
-                Téléversez un document pour commencer
-              </p>
+                    </CardContent>
+                  </Card>
+                );
+              })}
             </div>
           )}
         </CardContent>

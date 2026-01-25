@@ -40,16 +40,11 @@ import {
   Search,
 } from 'lucide-react';
 import {
-  mockCommands,
-  mockPayments,
-  mockServices,
-  mockUsers,
   formatDZD,
   getPaymentMethodLabel,
   getPaymentStatusFromAmounts,
 } from '@/lib/mock-data';
-import { Payment, PaymentMethod, Command, calculateRemainingBalance, calculateNetProfit } from '@/types';
-import { useToast } from '@/hooks/use-toast';
+import { PaymentMethod, calculateRemainingBalance, calculateNetProfit } from '@/types';
 import {
   BarChart,
   Bar,
@@ -61,10 +56,14 @@ import {
   LineChart,
   Line,
 } from 'recharts';
+import { usePayments, useCreatePayment } from '@/hooks/usePayments';
+import { useCommands } from '@/hooks/useCommands';
+import { useServices } from '@/hooks/useServices';
+import { AccountingSkeleton } from '@/components/skeletons/AccountingSkeleton';
+import { ErrorState } from '@/components/ui/error-state';
+import { EmptyState } from '@/components/ui/empty-state';
 
 const AccountingPage = () => {
-  const { toast } = useToast();
-  const [payments, setPayments] = useState<Payment[]>(mockPayments);
   const [searchQuery, setSearchQuery] = useState('');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedCommand, setSelectedCommand] = useState<string>('');
@@ -74,23 +73,32 @@ const AccountingPage = () => {
     notes: '',
   });
 
-  // Calculate stats using new fields
-  const totalRevenue = payments.reduce((sum, p) => sum + p.amount, 0);
-  const pendingPayments = mockCommands.reduce(
+  // React Query hooks
+  const { data: payments, isLoading: paymentsLoading, isError: paymentsError, error, refetch } = usePayments(searchQuery || undefined);
+  const { data: commandsData } = useCommands({});
+  const { data: services } = useServices();
+  const createPayment = useCreatePayment();
+
+  const commands = commandsData?.data ?? [];
+  const allPayments = payments ?? [];
+
+  // Calculate stats
+  const totalRevenue = allPayments.reduce((sum, p) => sum + p.amount, 0);
+  const pendingPayments = commands.reduce(
     (sum, cmd) => sum + calculateRemainingBalance(cmd.sellingPrice, cmd.amountPaid),
     0
   );
-  const totalProfit = mockCommands.reduce(
+  const totalProfit = commands.reduce(
     (sum, cmd) => sum + calculateNetProfit(cmd.sellingPrice, cmd.buyingPrice),
     0
   );
-  const todayPayments = payments.filter(
-    (p) => p.createdAt.toDateString() === new Date().toDateString()
+  const todayPayments = allPayments.filter(
+    (p) => new Date(p.createdAt).toDateString() === new Date().toDateString()
   );
   const todayTotal = todayPayments.reduce((sum, p) => sum + p.amount, 0);
 
-  // Get unpaid commands (where remaining balance > 0)
-  const unpaidCommands = mockCommands.filter(
+  // Get unpaid commands
+  const unpaidCommands = commands.filter(
     (cmd) => calculateRemainingBalance(cmd.sellingPrice, cmd.amountPaid) > 0
   );
 
@@ -104,48 +112,50 @@ const AccountingPage = () => {
     { mois: 'Juin', revenus: 1150000, depenses: 340000 },
   ];
 
-  const filteredPayments = payments.filter((payment) => {
-    const command = mockCommands.find((c) => c.id === payment.commandId);
-    const matchesSearch =
-      payment.notes?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      command?.data.type.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesSearch;
-  });
-
   const handleAddPayment = () => {
     if (!selectedCommand || !newPayment.amount) {
-      toast({
-        title: 'Erreur',
-        description: 'Veuillez remplir tous les champs obligatoires',
-        variant: 'destructive',
-      });
       return;
     }
 
-    const payment: Payment = {
-      id: String(payments.length + 1),
-      commandId: selectedCommand,
-      amount: Number(newPayment.amount),
-      method: newPayment.method,
-      recordedBy: '1',
-      createdAt: new Date(),
-      notes: newPayment.notes || undefined,
-    };
-
-    setPayments([payment, ...payments]);
-    setNewPayment({ amount: '', method: 'especes', notes: '' });
-    setSelectedCommand('');
-    setIsDialogOpen(false);
-    toast({
-      title: 'Paiement enregistré',
-      description: `Paiement de ${formatDZD(payment.amount)} enregistré avec succès`,
-    });
+    createPayment.mutate(
+      {
+        commandId: selectedCommand,
+        amount: Number(newPayment.amount),
+        method: newPayment.method,
+        notes: newPayment.notes || undefined,
+      },
+      {
+        onSuccess: () => {
+          setNewPayment({ amount: '', method: 'especes', notes: '' });
+          setSelectedCommand('');
+          setIsDialogOpen(false);
+        },
+      }
+    );
   };
 
-  const getCommandLabel = (command: Command): string => {
-    const service = mockServices.find((s) => s.id === command.serviceId);
+  const getCommandLabel = (commandId: string): string => {
+    const command = commands.find((c) => c.id === commandId);
+    if (!command) return 'N/A';
+    const service = services?.find((s) => s.id === command.serviceId);
     return `${service?.name || 'Service'} - ${command.data.clientFullName}`;
   };
+
+  if (paymentsLoading) {
+    return (
+      <DashboardLayout title="Comptabilité" subtitle="Suivi financier et traçabilité des paiements">
+        <AccountingSkeleton />
+      </DashboardLayout>
+    );
+  }
+
+  if (paymentsError) {
+    return (
+      <DashboardLayout title="Comptabilité" subtitle="Suivi financier et traçabilité des paiements">
+        <ErrorState message={error?.message} onRetry={refetch} />
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout
@@ -241,7 +251,7 @@ const AccountingPage = () => {
                                 return (
                                   <SelectItem key={command.id} value={command.id}>
                                     <div className="flex items-center justify-between gap-4">
-                                      <span>{getCommandLabel(command)}</span>
+                                      <span>{getCommandLabel(command.id)}</span>
                                       <span className="text-muted-foreground">
                                         Reste: {formatDZD(remaining)}
                                       </span>
@@ -299,7 +309,9 @@ const AccountingPage = () => {
                         <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
                           Annuler
                         </Button>
-                        <Button onClick={handleAddPayment}>Enregistrer</Button>
+                        <Button onClick={handleAddPayment} disabled={createPayment.isPending}>
+                          {createPayment.isPending ? 'Enregistrement...' : 'Enregistrer'}
+                        </Button>
                       </DialogFooter>
                     </DialogContent>
                   </Dialog>
@@ -307,25 +319,29 @@ const AccountingPage = () => {
               </div>
             </CardHeader>
             <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Date</TableHead>
-                    <TableHead>Commande</TableHead>
-                    <TableHead>Montant</TableHead>
-                    <TableHead>Mode</TableHead>
-                    <TableHead>Enregistré par</TableHead>
-                    <TableHead>Notes</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredPayments.map((payment) => {
-                    const command = mockCommands.find((c) => c.id === payment.commandId);
-                    const user = mockUsers.find((u) => u.id === payment.recordedBy);
-                    return (
+              {allPayments.length === 0 ? (
+                <EmptyState
+                  title="Aucun paiement"
+                  description="Les paiements apparaîtront ici"
+                  icon={<Receipt className="h-12 w-12" />}
+                />
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Date</TableHead>
+                      <TableHead>Commande</TableHead>
+                      <TableHead>Montant</TableHead>
+                      <TableHead>Mode</TableHead>
+                      <TableHead>Enregistré par</TableHead>
+                      <TableHead>Notes</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {allPayments.map((payment) => (
                       <TableRow key={payment.id}>
                         <TableCell>
-                          {payment.createdAt.toLocaleDateString('fr-FR', {
+                          {new Date(payment.createdAt).toLocaleDateString('fr-FR', {
                             day: '2-digit',
                             month: 'short',
                             year: 'numeric',
@@ -334,7 +350,7 @@ const AccountingPage = () => {
                           })}
                         </TableCell>
                         <TableCell>
-                          {command ? getCommandLabel(command) : 'N/A'}
+                          {getCommandLabel(payment.commandId)}
                         </TableCell>
                         <TableCell className="font-medium text-green-600">
                           +{formatDZD(payment.amount)}
@@ -345,16 +361,16 @@ const AccountingPage = () => {
                           </Badge>
                         </TableCell>
                         <TableCell>
-                          {user?.firstName} {user?.lastName}
+                          {payment.recordedBy}
                         </TableCell>
                         <TableCell className="text-muted-foreground">
                           {payment.notes || '-'}
                         </TableCell>
                       </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -368,70 +384,78 @@ const AccountingPage = () => {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Client</TableHead>
-                    <TableHead>Service</TableHead>
-                    <TableHead>Montant total</TableHead>
-                    <TableHead>Payé</TableHead>
-                    <TableHead>Reste à payer</TableHead>
-                    <TableHead>Statut</TableHead>
-                    <TableHead className="text-right">Action</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {unpaidCommands.map((command) => {
-                    const service = mockServices.find((s) => s.id === command.serviceId);
-                    const remaining = calculateRemainingBalance(command.sellingPrice, command.amountPaid);
-                    const paymentInfo = getPaymentStatusFromAmounts(command.sellingPrice, command.amountPaid);
-                    return (
-                      <TableRow key={command.id}>
-                        <TableCell className="font-medium">
-                          {command.data.clientFullName}
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="outline">{service?.name}</Badge>
-                        </TableCell>
-                        <TableCell>{formatDZD(command.sellingPrice)}</TableCell>
-                        <TableCell className="text-green-600">
-                          {formatDZD(command.amountPaid)}
-                        </TableCell>
-                        <TableCell className="font-medium text-red-600">
-                          {formatDZD(remaining)}
-                        </TableCell>
-                        <TableCell>
-                          <Badge
-                            variant={
-                              paymentInfo.status === 'partiel'
-                                ? 'secondary'
-                                : 'destructive'
-                            }
-                          >
-                            {paymentInfo.label}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <Button
-                            size="sm"
-                            onClick={() => {
-                              setSelectedCommand(command.id);
-                              setNewPayment({
-                                amount: String(remaining),
-                                method: 'especes',
-                                notes: '',
-                              });
-                              setIsDialogOpen(true);
-                            }}
-                          >
-                            Encaisser
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
+              {unpaidCommands.length === 0 ? (
+                <EmptyState
+                  title="Aucune commande impayée"
+                  description="Toutes les commandes sont réglées"
+                  icon={<CreditCard className="h-12 w-12" />}
+                />
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Client</TableHead>
+                      <TableHead>Service</TableHead>
+                      <TableHead>Montant total</TableHead>
+                      <TableHead>Payé</TableHead>
+                      <TableHead>Reste à payer</TableHead>
+                      <TableHead>Statut</TableHead>
+                      <TableHead className="text-right">Action</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {unpaidCommands.map((command) => {
+                      const service = services?.find((s) => s.id === command.serviceId);
+                      const remaining = calculateRemainingBalance(command.sellingPrice, command.amountPaid);
+                      const paymentInfo = getPaymentStatusFromAmounts(command.sellingPrice, command.amountPaid);
+                      return (
+                        <TableRow key={command.id}>
+                          <TableCell className="font-medium">
+                            {command.data.clientFullName}
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant="outline">{service?.name}</Badge>
+                          </TableCell>
+                          <TableCell>{formatDZD(command.sellingPrice)}</TableCell>
+                          <TableCell className="text-green-600">
+                            {formatDZD(command.amountPaid)}
+                          </TableCell>
+                          <TableCell className="font-medium text-red-600">
+                            {formatDZD(remaining)}
+                          </TableCell>
+                          <TableCell>
+                            <Badge
+                              variant={
+                                paymentInfo.status === 'partiel'
+                                  ? 'secondary'
+                                  : 'destructive'
+                              }
+                            >
+                              {paymentInfo.label}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <Button
+                              size="sm"
+                              onClick={() => {
+                                setSelectedCommand(command.id);
+                                setNewPayment({
+                                  amount: String(remaining),
+                                  method: 'especes',
+                                  notes: '',
+                                });
+                                setIsDialogOpen(true);
+                              }}
+                            >
+                              Encaisser
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -454,15 +478,15 @@ const AccountingPage = () => {
                     <XAxis dataKey="mois" className="text-xs" />
                     <YAxis className="text-xs" tickFormatter={(v) => `${v / 1000}k`} />
                     <Tooltip
-                      formatter={(value: number) => [formatDZD(value), '']}
+                      formatter={(value: number) => formatDZD(value)}
                       contentStyle={{
                         backgroundColor: 'hsl(var(--popover))',
                         border: '1px solid hsl(var(--border))',
                         borderRadius: '8px',
                       }}
                     />
-                    <Bar dataKey="revenus" fill="hsl(var(--chart-1))" name="Revenus" />
-                    <Bar dataKey="depenses" fill="hsl(var(--chart-2))" name="Dépenses" />
+                    <Bar dataKey="revenus" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="depenses" fill="hsl(var(--muted-foreground))" radius={[4, 4, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               </CardContent>
@@ -471,7 +495,7 @@ const AccountingPage = () => {
             <Card className="border-none shadow-sm">
               <CardHeader>
                 <CardTitle className="text-lg">Tendance des revenus</CardTitle>
-                <CardDescription>6 derniers mois</CardDescription>
+                <CardDescription>Progression sur 6 mois</CardDescription>
               </CardHeader>
               <CardContent>
                 <ResponsiveContainer width="100%" height={300}>
@@ -480,7 +504,7 @@ const AccountingPage = () => {
                     <XAxis dataKey="mois" className="text-xs" />
                     <YAxis className="text-xs" tickFormatter={(v) => `${v / 1000}k`} />
                     <Tooltip
-                      formatter={(value: number) => [formatDZD(value), 'Revenus']}
+                      formatter={(value: number) => formatDZD(value)}
                       contentStyle={{
                         backgroundColor: 'hsl(var(--popover))',
                         border: '1px solid hsl(var(--border))',
