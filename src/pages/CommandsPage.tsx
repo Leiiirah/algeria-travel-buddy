@@ -592,7 +592,7 @@ const CommandsPage = () => {
             <EmptyState
               title="Aucune commande"
               description="Commencez par créer votre première commande"
-              icon={<CreditCard className="h-12 w-12" />}
+              icon={CreditCard}
             />
           ) : (
             <div className="overflow-x-auto">

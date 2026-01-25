@@ -366,7 +366,7 @@ const SupplierAccountingPage = () => {
                   <EmptyState
                     title="Aucune transaction"
                     description="Les soldes fournisseurs apparaîtront ici"
-                    icon={<Wallet className="h-12 w-12" />}
+                    icon={Wallet}
                   />
                 ) : (
                   <Table>
@@ -421,7 +421,7 @@ const SupplierAccountingPage = () => {
                   <EmptyState
                     title="Aucune transaction"
                     description="Les transactions apparaîtront ici"
-                    icon={<CreditCard className="h-12 w-12" />}
+                    icon={CreditCard}
                   />
                 ) : (
                   <Table>

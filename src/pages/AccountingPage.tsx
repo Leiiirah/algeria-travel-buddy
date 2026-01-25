@@ -323,7 +323,7 @@ const AccountingPage = () => {
                 <EmptyState
                   title="Aucun paiement"
                   description="Les paiements apparaîtront ici"
-                  icon={<Receipt className="h-12 w-12" />}
+                  icon={Receipt}
                 />
               ) : (
                 <Table>
@@ -388,7 +388,7 @@ const AccountingPage = () => {
                 <EmptyState
                   title="Aucune commande impayée"
                   description="Toutes les commandes sont réglées"
-                  icon={<CreditCard className="h-12 w-12" />}
+                  icon={CreditCard}
                 />
               ) : (
                 <Table>

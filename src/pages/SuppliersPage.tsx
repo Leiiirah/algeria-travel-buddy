@@ -232,7 +232,7 @@ const SuppliersPage = () => {
             <EmptyState
               title="Aucun fournisseur"
               description="Ajoutez votre premier fournisseur"
-              icon={<Building2 className="h-12 w-12" />}
+              icon={Building2}
             />
           ) : (
             <Table>
