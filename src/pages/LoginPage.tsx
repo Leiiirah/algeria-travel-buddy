@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plane, Eye, EyeOff } from 'lucide-react';
+import { Eye, EyeOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import logoElHikma from '@/assets/logo-elhikma.png';
 
 const LoginPage = () => {
   const [email, setEmail] = useState('');
@@ -49,13 +50,17 @@ const LoginPage = () => {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-primary/5 via-background to-primary/10 p-4">
-      <Card className="w-full max-w-md border-none shadow-xl">
+      <Card className="w-full max-w-md shadow-soft">
         <CardHeader className="space-y-4 text-center">
-          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-primary">
-            <Plane className="h-8 w-8 text-primary-foreground" />
+          <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-2xl bg-primary/10 p-2">
+            <img 
+              src={logoElHikma} 
+              alt="El Hikma Tourisme Logo" 
+              className="h-full w-full object-contain"
+            />
           </div>
           <div>
-            <CardTitle className="text-2xl font-bold">Voyages Algérie</CardTitle>
+            <CardTitle className="text-2xl font-bold">El Hikma Tourisme</CardTitle>
             <CardDescription className="text-base">
               Connectez-vous à votre espace de gestion
             </CardDescription>
@@ -90,7 +95,7 @@ const LoginPage = () => {
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
                 >
                   {showPassword ? (
                     <EyeOff className="h-4 w-4" />
@@ -102,15 +107,15 @@ const LoginPage = () => {
             </div>
             <Button
               type="submit"
-              className="h-11 w-full text-base font-medium"
+              className="h-11 w-full text-base font-bold"
               disabled={isLoading}
             >
               {isLoading ? 'Connexion...' : 'Se connecter'}
             </Button>
           </form>
 
-          <div className="mt-6 rounded-lg bg-muted/50 p-4">
-            <p className="text-sm font-medium text-muted-foreground mb-2">
+          <div className="mt-6 rounded-xl bg-muted/50 p-4">
+            <p className="text-sm font-bold text-muted-foreground mb-2">
               Comptes de démonstration :
             </p>
             <div className="space-y-1 text-sm text-muted-foreground">

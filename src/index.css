@@ -2,62 +2,77 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Travel Agency Dashboard - Modern & Clean Theme */
+/* El Hikma Tourisme - Design System */
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap');
 
 @layer base {
   :root {
-    --background: 210 20% 98%;
-    --foreground: 222 47% 11%;
+    /* Background - Clean white/light gray */
+    --background: 210 17% 98%;
+    --foreground: 30 10% 20%;
 
+    /* Card */
     --card: 0 0% 100%;
-    --card-foreground: 222 47% 11%;
+    --card-foreground: 30 10% 20%;
 
+    /* Popover */
     --popover: 0 0% 100%;
-    --popover-foreground: 222 47% 11%;
+    --popover-foreground: 30 10% 20%;
 
-    --primary: 221 83% 53%;
-    --primary-foreground: 210 40% 98%;
+    /* Primary - Beige/Sand from logo #C9B896 */
+    --primary: 38 35% 69%;
+    --primary-foreground: 30 10% 15%;
 
-    --secondary: 210 40% 96%;
-    --secondary-foreground: 222 47% 11%;
+    /* Secondary */
+    --secondary: 38 20% 94%;
+    --secondary-foreground: 30 10% 20%;
 
-    --muted: 210 40% 96%;
-    --muted-foreground: 215 16% 47%;
+    /* Muted */
+    --muted: 38 15% 94%;
+    --muted-foreground: 30 10% 45%;
 
-    --accent: 210 40% 96%;
-    --accent-foreground: 222 47% 11%;
+    /* Accent - Light beige */
+    --accent: 38 25% 92%;
+    --accent-foreground: 30 10% 20%;
 
+    /* Destructive */
     --destructive: 0 84% 60%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive-foreground: 0 0% 100%;
 
+    /* Success */
     --success: 142 76% 36%;
-    --success-foreground: 210 40% 98%;
+    --success-foreground: 0 0% 100%;
 
+    /* Warning */
     --warning: 38 92% 50%;
-    --warning-foreground: 222 47% 11%;
+    --warning-foreground: 30 10% 15%;
 
+    /* Info */
     --info: 199 89% 48%;
-    --info-foreground: 210 40% 98%;
+    --info-foreground: 0 0% 100%;
 
-    --border: 214 32% 91%;
-    --input: 214 32% 91%;
-    --ring: 221 83% 53%;
+    /* Border & Input */
+    --border: 38 20% 88%;
+    --input: 38 20% 88%;
+    --ring: 38 35% 69%;
 
-    --radius: 0.5rem;
+    /* Radius - Slightly rounded */
+    --radius: 0.75rem;
 
-    --sidebar-background: 222 47% 11%;
-    --sidebar-foreground: 210 40% 96%;
-    --sidebar-primary: 221 83% 53%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 222 47% 16%;
-    --sidebar-accent-foreground: 210 40% 96%;
-    --sidebar-border: 222 47% 18%;
-    --sidebar-ring: 221 83% 53%;
-    --sidebar-muted: 215 16% 60%;
+    /* Sidebar - Dark with beige accents */
+    --sidebar-background: 30 15% 12%;
+    --sidebar-foreground: 38 20% 92%;
+    --sidebar-primary: 38 35% 69%;
+    --sidebar-primary-foreground: 30 10% 15%;
+    --sidebar-accent: 30 15% 18%;
+    --sidebar-accent-foreground: 38 20% 92%;
+    --sidebar-border: 30 15% 20%;
+    --sidebar-ring: 38 35% 69%;
+    --sidebar-muted: 38 15% 55%;
 
-    --chart-1: 221 83% 53%;
+    /* Charts */
+    --chart-1: 38 35% 69%;
     --chart-2: 142 76% 36%;
     --chart-3: 38 92% 50%;
     --chart-4: 280 67% 48%;
@@ -65,54 +80,68 @@
   }
 
   .dark {
-    --background: 222 47% 8%;
-    --foreground: 210 40% 98%;
+    /* Background */
+    --background: 30 15% 8%;
+    --foreground: 38 20% 92%;
 
-    --card: 222 47% 11%;
-    --card-foreground: 210 40% 98%;
+    /* Card */
+    --card: 30 15% 12%;
+    --card-foreground: 38 20% 92%;
 
-    --popover: 222 47% 11%;
-    --popover-foreground: 210 40% 98%;
+    /* Popover */
+    --popover: 30 15% 12%;
+    --popover-foreground: 38 20% 92%;
 
-    --primary: 221 83% 53%;
-    --primary-foreground: 0 0% 100%;
+    /* Primary - Beige/Sand */
+    --primary: 38 35% 69%;
+    --primary-foreground: 30 10% 15%;
 
-    --secondary: 217 33% 17%;
-    --secondary-foreground: 210 40% 98%;
+    /* Secondary */
+    --secondary: 30 15% 18%;
+    --secondary-foreground: 38 20% 92%;
 
-    --muted: 217 33% 17%;
-    --muted-foreground: 215 20% 65%;
+    /* Muted */
+    --muted: 30 15% 18%;
+    --muted-foreground: 38 15% 60%;
 
-    --accent: 217 33% 17%;
-    --accent-foreground: 210 40% 98%;
+    /* Accent */
+    --accent: 30 15% 18%;
+    --accent-foreground: 38 20% 92%;
 
+    /* Destructive */
     --destructive: 0 63% 31%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive-foreground: 0 0% 100%;
 
+    /* Success */
     --success: 142 76% 36%;
-    --success-foreground: 210 40% 98%;
+    --success-foreground: 0 0% 100%;
 
+    /* Warning */
     --warning: 38 92% 50%;
-    --warning-foreground: 222 47% 11%;
+    --warning-foreground: 30 10% 15%;
 
+    /* Info */
     --info: 199 89% 48%;
-    --info-foreground: 210 40% 98%;
+    --info-foreground: 0 0% 100%;
 
-    --border: 217 33% 17%;
-    --input: 217 33% 17%;
-    --ring: 221 83% 53%;
+    /* Border & Input */
+    --border: 30 15% 20%;
+    --input: 30 15% 20%;
+    --ring: 38 35% 69%;
     
-    --sidebar-background: 222 47% 6%;
-    --sidebar-foreground: 210 40% 96%;
-    --sidebar-primary: 221 83% 53%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 222 47% 12%;
-    --sidebar-accent-foreground: 210 40% 96%;
-    --sidebar-border: 222 47% 14%;
-    --sidebar-ring: 221 83% 53%;
-    --sidebar-muted: 215 16% 50%;
+    /* Sidebar */
+    --sidebar-background: 30 15% 6%;
+    --sidebar-foreground: 38 20% 92%;
+    --sidebar-primary: 38 35% 69%;
+    --sidebar-primary-foreground: 30 10% 15%;
+    --sidebar-accent: 30 15% 14%;
+    --sidebar-accent-foreground: 38 20% 92%;
+    --sidebar-border: 30 15% 16%;
+    --sidebar-ring: 38 35% 69%;
+    --sidebar-muted: 38 15% 50%;
 
-    --chart-1: 221 83% 53%;
+    /* Charts */
+    --chart-1: 38 35% 69%;
     --chart-2: 142 76% 36%;
     --chart-3: 38 92% 50%;
     --chart-4: 280 67% 48%;
@@ -126,16 +155,37 @@
   }
 
   body {
-    @apply bg-background text-foreground font-sans antialiased;
-    font-family: 'Inter', sans-serif;
+    @apply bg-background text-foreground antialiased;
+    font-family: 'Tajawal', sans-serif;
+    font-weight: 500;
   }
 
   h1, h2, h3, h4, h5, h6 {
-    @apply font-semibold tracking-tight;
+    @apply font-bold tracking-tight;
+    font-family: 'Tajawal', sans-serif;
+  }
+
+  /* RTL Support */
+  [dir="rtl"] {
+    text-align: right;
+  }
+
+  [dir="rtl"] .flex-row {
+    flex-direction: row-reverse;
   }
 }
 
 @layer utilities {
+  /* Font weights */
+  .font-medium {
+    font-weight: 500;
+  }
+
+  .font-bold {
+    font-weight: 700;
+  }
+
+  /* Scrollbar styling */
   .scrollbar-thin {
     scrollbar-width: thin;
   }
@@ -155,5 +205,10 @@
   
   .scrollbar-thin::-webkit-scrollbar-thumb:hover {
     @apply bg-muted-foreground/50;
+  }
+
+  /* RTL utility classes */
+  .rtl\:space-x-reverse:is([dir="rtl"] *) > :not([hidden]) ~ :not([hidden]) {
+    --tw-space-x-reverse: 1;
   }
 }
