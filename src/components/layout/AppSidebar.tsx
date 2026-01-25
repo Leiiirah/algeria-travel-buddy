@@ -3,21 +3,16 @@ import {
   LayoutDashboard,
   Users,
   Settings,
-  FileText,
-  Package,
   FolderOpen,
   Building2,
   Calculator,
   LogOut,
-  ChevronLeft,
-  ChevronRight,
-  Plane,
+  Package,
   Wallet,
 } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
-import { cn } from '@/lib/utils';
 import {
   Sidebar,
   SidebarContent,
@@ -29,9 +24,9 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarTrigger,
   useSidebar,
 } from '@/components/ui/sidebar';
+import logoElHikma from '@/assets/logo-elhikma.png';
 
 const mainMenuItems = [
   {
@@ -92,16 +87,20 @@ export function AppSidebar() {
     <Sidebar collapsible="icon" className="border-r border-sidebar-border">
       <SidebarHeader className="border-b border-sidebar-border p-4">
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-sidebar-primary">
-            <Plane className="h-5 w-5 text-sidebar-primary-foreground" />
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl overflow-hidden bg-primary/10">
+            <img 
+              src={logoElHikma} 
+              alt="El Hikma Logo" 
+              className="h-10 w-10 object-contain"
+            />
           </div>
           {!isCollapsed && (
             <div className="flex flex-col">
-              <span className="text-sm font-semibold text-sidebar-foreground">
-                Voyages Algérie
+              <span className="text-sm font-bold text-sidebar-foreground">
+                El Hikma Tourisme
               </span>
               <span className="text-xs text-sidebar-muted">
-                Agence de Voyage
+                Tourisme et Voyage
               </span>
             </div>
           )}
@@ -125,7 +124,7 @@ export function AppSidebar() {
                     <NavLink
                       to={item.url}
                       className="flex items-center gap-3"
-                      activeClassName="bg-sidebar-accent text-sidebar-accent-foreground"
+                      activeClassName="bg-sidebar-primary/20 text-sidebar-primary"
                     >
                       <item.icon className="h-4 w-4" />
                       <span>{item.title}</span>
@@ -153,7 +152,7 @@ export function AppSidebar() {
                     <NavLink
                       to={item.url}
                       className="flex items-center gap-3"
-                      activeClassName="bg-sidebar-accent text-sidebar-accent-foreground"
+                      activeClassName="bg-sidebar-primary/20 text-sidebar-primary"
                     >
                       <item.icon className="h-4 w-4" />
                       <span>{item.title}</span>
@@ -182,7 +181,7 @@ export function AppSidebar() {
                       <NavLink
                         to={item.url}
                         className="flex items-center gap-3"
-                        activeClassName="bg-sidebar-accent text-sidebar-accent-foreground"
+                        activeClassName="bg-sidebar-primary/20 text-sidebar-primary"
                       >
                         <item.icon className="h-4 w-4" />
                         <span>{item.title}</span>
@@ -201,7 +200,7 @@ export function AppSidebar() {
           <div className="flex flex-col gap-3">
             {!isCollapsed && (
               <div className="flex items-center gap-3">
-                <div className="flex h-9 w-9 items-center justify-center rounded-full bg-sidebar-accent text-sm font-medium text-sidebar-accent-foreground">
+                <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/20 text-sm font-bold text-primary">
                   {user.firstName[0]}
                   {user.lastName[0]}
                 </div>

@@ -24,14 +24,22 @@ export function StatsCard({
 }: StatsCardProps) {
   const variantStyles = {
     default: 'bg-muted text-muted-foreground',
-    primary: 'bg-primary/10 text-primary',
-    success: 'bg-success/10 text-success',
-    warning: 'bg-warning/10 text-warning',
-    info: 'bg-info/10 text-info',
+    primary: 'bg-primary/15 text-primary',
+    success: 'bg-success/15 text-success',
+    warning: 'bg-warning/15 text-warning',
+    info: 'bg-info/15 text-info',
+  };
+
+  const borderStyles = {
+    default: '',
+    primary: 'border-l-4 border-l-primary',
+    success: 'border-l-4 border-l-success',
+    warning: 'border-l-4 border-l-warning',
+    info: 'border-l-4 border-l-info',
   };
 
   return (
-    <Card className="border-none shadow-sm">
+    <Card className={cn("shadow-soft", borderStyles[variant])}>
       <CardContent className="p-6">
         <div className="flex items-start justify-between">
           <div className="space-y-2">
@@ -54,7 +62,7 @@ export function StatsCard({
           </div>
           <div
             className={cn(
-              'flex h-12 w-12 items-center justify-center rounded-lg',
+              'flex h-12 w-12 items-center justify-center rounded-xl',
               variantStyles[variant]
             )}
           >
