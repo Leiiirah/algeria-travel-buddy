@@ -119,6 +119,20 @@ export interface Payment {
   notes?: string;
 }
 
+// Supplier Transaction Types
+export type SupplierTransactionType = 'sortie' | 'entree';
+
+export interface SupplierTransaction {
+  id: string;
+  date: Date;
+  supplierId: string;
+  type: SupplierTransactionType;
+  amount: number;
+  note: string;
+  recordedBy: string;
+  createdAt: Date;
+}
+
 // Analytics Types
 export interface DailyStats {
   date: string;

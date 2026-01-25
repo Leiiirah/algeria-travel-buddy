@@ -1,4 +1,4 @@
-import { User, Service, Supplier, Command, Document, Payment } from '@/types';
+import { User, Service, Supplier, Command, Document, Payment, SupplierTransaction, SupplierTransactionType } from '@/types';
 
 // Mock Users
 export const mockUsers: User[] = [
@@ -337,6 +337,74 @@ export const mockPayments: Payment[] = [
   },
 ];
 
+// Mock Supplier Transactions
+export const mockSupplierTransactions: SupplierTransaction[] = [
+  {
+    id: '1',
+    date: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
+    supplierId: '1', // VFS Global
+    type: 'sortie',
+    amount: 50000,
+    note: 'Versement espèces - commandes visa',
+    recordedBy: '1',
+    createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
+  },
+  {
+    id: '2',
+    date: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000),
+    supplierId: '4', // Air Algérie
+    type: 'sortie',
+    amount: 20000,
+    note: 'Virement bancaire - billets',
+    recordedBy: '1',
+    createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000),
+  },
+  {
+    id: '3',
+    date: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
+    supplierId: '3', // Booking Partner
+    type: 'entree',
+    amount: 5000,
+    note: 'Remboursement annulation réservation',
+    recordedBy: '2',
+    createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
+  },
+  {
+    id: '4',
+    date: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
+    supplierId: '5', // Turkish Airlines
+    type: 'sortie',
+    amount: 30000,
+    note: 'Paiement partiel billets Istanbul',
+    recordedBy: '1',
+    createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
+  },
+];
+
+// Calculate supplier balance
+export const calculateSupplierBalance = (
+  supplierId: string,
+  commands: Command[],
+  transactions: SupplierTransaction[]
+): { totalPurchased: number; totalPaid: number; remainingBalance: number } => {
+  // Total Purchases = Sum of buyingPrice for this supplier
+  const totalPurchased = commands
+    .filter(cmd => cmd.supplierId === supplierId)
+    .reduce((sum, cmd) => sum + cmd.buyingPrice, 0);
+
+  // Total Paid = Sum of 'sortie' - Sum of 'entree'
+  const totalPaid = transactions
+    .filter(t => t.supplierId === supplierId)
+    .reduce((sum, t) => {
+      return t.type === 'sortie' ? sum + t.amount : sum - t.amount;
+    }, 0);
+
+  // Remaining Balance = Total Purchases - Total Paid
+  const remainingBalance = totalPurchased - totalPaid;
+
+  return { totalPurchased, totalPaid, remainingBalance };
+};
+
 // Utility function to format currency
 export const formatDZD = (amount: number): string => {
   return new Intl.NumberFormat('fr-DZ', {
@@ -411,4 +479,9 @@ export const getDocumentCategoryLabel = (category: string): string => {
 export const getSupplierName = (supplierId: string): string => {
   const supplier = mockSuppliers.find(s => s.id === supplierId);
   return supplier?.name || '-';
+};
+
+// Get transaction type label in French
+export const getTransactionTypeLabel = (type: SupplierTransactionType): string => {
+  return type === 'sortie' ? 'Paiement envoyé' : 'Remboursement reçu';
 };
