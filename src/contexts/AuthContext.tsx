@@ -1,6 +1,6 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { User } from '@/types';
-import { mockUsers } from '@/lib/mock-data';
+import { api, ApiError } from '@/lib/api';
 
 interface AuthContextType {
   user: User | null;
@@ -16,34 +16,52 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  // Check for existing session on mount
   useEffect(() => {
-    // Check for stored user session
-    const storedUser = localStorage.getItem('currentUser');
-    if (storedUser) {
-      setUser(JSON.parse(storedUser));
-    }
-    setIsLoading(false);
+    const checkAuth = async () => {
+      const token = api.getToken();
+      if (token) {
+        try {
+          const currentUser = await api.getMe();
+          setUser(currentUser);
+        } catch (error) {
+          // Token is invalid, clear it
+          api.setToken(null);
+          localStorage.removeItem('currentUser');
+        }
+      }
+      setIsLoading(false);
+    };
+
+    checkAuth();
   }, []);
 
-  const login = async (email: string, password: string): Promise<boolean> => {
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 500));
-    
-    // Mock authentication - in production, this would call an API
-    const foundUser = mockUsers.find(u => u.email === email && u.isActive);
-    
-    if (foundUser && password === 'password123') {
-      setUser(foundUser);
-      localStorage.setItem('currentUser', JSON.stringify(foundUser));
+  const login = useCallback(async (email: string, password: string): Promise<boolean> => {
+    try {
+      const response = await api.login({ email, password });
+      api.setToken(response.accessToken);
+      setUser(response.user);
+      localStorage.setItem('currentUser', JSON.stringify(response.user));
       return true;
+    } catch (error) {
+      if (error instanceof ApiError) {
+        console.error('Login failed:', error.message);
+      }
+      return false;
     }
-    return false;
-  };
+  }, []);
 
-  const logout = () => {
-    setUser(null);
-    localStorage.removeItem('currentUser');
-  };
+  const logout = useCallback(async () => {
+    try {
+      await api.logout();
+    } catch (error) {
+      // Ignore logout errors
+    } finally {
+      api.setToken(null);
+      setUser(null);
+      localStorage.removeItem('currentUser');
+    }
+  }, []);
 
   return (
     <AuthContext.Provider
