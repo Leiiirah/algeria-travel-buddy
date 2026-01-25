@@ -11,6 +11,7 @@ import ServicesPage from "./pages/ServicesPage";
 import CommandsPage from "./pages/CommandsPage";
 import DocumentsPage from "./pages/DocumentsPage";
 import SuppliersPage from "./pages/SuppliersPage";
+import SupplierAccountingPage from "./pages/SupplierAccountingPage";
 import AccountingPage from "./pages/AccountingPage";
 import NotFound from "./pages/NotFound";
 
@@ -32,6 +33,7 @@ const App = () => (
             <Route path="/commandes" element={<CommandsPage />} />
             <Route path="/documents" element={<DocumentsPage />} />
             <Route path="/fournisseurs" element={<SuppliersPage />} />
+            <Route path="/situation-fournisseurs" element={<SupplierAccountingPage />} />
             <Route path="/comptabilite" element={<AccountingPage />} />
             <Route path="*" element={<NotFound />} />
           </Routes>

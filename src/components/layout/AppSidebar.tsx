@@ -12,6 +12,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Plane,
+  Wallet,
 } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
 import { Button } from '@/components/ui/button';
@@ -60,6 +61,11 @@ const managementMenuItems = [
     title: 'Fournisseurs',
     url: '/fournisseurs',
     icon: Building2,
+  },
+  {
+    title: 'Situation Fournisseurs',
+    url: '/situation-fournisseurs',
+    icon: Wallet,
   },
   {
     title: 'Comptabilité',
