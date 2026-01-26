@@ -24,7 +24,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Plus, Settings, FileText, Plane, Hotel, Folder } from 'lucide-react';
-import { getServiceTypeLabel } from '@/lib/mock-data';
+import { getServiceTypeLabel } from '@/lib/utils';
 import { ServiceType } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
 import { Navigate } from 'react-router-dom';

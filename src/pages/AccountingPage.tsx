@@ -44,7 +44,7 @@ import {
   formatDZD,
   getPaymentMethodLabel,
   getPaymentStatusFromAmounts,
-} from '@/lib/mock-data';
+} from '@/lib/utils';
 import { PaymentMethod, calculateRemainingBalance, calculateNetProfit } from '@/types';
 import {
   BarChart,

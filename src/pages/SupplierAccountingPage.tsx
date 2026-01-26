@@ -33,7 +33,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { formatDZD, getTransactionTypeLabel } from '@/lib/mock-data';
+import { formatDZD, getTransactionTypeLabel } from '@/lib/utils';
 import { SupplierTransactionType } from '@/types';
 import { useSuppliers, useSupplierBalance } from '@/hooks/useSuppliers';
 import { useSupplierTransactions, useCreateSupplierTransaction } from '@/hooks/useSupplierTransactions';

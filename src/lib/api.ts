@@ -10,6 +10,7 @@ export interface LoginDto {
 
 export interface LoginResponse {
   accessToken: string;
+  refreshToken: string;
   user: User;
 }
 
@@ -130,6 +131,14 @@ export interface CommandFilters {
   limit?: number;
 }
 
+export interface SearchResult {
+  id: string;
+  type: 'command' | 'supplier' | 'employee' | 'document' | 'transaction' | 'payment';
+  label: string;
+  sublabel: string;
+  url: string;
+}
+
 class ApiError extends Error {
   constructor(public status: number, message: string) {
     super(message);
@@ -139,10 +148,14 @@ class ApiError extends Error {
 
 class ApiClient {
   private token: string | null = null;
+  private refreshTokenValue: string | null = null;
+  private isRefreshing = false;
+  private refreshPromise: Promise<boolean> | null = null;
 
   constructor() {
-    // Restore token from localStorage on init
+    // Restore tokens from localStorage on init
     this.token = localStorage.getItem('authToken');
+    this.refreshTokenValue = localStorage.getItem('refreshToken');
   }
 
   setToken(token: string | null) {
@@ -158,7 +171,65 @@ class ApiClient {
     return this.token;
   }
 
-  private async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+  setRefreshToken(token: string | null) {
+    this.refreshTokenValue = token;
+    if (token) {
+      localStorage.setItem('refreshToken', token);
+    } else {
+      localStorage.removeItem('refreshToken');
+    }
+  }
+
+  getRefreshToken(): string | null {
+    return this.refreshTokenValue;
+  }
+
+  clearTokens() {
+    this.setToken(null);
+    this.setRefreshToken(null);
+  }
+
+  private async attemptRefresh(): Promise<boolean> {
+    if (!this.refreshTokenValue) {
+      return false;
+    }
+
+    // Prevent multiple simultaneous refresh attempts
+    if (this.isRefreshing) {
+      return this.refreshPromise || Promise.resolve(false);
+    }
+
+    this.isRefreshing = true;
+    this.refreshPromise = (async () => {
+      try {
+        const response = await fetch(`${API_URL}/auth/refresh`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ refreshToken: this.refreshTokenValue }),
+        });
+
+        if (!response.ok) {
+          this.clearTokens();
+          return false;
+        }
+
+        const data = await response.json();
+        this.setToken(data.accessToken);
+        this.setRefreshToken(data.refreshToken);
+        return true;
+      } catch {
+        this.clearTokens();
+        return false;
+      } finally {
+        this.isRefreshing = false;
+        this.refreshPromise = null;
+      }
+    })();
+
+    return this.refreshPromise;
+  }
+
+  private async request<T>(endpoint: string, options: RequestInit = {}, isRetry = false): Promise<T> {
     const headers: HeadersInit = {
       'Content-Type': 'application/json',
       ...(this.token && { Authorization: `Bearer ${this.token}` }),
@@ -171,8 +242,15 @@ class ApiClient {
     });
 
     if (!response.ok) {
-      if (response.status === 401) {
-        this.setToken(null);
+      if (response.status === 401 && !isRetry) {
+        // Try to refresh the token
+        const refreshed = await this.attemptRefresh();
+        if (refreshed) {
+          // Retry the request with new token
+          return this.request<T>(endpoint, options, true);
+        }
+        // Refresh failed, redirect to login
+        this.clearTokens();
         window.location.href = '/login';
         throw new ApiError(401, 'Session expired');
       }
@@ -185,7 +263,7 @@ class ApiClient {
     return text ? JSON.parse(text) : null;
   }
 
-  private async requestWithFormData<T>(endpoint: string, formData: FormData): Promise<T> {
+  private async requestWithFormData<T>(endpoint: string, formData: FormData, isRetry = false): Promise<T> {
     const headers: HeadersInit = {
       ...(this.token && { Authorization: `Bearer ${this.token}` }),
     };
@@ -197,8 +275,12 @@ class ApiClient {
     });
 
     if (!response.ok) {
-      if (response.status === 401) {
-        this.setToken(null);
+      if (response.status === 401 && !isRetry) {
+        const refreshed = await this.attemptRefresh();
+        if (refreshed) {
+          return this.requestWithFormData<T>(endpoint, formData, true);
+        }
+        this.clearTokens();
         window.location.href = '/login';
         throw new ApiError(401, 'Session expired');
       }
@@ -217,8 +299,11 @@ class ApiClient {
       body: JSON.stringify(data),
     });
 
-  refreshToken = (): Promise<{ accessToken: string }> =>
-    this.request('/auth/refresh', { method: 'POST' });
+  refreshToken = (): Promise<{ accessToken: string; refreshToken: string }> =>
+    this.request('/auth/refresh', {
+      method: 'POST',
+      body: JSON.stringify({ refreshToken: this.refreshTokenValue }),
+    });
 
   logout = (): Promise<void> =>
     this.request('/auth/logout', { method: 'POST' });
@@ -432,6 +517,11 @@ class ApiClient {
     revenue: number
   }[]> =>
     this.request('/analytics/services');
+
+  // ==================== SEARCH ====================
+
+  search = (query: string, limit?: number): Promise<SearchResult[]> =>
+    this.request(`/search?q=${encodeURIComponent(query)}${limit ? `&limit=${limit}` : ''}`);
 }
 
 export const api = new ApiClient();

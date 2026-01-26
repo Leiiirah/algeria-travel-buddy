@@ -1,6 +1,5 @@
-import { Bell, Search, Menu } from 'lucide-react';
+import { Bell, Menu } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import {
   DropdownMenu,
@@ -11,6 +10,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
+import { GlobalSearch } from '@/components/search/GlobalSearch';
 
 interface AppHeaderProps {
   title: string;
@@ -21,7 +21,7 @@ export function AppHeader({ title, subtitle }: AppHeaderProps) {
   return (
     <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-card px-6">
       <SidebarTrigger className="text-muted-foreground hover:text-foreground" />
-      
+
       <div className="flex flex-1 items-center gap-4">
         <div>
           <h1 className="text-lg font-semibold text-foreground">{title}</h1>
@@ -32,14 +32,7 @@ export function AppHeader({ title, subtitle }: AppHeaderProps) {
       </div>
 
       <div className="flex items-center gap-3">
-        <div className="relative hidden md:block">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            type="search"
-            placeholder="Rechercher..."
-            className="w-64 pl-9"
-          />
-        </div>
+        <GlobalSearch />
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>

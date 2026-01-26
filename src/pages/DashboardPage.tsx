@@ -9,7 +9,7 @@ import {
   FileText,
   AlertCircle,
 } from 'lucide-react';
-import { formatDZD, getCommandStatusLabel, getPaymentStatusFromAmounts } from '@/lib/mock-data';
+import { formatDZD, getCommandStatusLabel, getPaymentStatusFromAmounts } from '@/lib/utils';
 import {
   ResponsiveContainer,
   PieChart,

@@ -43,7 +43,7 @@ import {
   isCommandEditable,
   getCommandStatusLabel,
   getPaymentStatusFromAmounts,
-} from '@/lib/mock-data';
+} from '@/lib/utils';
 import { CommandData, calculateRemainingBalance, calculateNetProfit } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCommands, useCommandStats, useCreateCommand, useDeleteCommand } from '@/hooks/useCommands';

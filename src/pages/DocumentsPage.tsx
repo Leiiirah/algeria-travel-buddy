@@ -33,7 +33,7 @@ import {
   Building,
   HelpCircle,
 } from 'lucide-react';
-import { getDocumentCategoryLabel } from '@/lib/mock-data';
+import { getDocumentCategoryLabel } from '@/lib/utils';
 import { DocumentCategory } from '@/types';
 import { useDocuments, useUploadDocument, useDeleteDocument, getDocumentDownloadUrl } from '@/hooks/useDocuments';
 import { DocumentsSkeleton } from '@/components/skeletons/DocumentsSkeleton';

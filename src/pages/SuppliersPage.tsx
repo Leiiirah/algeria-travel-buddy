@@ -24,7 +24,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Plus, Search, Building2, Phone, Mail, Edit, Trash2 } from 'lucide-react';
-import { getServiceTypeLabel } from '@/lib/mock-data';
+import { getServiceTypeLabel } from '@/lib/utils';
 import { ServiceType } from '@/types';
 import { useSuppliers, useCreateSupplier, useDeleteSupplier } from '@/hooks/useSuppliers';
 import { SuppliersSkeleton } from '@/components/skeletons/SuppliersSkeleton';
