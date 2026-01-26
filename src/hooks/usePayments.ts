@@ -1,11 +1,11 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { api, CreatePaymentDto } from '@/lib/api';
+import { api, CreatePaymentDto, PaymentFilters } from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
 
-export const usePayments = (search?: string) => {
+export const usePayments = (filters?: PaymentFilters) => {
   return useQuery({
-    queryKey: ['payments', search],
-    queryFn: () => api.getPayments(search),
+    queryKey: ['payments', filters],
+    queryFn: () => api.getPayments(filters),
   });
 };
 

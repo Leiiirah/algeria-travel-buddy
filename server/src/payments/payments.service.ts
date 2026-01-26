@@ -5,6 +5,12 @@ import { Payment } from './entities/payment.entity';
 import { CreatePaymentDto } from './dto/create-payment.dto';
 import { CommandsService } from '../commands/commands.service';
 
+export interface PaymentFilters {
+  search?: string;
+  fromDate?: string;
+  toDate?: string;
+}
+
 @Injectable()
 export class PaymentsService {
   constructor(
@@ -12,16 +18,32 @@ export class PaymentsService {
     private paymentsRepository: Repository<Payment>,
     @Inject(forwardRef(() => CommandsService))
     private commandsService: CommandsService,
-  ) {}
+  ) { }
 
-  async findAll(search?: string): Promise<Payment[]> {
+  async findAll(filters: PaymentFilters = {}): Promise<Payment[]> {
+    const { search, fromDate, toDate } = filters;
     const queryBuilder = this.paymentsRepository
       .createQueryBuilder('payment')
       .leftJoinAndSelect('payment.command', 'command')
       .leftJoinAndSelect('payment.recorder', 'recorder');
 
     if (search) {
-      queryBuilder.where('payment.notes ILIKE :search', { search: `%${search}%` });
+      queryBuilder.andWhere(
+        "(payment.notes ILIKE :search OR command.data->>'clientFullName' ILIKE :search)",
+        { search: `%${search}%` },
+      );
+    }
+
+    if (fromDate) {
+      queryBuilder.andWhere('payment.createdAt >= :fromDate', {
+        fromDate: new Date(fromDate),
+      });
+    }
+
+    if (toDate) {
+      queryBuilder.andWhere('payment.createdAt <= :toDate', {
+        toDate: new Date(toDate),
+      });
     }
 
     return queryBuilder.orderBy('payment.createdAt', 'DESC').getMany();

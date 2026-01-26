@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { AdvancedFilter } from '@/components/search/AdvancedFilter';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -33,6 +34,7 @@ import { EmptyState } from '@/components/ui/empty-state';
 
 const SuppliersPage = () => {
   const [searchQuery, setSearchQuery] = useState('');
+  const [filters, setFilters] = useState<Record<string, any>>({});
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [newSupplier, setNewSupplier] = useState({
     name: '',
@@ -47,11 +49,23 @@ const SuppliersPage = () => {
   const createSupplier = useCreateSupplier();
   const deleteSupplier = useDeleteSupplier();
 
-  const filteredSuppliers = (suppliers ?? []).filter(
-    (supplier) =>
+  const filteredSuppliers = (suppliers ?? []).filter((supplier) => {
+    const matchesSearch =
       supplier.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      supplier.contact.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+      supplier.contact.toLowerCase().includes(searchQuery.toLowerCase());
+
+    const matchesService =
+      !filters.serviceType ||
+      filters.serviceType === 'all' ||
+      supplier.serviceTypes.includes(filters.serviceType as ServiceType);
+
+    const matchesStatus =
+      !filters.status ||
+      filters.status === 'all' ||
+      (filters.status === 'active' ? supplier.isActive : !supplier.isActive);
+
+    return matchesSearch && matchesService && matchesStatus;
+  });
 
   const serviceTypeOptions: { value: ServiceType; label: string }[] = [
     { value: 'visa', label: 'Visa' },
@@ -122,14 +136,30 @@ const SuppliersPage = () => {
                 {(suppliers ?? []).filter((s) => s.isActive).length} fournisseurs actifs
               </CardDescription>
             </div>
-            <div className="flex gap-3">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  placeholder="Rechercher..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-64 pl-9"
+            <div className="flex gap-3 items-center">
+              <div className="w-[450px]">
+                <AdvancedFilter
+                  searchQuery={searchQuery}
+                  onSearchChange={setSearchQuery}
+                  filters={filters}
+                  onFilterChange={setFilters}
+                  filterConfig={[
+                    {
+                      key: 'serviceType',
+                      label: 'Service',
+                      type: 'select',
+                      options: serviceTypeOptions,
+                    },
+                    {
+                      key: 'status',
+                      label: 'Statut',
+                      type: 'select',
+                      options: [
+                        { label: 'Actif', value: 'active' },
+                        { label: 'Inactif', value: 'inactive' },
+                      ],
+                    },
+                  ]}
                 />
               </div>
               <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>

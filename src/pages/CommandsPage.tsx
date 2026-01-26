@@ -45,10 +45,13 @@ import {
   getPaymentStatusFromAmounts,
 } from '@/lib/utils';
 import { CommandData, calculateRemainingBalance, calculateNetProfit } from '@/types';
+import { CommandFilters } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
+import { AdvancedFilter } from '@/components/search/AdvancedFilter';
 import { useCommands, useCommandStats, useCreateCommand, useDeleteCommand } from '@/hooks/useCommands';
 import { useActiveServices } from '@/hooks/useServices';
 import { useSuppliers } from '@/hooks/useSuppliers';
+import { useDebounce } from '@/hooks/useDebounce';
 import { CommandsSkeleton } from '@/components/skeletons/CommandsSkeleton';
 import { ErrorState } from '@/components/ui/error-state';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -57,7 +60,7 @@ const CommandsPage = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [filters, setFilters] = useState<CommandFilters>({});
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedService, setSelectedService] = useState<string>('');
 
@@ -78,10 +81,12 @@ const CommandsPage = () => {
     description: '',
   });
 
+  const debouncedSearch = useDebounce(searchQuery, 500);
+
   // React Query hooks
   const { data: commandsData, isLoading, isError, error, refetch } = useCommands({
-    status: statusFilter !== 'all' ? statusFilter : undefined,
-    search: searchQuery || undefined,
+    ...filters,
+    search: debouncedSearch || undefined,
   });
   const { data: statsData } = useCommandStats();
   const { data: services } = useActiveServices();
@@ -414,27 +419,49 @@ const CommandsPage = () => {
               <CardDescription>{commandsData?.total ?? 0} commandes au total</CardDescription>
             </div>
             <div className="flex flex-wrap gap-3">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  placeholder="Rechercher..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-48 pl-9"
+              <div className="flex-1">
+                <AdvancedFilter
+                  searchQuery={searchQuery}
+                  onSearchChange={setSearchQuery}
+                  filters={filters}
+                  onFilterChange={setFilters}
+                  filterConfig={[
+                    {
+                      key: 'status',
+                      label: 'Statut',
+                      type: 'select',
+                      options: [
+                        { label: 'En attente', value: 'en_attente' },
+                        { label: 'En cours', value: 'en_cours' },
+                        { label: 'Terminé', value: 'termine' },
+                        { label: 'Annulé', value: 'annule' },
+                      ],
+                    },
+                    {
+                      key: 'serviceId',
+                      label: 'Service',
+                      type: 'select',
+                      options: services?.map(s => ({ label: s.name, value: s.id })) || [],
+                    },
+                    {
+                      key: 'supplierId',
+                      label: 'Fournisseur',
+                      type: 'select',
+                      options: suppliers?.filter(s => s.isActive).map(s => ({ label: s.name, value: s.id })) || [],
+                    },
+                    {
+                      key: 'fromDate',
+                      label: 'Date début',
+                      type: 'date-range',
+                    },
+                    {
+                      key: 'toDate',
+                      label: 'Date fin',
+                      type: 'date-range',
+                    },
+                  ]}
                 />
               </div>
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-40">
-                  <SelectValue placeholder="Statut" />
-                </SelectTrigger>
-                <SelectContent className="bg-popover">
-                  <SelectItem value="all">Tous les statuts</SelectItem>
-                  <SelectItem value="en_attente">En attente</SelectItem>
-                  <SelectItem value="en_cours">En cours</SelectItem>
-                  <SelectItem value="termine">Terminé</SelectItem>
-                  <SelectItem value="annule">Annulé</SelectItem>
-                </SelectContent>
-              </Select>
               <Dialog open={isDialogOpen} onOpenChange={(open) => {
                 setIsDialogOpen(open);
                 if (!open) {

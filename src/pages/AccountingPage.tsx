@@ -58,6 +58,8 @@ import {
   Line,
 } from 'recharts';
 import { usePayments, useCreatePayment } from '@/hooks/usePayments';
+import { PaymentFilters } from '@/lib/api';
+import { AdvancedFilter } from '@/components/search/AdvancedFilter';
 import { useCommands } from '@/hooks/useCommands';
 import { useServices } from '@/hooks/useServices';
 import { AccountingSkeleton } from '@/components/skeletons/AccountingSkeleton';
@@ -67,6 +69,7 @@ import { EmptyState } from '@/components/ui/empty-state';
 const AccountingPage = () => {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
+  const [filters, setFilters] = useState<PaymentFilters>({});
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedCommand, setSelectedCommand] = useState<string>('');
   const [newPayment, setNewPayment] = useState({
@@ -76,7 +79,10 @@ const AccountingPage = () => {
   });
 
   // React Query hooks
-  const { data: payments, isLoading: paymentsLoading, isError: paymentsError, error, refetch } = usePayments(searchQuery || undefined);
+  const { data: payments, isLoading: paymentsLoading, isError: paymentsError, error, refetch } = usePayments({
+    ...filters,
+    search: searchQuery || undefined
+  });
   const { data: commandsData } = useCommands({});
   const { data: services } = useServices();
   const createPayment = useCreatePayment();
@@ -213,14 +219,25 @@ const AccountingPage = () => {
                     Tous les paiements enregistrés
                   </CardDescription>
                 </div>
-                <div className="flex gap-3">
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                    <Input
-                      placeholder="Rechercher..."
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      className="w-48 pl-9"
+                <div className="flex gap-3 items-center">
+                  <div className="w-[450px]">
+                    <AdvancedFilter
+                      searchQuery={searchQuery}
+                      onSearchChange={setSearchQuery}
+                      filters={filters}
+                      onFilterChange={setFilters}
+                      filterConfig={[
+                        {
+                          key: 'fromDate',
+                          label: 'Date début',
+                          type: 'date-range',
+                        },
+                        {
+                          key: 'toDate',
+                          label: 'Date fin',
+                          type: 'date-range',
+                        },
+                      ]}
                     />
                   </div>
                   <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>

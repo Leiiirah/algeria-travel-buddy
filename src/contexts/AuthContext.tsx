@@ -27,9 +27,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           const currentUser = await api.getMe();
           setUser(currentUser);
         } catch (error) {
-          // Token invalid or expired, clear tokens
-          api.clearTokens();
-          localStorage.removeItem('currentUser');
+          // Only clear tokens if unauthorized or forbidden
+          if (error instanceof ApiError && (error.status === 401 || error.status === 403)) {
+            api.clearTokens();
+            localStorage.removeItem('currentUser');
+          } else {
+            // For other errors (network, 500), keep the token
+            // We might want to show an error state, but for now just don't logout
+            console.error('Session check failed:', error);
+          }
         }
       }
       setIsLoading(false);

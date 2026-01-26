@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { AdvancedFilter } from '@/components/search/AdvancedFilter';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -42,7 +43,7 @@ import { EmptyState } from '@/components/ui/empty-state';
 
 const DocumentsPage = () => {
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [filters, setFilters] = useState<Record<string, any>>({});
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [newDocument, setNewDocument] = useState({
@@ -51,8 +52,7 @@ const DocumentsPage = () => {
   });
 
   // React Query hooks
-  const categoryFilter = selectedCategory === 'all' ? undefined : selectedCategory;
-  const { data: documents, isLoading, isError, error, refetch } = useDocuments(categoryFilter);
+  const { data: documents, isLoading, isError, error, refetch } = useDocuments();
   const uploadDocument = useUploadDocument();
   const deleteDocument = useDeleteDocument();
 
@@ -66,7 +66,17 @@ const DocumentsPage = () => {
 
   const filteredDocuments = (documents ?? []).filter((doc) => {
     const matchesSearch = doc.name.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesSearch;
+
+    const matchesCategory =
+      !filters.category ||
+      filters.category === 'all' ||
+      doc.category === filters.category;
+
+    const matchesDate =
+      (!filters.fromDate || new Date(doc.createdAt) >= new Date(filters.fromDate)) &&
+      (!filters.toDate || new Date(doc.createdAt) <= new Date(filters.toDate));
+
+    return matchesSearch && matchesCategory && matchesDate;
   });
 
   const getCategoryIcon = (category: DocumentCategory) => {
@@ -141,10 +151,9 @@ const DocumentsPage = () => {
           return (
             <Card
               key={cat.value}
-              className={`cursor-pointer border-none shadow-sm transition-all hover:shadow-md ${
-                selectedCategory === cat.value ? 'ring-2 ring-primary' : ''
-              }`}
-              onClick={() => setSelectedCategory(cat.value)}
+              className={`cursor-pointer border-none shadow-sm transition-all hover:shadow-md ${filters.category === cat.value ? 'ring-2 ring-primary' : ''
+                }`}
+              onClick={() => setFilters({ ...filters, category: cat.value })}
             >
               <CardContent className="flex items-center gap-4 p-4">
                 <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10">
@@ -170,28 +179,33 @@ const DocumentsPage = () => {
                 {filteredDocuments.length} document(s) trouvé(s)
               </CardDescription>
             </div>
-            <div className="flex gap-3">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  placeholder="Rechercher..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-48 pl-9"
+            <div className="flex gap-3 items-center">
+              <div className="w-[450px]">
+                <AdvancedFilter
+                  searchQuery={searchQuery}
+                  onSearchChange={setSearchQuery}
+                  filters={filters}
+                  onFilterChange={setFilters}
+                  filterConfig={[
+                    {
+                      key: 'category',
+                      label: 'Catégorie',
+                      type: 'select',
+                      options: categories.slice(1).map(c => ({ label: c.label, value: c.value })),
+                    },
+                    {
+                      key: 'fromDate',
+                      label: 'Date début',
+                      type: 'date-range',
+                    },
+                    {
+                      key: 'toDate',
+                      label: 'Date fin',
+                      type: 'date-range',
+                    },
+                  ]}
                 />
               </div>
-              <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-                <SelectTrigger className="w-40">
-                  <SelectValue placeholder="Catégorie" />
-                </SelectTrigger>
-                <SelectContent className="bg-popover">
-                  {categories.map((cat) => (
-                    <SelectItem key={cat.value} value={cat.value}>
-                      {cat.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
               <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                 <DialogTrigger asChild>
                   <Button>
@@ -244,9 +258,9 @@ const DocumentsPage = () => {
                           <p className="mt-2 text-sm text-muted-foreground">
                             {selectedFile ? selectedFile.name : 'Glissez-déposez ou cliquez pour sélectionner'}
                           </p>
-                          <Input 
-                            type="file" 
-                            accept=".pdf" 
+                          <Input
+                            type="file"
+                            accept=".pdf"
                             className="mt-4"
                             onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
                           />
@@ -304,9 +318,9 @@ const DocumentsPage = () => {
                         </div>
                       </div>
                       <div className="mt-4 flex gap-2 opacity-0 transition-opacity group-hover:opacity-100">
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
+                        <Button
+                          variant="outline"
+                          size="sm"
                           className="flex-1"
                           onClick={() => handleDownload(doc.id)}
                         >

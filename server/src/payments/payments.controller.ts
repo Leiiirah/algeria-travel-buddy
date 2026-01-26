@@ -19,8 +19,12 @@ export class PaymentsController {
   constructor(private readonly paymentsService: PaymentsService) { }
 
   @Get()
-  findAll(@Query('search') search?: string) {
-    return this.paymentsService.findAll(search);
+  findAll(
+    @Query('search') search?: string,
+    @Query('fromDate') fromDate?: string,
+    @Query('toDate') toDate?: string,
+  ) {
+    return this.paymentsService.findAll({ search, fromDate, toDate });
   }
 
   @Get('command/:commandId')

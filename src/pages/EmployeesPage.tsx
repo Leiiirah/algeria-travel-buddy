@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { AdvancedFilter } from '@/components/search/AdvancedFilter';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -40,6 +41,7 @@ import { EmptyState } from '@/components/ui/empty-state';
 const EmployeesPage = () => {
   const { isAdmin } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
+  const [filters, setFilters] = useState<Record<string, any>>({});
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [newUser, setNewUser] = useState({
     firstName: '',
@@ -54,12 +56,24 @@ const EmployeesPage = () => {
   const createUser = useCreateUser();
   const toggleStatus = useToggleUserStatus();
 
-  const filteredUsers = (users ?? []).filter(
-    (user) =>
+  const filteredUsers = (users ?? []).filter((user) => {
+    const matchesSearch =
       user.firstName.toLowerCase().includes(searchQuery.toLowerCase()) ||
       user.lastName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      user.email.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+      user.email.toLowerCase().includes(searchQuery.toLowerCase());
+
+    const matchesRole =
+      !filters.role ||
+      filters.role === 'all' ||
+      user.role === filters.role;
+
+    const matchesStatus =
+      !filters.status ||
+      filters.status === 'all' ||
+      (filters.status === 'active' ? user.isActive : !user.isActive);
+
+    return matchesSearch && matchesRole && matchesStatus;
+  });
 
   const handleAddUser = () => {
     if (!newUser.firstName || !newUser.lastName || !newUser.email || !newUser.password) {
@@ -114,14 +128,33 @@ const EmployeesPage = () => {
                 {(users ?? []).length} employés enregistrés
               </CardDescription>
             </div>
-            <div className="flex gap-3">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  placeholder="Rechercher..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-64 pl-9"
+            <div className="flex gap-3 items-center">
+              <div className="w-[450px]">
+                <AdvancedFilter
+                  searchQuery={searchQuery}
+                  onSearchChange={setSearchQuery}
+                  filters={filters}
+                  onFilterChange={setFilters}
+                  filterConfig={[
+                    {
+                      key: 'role',
+                      label: 'Rôle',
+                      type: 'select',
+                      options: [
+                        { label: 'Administrateur', value: 'admin' },
+                        { label: 'Employé', value: 'employee' },
+                      ],
+                    },
+                    {
+                      key: 'status',
+                      label: 'Statut',
+                      type: 'select',
+                      options: [
+                        { label: 'Actif', value: 'active' },
+                        { label: 'Inactif', value: 'inactive' },
+                      ],
+                    },
+                  ]}
                 />
               </div>
               {isAdmin && (

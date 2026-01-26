@@ -131,6 +131,12 @@ export interface CommandFilters {
   limit?: number;
 }
 
+export interface PaymentFilters {
+  search?: string;
+  fromDate?: string;
+  toDate?: string;
+}
+
 export interface SearchResult {
   id: string;
   type: 'command' | 'supplier' | 'employee' | 'document' | 'transaction' | 'payment';
@@ -209,7 +215,9 @@ class ApiClient {
         });
 
         if (!response.ok) {
-          this.clearTokens();
+          if (response.status === 401 || response.status === 403) {
+            this.clearTokens();
+          }
           return false;
         }
 
@@ -218,7 +226,7 @@ class ApiClient {
         this.setRefreshToken(data.refreshToken);
         return true;
       } catch {
-        this.clearTokens();
+        // Network error or other issue, don't clear tokens immediately
         return false;
       } finally {
         this.isRefreshing = false;
@@ -249,7 +257,14 @@ class ApiClient {
           // Retry the request with new token
           return this.request<T>(endpoint, options, true);
         }
-        // Refresh failed, redirect to login
+
+        // If refresh failed but we still have tokens (e.g. 500 error on refresh),
+        // DO NOT logout. Just throw the original error.
+        if (this.getToken()) {
+          throw new ApiError(401, 'Session refresh failed temporary');
+        }
+
+        // Only redirect if we definitely have no valid session
         this.clearTokens();
         window.location.href = '/login';
         throw new ApiError(401, 'Session expired');
@@ -280,6 +295,11 @@ class ApiClient {
         if (refreshed) {
           return this.requestWithFormData<T>(endpoint, formData, true);
         }
+
+        if (this.getToken()) {
+          throw new ApiError(401, 'Session refresh failed temporary');
+        }
+
         this.clearTokens();
         window.location.href = '/login';
         throw new ApiError(401, 'Session expired');
@@ -435,9 +455,17 @@ class ApiClient {
 
   // ==================== PAYMENTS ====================
 
-  getPayments = (search?: string): Promise<Payment[]> => {
-    const query = search ? `?search=${encodeURIComponent(search)}` : '';
-    return this.request(`/payments${query}`);
+  getPayments = (filters?: PaymentFilters): Promise<Payment[]> => {
+    const params = new URLSearchParams();
+    if (filters) {
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value !== undefined && value !== '') {
+          params.append(key, String(value));
+        }
+      });
+    }
+    const query = params.toString();
+    return this.request(`/payments${query ? `?${query}` : ''}`);
   };
 
   getPaymentsByCommand = (commandId: string): Promise<Payment[]> =>

@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import { api, CreateCommandDto, UpdateCommandDto, CommandFilters } from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
 
@@ -6,6 +6,7 @@ export const useCommands = (filters?: CommandFilters) => {
   return useQuery({
     queryKey: ['commands', filters],
     queryFn: () => api.getCommands(filters),
+    placeholderData: keepPreviousData,
   });
 };
 
