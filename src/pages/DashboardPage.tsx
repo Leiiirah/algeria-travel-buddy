@@ -152,7 +152,15 @@ const DashboardPage = () => {
               <LineChart data={weeklyData}>
                 <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                 <XAxis dataKey="name" className="text-xs" />
-                <YAxis className="text-xs" tickFormatter={(v) => `${v / 1000}k`} />
+                <YAxis
+                  className="text-xs"
+                  tickFormatter={(value) => {
+                    if (value === 0) return '0';
+                    if (value >= 1000000) return `${(value / 1000000).toFixed(1)}M`;
+                    if (value >= 1000) return `${(value / 1000).toFixed(1)}k`;
+                    return value.toString();
+                  }}
+                />
                 <Tooltip
                   formatter={(value: number) => [formatDZD(value), 'Revenus']}
                   contentStyle={{
