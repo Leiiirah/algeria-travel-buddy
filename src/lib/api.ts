@@ -145,10 +145,37 @@ export interface SearchResult {
   url: string;
 }
 
+export type ApiErrorType =
+  | 'network'
+  | 'unauthorized'
+  | 'forbidden'
+  | 'validation'
+  | 'rate_limited'
+  | 'not_found'
+  | 'server_error';
+
 class ApiError extends Error {
-  constructor(public status: number, message: string) {
+  public readonly type: ApiErrorType;
+
+  constructor(public status: number, message: string, type?: ApiErrorType) {
     super(message);
     this.name = 'ApiError';
+    this.type = type || this.determineType(status);
+  }
+
+  private determineType(status: number): ApiErrorType {
+    if (status === 401) return 'unauthorized';
+    if (status === 403) return 'forbidden';
+    if (status === 404) return 'not_found';
+    if (status === 429) return 'rate_limited';
+    if (status === 400 || status === 422) return 'validation';
+    if (status >= 500) return 'server_error';
+    return 'server_error';
+  }
+
+  static networkError(message = 'Impossible de se connecter au serveur'): ApiError {
+    const error = new ApiError(0, message, 'network');
+    return error;
   }
 }
 
@@ -196,18 +223,22 @@ class ApiClient {
   }
 
   private async attemptRefresh(): Promise<boolean> {
+    console.log('Attempting token refresh...');
     if (!this.refreshTokenValue) {
+      console.log('No refresh token available');
       return false;
     }
 
     // Prevent multiple simultaneous refresh attempts
     if (this.isRefreshing) {
+      console.log('Refresh already in progress, waiting...');
       return this.refreshPromise || Promise.resolve(false);
     }
 
     this.isRefreshing = true;
     this.refreshPromise = (async () => {
       try {
+        console.log('Sending refresh request...');
         const response = await fetch(`${API_URL}/auth/refresh`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -215,6 +246,7 @@ class ApiClient {
         });
 
         if (!response.ok) {
+          console.error('Refresh failed with status:', response.status);
           if (response.status === 401 || response.status === 403) {
             this.clearTokens();
           }
@@ -222,10 +254,12 @@ class ApiClient {
         }
 
         const data = await response.json();
+        console.log('Refresh successful, new tokens received');
         this.setToken(data.accessToken);
         this.setRefreshToken(data.refreshToken);
         return true;
-      } catch {
+      } catch (e) {
+        console.error('Refresh error:', e);
         // Network error or other issue, don't clear tokens immediately
         return false;
       } finally {
@@ -244,10 +278,16 @@ class ApiClient {
       ...options.headers,
     };
 
-    const response = await fetch(`${API_URL}${endpoint}`, {
-      ...options,
-      headers,
-    });
+    let response: Response;
+    try {
+      response = await fetch(`${API_URL}${endpoint}`, {
+        ...options,
+        headers,
+      });
+    } catch (error) {
+      // Network error (offline, server unreachable, DNS failure, etc.)
+      throw ApiError.networkError();
+    }
 
     if (!response.ok) {
       if (response.status === 401 && !isRetry) {
@@ -283,11 +323,16 @@ class ApiClient {
       ...(this.token && { Authorization: `Bearer ${this.token}` }),
     };
 
-    const response = await fetch(`${API_URL}${endpoint}`, {
-      method: 'POST',
-      headers,
-      body: formData,
-    });
+    let response: Response;
+    try {
+      response = await fetch(`${API_URL}${endpoint}`, {
+        method: 'POST',
+        headers,
+        body: formData,
+      });
+    } catch (error) {
+      throw ApiError.networkError();
+    }
 
     if (!response.ok) {
       if (response.status === 401 && !isRetry) {

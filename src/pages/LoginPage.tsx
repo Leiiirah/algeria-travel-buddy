@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Eye, EyeOff } from 'lucide-react';
+import { Eye, EyeOff, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -9,38 +9,96 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import logoElHikma from '@/assets/logo-elhikma.png';
 
+interface FieldErrors {
+  email?: string;
+  password?: string;
+}
+
 const LoginPage = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const { login } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
+  // Email validation regex
+  const isValidEmail = (email: string): boolean => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
+
+  // Client-side validation
+  const validateForm = (): boolean => {
+    const errors: FieldErrors = {};
+
+    // Email validation
+    if (!email.trim()) {
+      errors.email = "L'email est requis";
+    } else if (!isValidEmail(email.trim())) {
+      errors.email = "Format d'email invalide";
+    }
+
+    // Password validation
+    if (!password) {
+      errors.password = 'Le mot de passe est requis';
+    } else if (password.length < 6) {
+      errors.password = 'Le mot de passe doit contenir au moins 6 caractères';
+    }
+
+    setFieldErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  // Clear field error when user starts typing
+  const handleEmailChange = (value: string) => {
+    setEmail(value);
+    if (fieldErrors.email) {
+      setFieldErrors(prev => ({ ...prev, email: undefined }));
+    }
+  };
+
+  const handlePasswordChange = (value: string) => {
+    setPassword(value);
+    if (fieldErrors.password) {
+      setFieldErrors(prev => ({ ...prev, password: undefined }));
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Validate before submitting
+    if (!validateForm()) {
+      return;
+    }
+
     setIsLoading(true);
 
     try {
-      const success = await login(email, password);
-      if (success) {
+      const result = await login(email.trim(), password);
+
+      if (result.success) {
         toast({
           title: 'Connexion réussie',
           description: 'Bienvenue sur votre tableau de bord',
         });
         navigate('/dashboard');
       } else {
+        // Show specific error message from the login result
         toast({
           title: 'Erreur de connexion',
-          description: 'Email ou mot de passe incorrect',
+          description: result.error?.message || 'Une erreur est survenue',
           variant: 'destructive',
         });
       }
     } catch (error) {
+      // This should rarely happen since AuthContext handles errors
       toast({
         title: 'Erreur',
-        description: 'Une erreur est survenue lors de la connexion',
+        description: 'Une erreur inattendue est survenue lors de la connexion',
         variant: 'destructive',
       });
     } finally {
@@ -75,10 +133,17 @@ const LoginPage = () => {
                 type="email"
                 placeholder="votre@email.com"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                className="h-11"
+                onChange={(e) => handleEmailChange(e.target.value)}
+                className={`h-11 ${fieldErrors.email ? 'border-destructive focus-visible:ring-destructive' : ''}`}
+                aria-invalid={!!fieldErrors.email}
+                aria-describedby={fieldErrors.email ? 'email-error' : undefined}
               />
+              {fieldErrors.email && (
+                <p id="email-error" className="flex items-center gap-1 text-sm text-destructive">
+                  <AlertCircle className="h-4 w-4" />
+                  {fieldErrors.email}
+                </p>
+              )}
             </div>
             <div className="space-y-2">
               <Label htmlFor="password">Mot de passe</Label>
@@ -88,9 +153,10 @@ const LoginPage = () => {
                   type={showPassword ? 'text' : 'password'}
                   placeholder="••••••••"
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  className="h-11 pr-10"
+                  onChange={(e) => handlePasswordChange(e.target.value)}
+                  className={`h-11 pr-10 ${fieldErrors.password ? 'border-destructive focus-visible:ring-destructive' : ''}`}
+                  aria-invalid={!!fieldErrors.password}
+                  aria-describedby={fieldErrors.password ? 'password-error' : undefined}
                 />
                 <button
                   type="button"
@@ -104,6 +170,12 @@ const LoginPage = () => {
                   )}
                 </button>
               </div>
+              {fieldErrors.password && (
+                <p id="password-error" className="flex items-center gap-1 text-sm text-destructive">
+                  <AlertCircle className="h-4 w-4" />
+                  {fieldErrors.password}
+                </p>
+              )}
             </div>
             <Button
               type="submit"
@@ -120,13 +192,10 @@ const LoginPage = () => {
             </p>
             <div className="space-y-1 text-sm text-muted-foreground">
               <p>
-                <span className="font-medium">Admin :</span> admin@elhikma.dz
+                <span className="font-medium">Admin :</span> admin@elhikma.dz / Admin@123
               </p>
               <p>
-                <span className="font-medium">Employé :</span> sarah@elhikma.dz
-              </p>
-              <p>
-                <span className="font-medium">Mot de passe :</span> password123
+                <span className="font-medium">Employé :</span> sarah@elhikma.dz / Employee@123
               </p>
             </div>
           </div>

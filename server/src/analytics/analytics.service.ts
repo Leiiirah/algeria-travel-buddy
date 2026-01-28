@@ -13,13 +13,111 @@ export class AnalyticsService {
     @InjectRepository(Payment) private paymentsRepo: Repository<Payment>,
     @InjectRepository(Supplier) private suppliersRepo: Repository<Supplier>,
     @InjectRepository(SupplierTransaction) private transactionsRepo: Repository<SupplierTransaction>,
-  ) {}
+  ) { }
 
   async getDashboardStats() {
-    const commands = await this.commandsRepo.find();
+    const commands = await this.commandsRepo.find({
+      relations: ['service'],
+      order: { createdAt: 'DESC' }
+    });
+
     const totalRevenue = commands.reduce((sum, c) => sum + Number(c.sellingPrice || 0), 0);
     const totalProfit = commands.reduce((sum, c) => sum + (Number(c.sellingPrice || 0) - Number(c.buyingPrice || 0)), 0);
-    return { totalCommands: commands.length, totalRevenue, totalProfit, commandsByStatus: { en_attente: commands.filter(c => c.status === 'en_attente').length, en_cours: commands.filter(c => c.status === 'en_cours').length, termine: commands.filter(c => c.status === 'termine').length, annule: commands.filter(c => c.status === 'annule').length } };
+    const pendingAmount = commands
+      .reduce((sum, c) => {
+        const selling = Number(c.sellingPrice || 0);
+        const paid = Number(c.amountPaid || 0);
+        return sum + Math.max(0, selling - paid);
+      }, 0);
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const todayCommands = commands.filter(c => {
+      const d = new Date(c.createdAt);
+      d.setHours(0, 0, 0, 0);
+      return d.getTime() === today.getTime();
+    }).length;
+
+    const inProgressCommands = commands.filter(c => c.status === 'en_cours').length;
+
+    // Weekly Revenue Data (Last 7 days)
+    const weeklyData = [];
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      d.setHours(0, 0, 0, 0);
+
+      const dayName = d.toLocaleDateString('fr-FR', { weekday: 'short' });
+      // Capitalize first letter
+      const formattedName = dayName.charAt(0).toUpperCase() + dayName.slice(1);
+
+      const dayRevenue = commands
+        .filter(c => {
+          const cd = new Date(c.createdAt);
+          cd.setHours(0, 0, 0, 0);
+          return cd.getTime() === d.getTime();
+        })
+        .reduce((sum, c) => sum + Number(c.sellingPrice || 0), 0);
+
+      weeklyData.push({
+        name: formattedName,
+        revenue: dayRevenue
+      });
+    }
+
+    // Service Distribution Data
+    const serviceCounts: Record<string, number> = {};
+    let totalServiceCommands = 0;
+
+    commands.forEach(c => {
+      if (c.service?.type) {
+        serviceCounts[c.service.type] = (serviceCounts[c.service.type] || 0) + 1;
+        totalServiceCommands++;
+      }
+    });
+
+    const serviceColors: Record<string, string> = {
+      visa: 'hsl(var(--chart-1))',
+      residence: 'hsl(var(--chart-2))',
+      ticket: 'hsl(var(--chart-3))',
+      dossier: 'hsl(var(--chart-4))',
+      unknown: 'hsl(var(--chart-5))'
+    };
+
+    const serviceNames: Record<string, string> = {
+      visa: 'Visa',
+      residence: 'Résidence',
+      ticket: 'Billets',
+      dossier: 'Dossiers',
+      unknown: 'Autre'
+    };
+
+    const serviceData = Object.entries(serviceCounts).map(([type, count]) => ({
+      name: serviceNames[type] || type,
+      value: totalServiceCommands > 0 ? Math.round((count / totalServiceCommands) * 100) : 0,
+      color: serviceColors[type] || serviceColors.unknown
+    }));
+
+    // Sort by value descending
+    serviceData.sort((a, b) => b.value - a.value);
+
+    return {
+      totalCommands: commands.length,
+      totalRevenue,
+      totalProfit,
+      pendingAmount,
+      todayCommands,
+      inProgressCommands,
+      commandsByStatus: {
+        en_attente: commands.filter(c => c.status === 'en_attente').length,
+        en_cours: inProgressCommands,
+        termine: commands.filter(c => c.status === 'termine').length,
+        annule: commands.filter(c => c.status === 'annule').length
+      },
+      weeklyData,
+      serviceData
+    };
   }
 
   async getRevenueStats(fromDate: string, toDate: string) {

@@ -1,11 +1,19 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { User } from '@/types';
-import { api, ApiError } from '@/lib/api';
+import { api, ApiError, ApiErrorType } from '@/lib/api';
+
+export interface LoginResult {
+  success: boolean;
+  error?: {
+    type: ApiErrorType;
+    message: string;
+  };
+}
 
 interface AuthContextType {
   user: User | null;
   isLoading: boolean;
-  login: (email: string, password: string) => Promise<boolean>;
+  login: (email: string, password: string) => Promise<LoginResult>;
   logout: () => void;
   isAdmin: boolean;
 }
@@ -24,11 +32,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (token || refreshToken) {
         try {
+          console.log('Checking auth with existing tokens...');
           const currentUser = await api.getMe();
+          console.log('Auth check successful, user:', currentUser.email);
           setUser(currentUser);
         } catch (error) {
+          console.error('Auth check failed:', error);
           // Only clear tokens if unauthorized or forbidden
           if (error instanceof ApiError && (error.status === 401 || error.status === 403)) {
+            console.log('Clearing tokens due to 401/403');
             api.clearTokens();
             localStorage.removeItem('currentUser');
           } else {
@@ -37,6 +49,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             console.error('Session check failed:', error);
           }
         }
+      } else {
+        console.log('No tokens found, user is not logged in.');
       }
       setIsLoading(false);
     };
@@ -44,19 +58,53 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     checkAuth();
   }, []);
 
-  const login = useCallback(async (email: string, password: string): Promise<boolean> => {
+  const login = useCallback(async (email: string, password: string): Promise<LoginResult> => {
     try {
       const response = await api.login({ email, password });
       api.setToken(response.accessToken);
       api.setRefreshToken(response.refreshToken);
       setUser(response.user);
       localStorage.setItem('currentUser', JSON.stringify(response.user));
-      return true;
+      return { success: true };
     } catch (error) {
       if (error instanceof ApiError) {
-        console.error('Login failed:', error.message);
+        // Map API errors to user-friendly messages
+        let message: string;
+        switch (error.type) {
+          case 'network':
+            message = 'Impossible de se connecter au serveur. Vérifiez votre connexion internet.';
+            break;
+          case 'unauthorized':
+            // Check if it's a deactivated account or invalid credentials
+            if (error.message.toLowerCase().includes('deactivat') ||
+              error.message.toLowerCase().includes('désactivé')) {
+              message = 'Votre compte a été désactivé. Contactez un administrateur.';
+            } else {
+              message = 'Email ou mot de passe incorrect.';
+            }
+            break;
+          case 'rate_limited':
+            message = 'Trop de tentatives de connexion. Réessayez dans quelques minutes.';
+            break;
+          case 'server_error':
+            message = 'Une erreur serveur est survenue. Réessayez plus tard.';
+            break;
+          default:
+            message = error.message || 'Une erreur est survenue lors de la connexion.';
+        }
+        return {
+          success: false,
+          error: { type: error.type, message }
+        };
       }
-      return false;
+      // Unknown error
+      return {
+        success: false,
+        error: {
+          type: 'server_error',
+          message: 'Une erreur inattendue est survenue.'
+        }
+      };
     }
   }, []);
 
