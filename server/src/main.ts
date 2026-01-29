@@ -1,11 +1,15 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   const configService = app.get(ConfigService);
+
+  // Global exception filter
+  app.useGlobalFilters(new HttpExceptionFilter());
 
   // Enable CORS
   const corsOrigin = configService.get<string>('CORS_ORIGIN', '*');
