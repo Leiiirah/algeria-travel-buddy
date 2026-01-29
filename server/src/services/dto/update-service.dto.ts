@@ -1,4 +1,4 @@
-import { IsString, IsEnum, IsOptional, IsBoolean } from 'class-validator';
+import { IsString, IsEnum, IsOptional, IsBoolean, IsNumber } from 'class-validator';
 import { ServiceType } from '../entities/service.entity';
 
 export class UpdateServiceDto {
@@ -12,7 +12,17 @@ export class UpdateServiceDto {
 
   @IsString()
   @IsOptional()
+  @IsString()
+  @IsOptional()
   description?: string;
+
+  @IsString()
+  @IsOptional()
+  defaultSupplierId?: string;
+
+  @IsNumber()
+  @IsOptional()
+  defaultBuyingPrice?: number;
 
   @IsBoolean()
   @IsOptional()

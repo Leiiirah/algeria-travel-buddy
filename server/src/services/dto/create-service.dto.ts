@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsString, IsEnum, IsOptional } from 'class-validator';
+import { IsNotEmpty, IsString, IsEnum, IsOptional, IsNumber } from 'class-validator';
 import { ServiceType } from '../entities/service.entity';
 
 export class CreateServiceDto {
@@ -13,4 +13,12 @@ export class CreateServiceDto {
   @IsString()
   @IsOptional()
   description?: string;
+
+  @IsString()
+  @IsOptional()
+  defaultSupplierId?: string;
+
+  @IsNumber()
+  @IsOptional()
+  defaultBuyingPrice?: number;
 }

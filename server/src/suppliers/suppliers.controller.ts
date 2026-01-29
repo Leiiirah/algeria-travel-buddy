@@ -16,11 +16,16 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 @Controller('suppliers')
 @UseGuards(JwtAuthGuard)
 export class SuppliersController {
-  constructor(private readonly suppliersService: SuppliersService) {}
+  constructor(private readonly suppliersService: SuppliersService) { }
 
   @Get()
   findAll() {
     return this.suppliersService.findAll();
+  }
+
+  @Get('accounting')
+  findAllWithBalance() {
+    return this.suppliersService.findAllWithBalance();
   }
 
   @Get(':id')

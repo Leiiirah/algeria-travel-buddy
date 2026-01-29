@@ -540,7 +540,24 @@ const CommandsPage = () => {
                       <Label>Service</Label>
                       <Select value={selectedService} onValueChange={(value) => {
                         setSelectedService(value);
-                        resetForm();
+                        // Reset form but keep/apply defaults if available
+                        const service = services?.find(s => s.id === value);
+                        setFormData({
+                          clientFullName: '',
+                          phone: '',
+                          destination: '',
+                          sellingPrice: 0,
+                          amountPaid: 0,
+                          buyingPrice: service?.defaultBuyingPrice || 0,
+                          supplierId: service?.defaultSupplierId || '',
+                          firstName: '',
+                          lastName: '',
+                          hotelName: '',
+                          departureDate: '',
+                          returnDate: '',
+                          description: '',
+                        });
+                        setEditingCommandId(null);
                       }}>
                         <SelectTrigger>
                           <SelectValue placeholder="Choisir un service" />

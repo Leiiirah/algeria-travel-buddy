@@ -9,6 +9,13 @@ export const useSuppliers = () => {
   });
 };
 
+export const useSuppliersWithBalance = () => {
+  return useQuery({
+    queryKey: ['suppliers', 'balance'],
+    queryFn: () => api.getSuppliersWithBalance(),
+  });
+};
+
 export const useSupplier = (id: string) => {
   return useQuery({
     queryKey: ['suppliers', id],

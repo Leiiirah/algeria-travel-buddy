@@ -34,12 +34,16 @@ export interface CreateServiceDto {
   name: string;
   type: 'visa' | 'residence' | 'ticket' | 'dossier';
   description: string;
+  defaultSupplierId?: string;
+  defaultBuyingPrice?: number;
 }
 
 export interface UpdateServiceDto {
   name?: string;
   description?: string;
   isActive?: boolean;
+  defaultSupplierId?: string;
+  defaultBuyingPrice?: number;
 }
 
 export interface CreateSupplierDto {
@@ -427,9 +431,17 @@ class ApiClient {
     this.request(`/services/${id}/status`, { method: 'PATCH' });
 
   // ==================== SUPPLIERS ====================
-
+  // Suppliers
   getSuppliers = (): Promise<Supplier[]> =>
     this.request('/suppliers');
+
+  getSuppliersWithBalance = (): Promise<(Supplier & {
+    totalBuyingPrice: number;
+    totalTransactionsSortie: number;
+    totalTransactionsEntree: number;
+    balance: number;
+  })[]> =>
+    this.request('/suppliers/accounting');
 
   getSupplier = (id: string): Promise<Supplier> =>
     this.request(`/suppliers/${id}`);

@@ -23,12 +23,23 @@ export class SuppliersService {
     private commandsRepository: Repository<Command>,
     @InjectRepository(SupplierTransaction)
     private transactionsRepository: Repository<SupplierTransaction>,
-  ) {}
+  ) { }
 
   async findAll(): Promise<Supplier[]> {
     return this.suppliersRepository.find({
       order: { createdAt: 'DESC' },
     });
+  }
+
+  async findAllWithBalance(): Promise<(Supplier & SupplierBalance)[]> {
+    const suppliers = await this.findAll();
+    const suppliersWithBalance = await Promise.all(
+      suppliers.map(async (supplier) => {
+        const balance = await this.getBalance(supplier.id);
+        return { ...supplier, ...balance };
+      }),
+    );
+    return suppliersWithBalance;
   }
 
   async findOne(id: string): Promise<Supplier> {

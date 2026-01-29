@@ -20,6 +20,8 @@ export interface Service {
   type: ServiceType;
   description: string;
   isActive: boolean;
+  defaultSupplierId?: string;
+  defaultBuyingPrice?: number;
   createdAt: Date;
 }
 

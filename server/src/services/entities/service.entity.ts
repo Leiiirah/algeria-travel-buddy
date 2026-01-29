@@ -3,7 +3,10 @@ import {
   PrimaryGeneratedColumn,
   Column,
   CreateDateColumn,
+  ManyToOne,
+  JoinColumn,
 } from 'typeorm';
+import { Supplier } from '../../suppliers/entities/supplier.entity';
 
 export enum ServiceType {
   VISA = 'visa',
@@ -28,6 +31,16 @@ export class Service {
 
   @Column({ type: 'text', nullable: true })
   description: string;
+
+  @Column({ nullable: true })
+  defaultSupplierId: string;
+
+  @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true })
+  defaultBuyingPrice: number;
+
+  @ManyToOne(() => Supplier, { nullable: true })
+  @JoinColumn({ name: 'defaultSupplierId' })
+  defaultSupplier: Supplier;
 
   @Column({ default: true })
   isActive: boolean;
