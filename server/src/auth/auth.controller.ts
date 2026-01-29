@@ -17,16 +17,16 @@ import { JwtAuthGuard } from './jwt-auth.guard';
 export class AuthController {
   constructor(private authService: AuthService) { }
 
-  // Stricter rate limiting for login: 5 attempts per minute
-  @Throttle({ default: { limit: 5, ttl: 60000 } })
+  // Stricter rate limiting for login: 20 attempts per minute
+  @Throttle({ default: { limit: 20, ttl: 60000 } })
   @Post('login')
   @HttpCode(HttpStatus.OK)
   async login(@Body() loginDto: LoginDto) {
     return this.authService.login(loginDto);
   }
 
-  // Stricter rate limiting for refresh: 10 attempts per minute
-  @Throttle({ default: { limit: 10, ttl: 60000 } })
+  // Stricter rate limiting for refresh: 20 attempts per minute
+  @Throttle({ default: { limit: 20, ttl: 60000 } })
   @Post('refresh')
   @HttpCode(HttpStatus.OK)
   async refreshToken(@Body('refreshToken') refreshToken: string) {

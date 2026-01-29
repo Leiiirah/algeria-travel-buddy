@@ -27,7 +27,7 @@ import {
 import { Plus, Search, Building2, Phone, Mail, Edit, Trash2 } from 'lucide-react';
 import { getServiceTypeLabel } from '@/lib/utils';
 import { ServiceType } from '@/types';
-import { useSuppliers, useCreateSupplier, useDeleteSupplier } from '@/hooks/useSuppliers';
+import { useSuppliers, useCreateSupplier, useDeleteSupplier, useUpdateSupplier } from '@/hooks/useSuppliers';
 import { SuppliersSkeleton } from '@/components/skeletons/SuppliersSkeleton';
 import { ErrorState } from '@/components/ui/error-state';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -36,6 +36,7 @@ const SuppliersPage = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [filters, setFilters] = useState<Record<string, any>>({});
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [newSupplier, setNewSupplier] = useState({
     name: '',
     contact: '',
@@ -47,6 +48,7 @@ const SuppliersPage = () => {
   // React Query hooks
   const { data: suppliers, isLoading, isError, error, refetch } = useSuppliers();
   const createSupplier = useCreateSupplier();
+  const updateSupplier = useUpdateSupplier();
   const deleteSupplier = useDeleteSupplier();
 
   const filteredSuppliers = (suppliers ?? []).filter((supplier) => {
@@ -74,26 +76,50 @@ const SuppliersPage = () => {
     { value: 'dossier', label: 'Traitement de dossier' },
   ];
 
-  const handleAddSupplier = () => {
+  const handleSaveSupplier = () => {
     if (!newSupplier.name || !newSupplier.contact || !newSupplier.phone) {
       return;
     }
 
-    createSupplier.mutate(
-      {
-        name: newSupplier.name,
-        contact: newSupplier.contact,
-        phone: newSupplier.phone,
-        email: newSupplier.email,
-        serviceTypes: newSupplier.serviceTypes,
-      },
-      {
+    const supplierData = {
+      name: newSupplier.name,
+      contact: newSupplier.contact,
+      phone: newSupplier.phone,
+      email: newSupplier.email,
+      serviceTypes: newSupplier.serviceTypes,
+    };
+
+    if (editingId) {
+      updateSupplier.mutate(
+        { id: editingId, data: supplierData },
+        {
+          onSuccess: () => {
+            setNewSupplier({ name: '', contact: '', phone: '', email: '', serviceTypes: [] });
+            setEditingId(null);
+            setIsDialogOpen(false);
+          },
+        }
+      );
+    } else {
+      createSupplier.mutate(supplierData, {
         onSuccess: () => {
           setNewSupplier({ name: '', contact: '', phone: '', email: '', serviceTypes: [] });
           setIsDialogOpen(false);
         },
-      }
-    );
+      });
+    }
+  };
+
+  const handleEditClick = (supplier: any) => {
+    setEditingId(supplier.id);
+    setNewSupplier({
+      name: supplier.name,
+      contact: supplier.contact,
+      phone: supplier.phone,
+      email: supplier.email || '',
+      serviceTypes: supplier.serviceTypes,
+    });
+    setIsDialogOpen(true);
   };
 
   const handleDeleteSupplier = (supplierId: string) => {
@@ -162,18 +188,27 @@ const SuppliersPage = () => {
                   ]}
                 />
               </div>
-              <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+              <Dialog open={isDialogOpen} onOpenChange={(open) => {
+                setIsDialogOpen(open);
+                if (!open) {
+                  setEditingId(null);
+                  setNewSupplier({ name: '', contact: '', phone: '', email: '', serviceTypes: [] });
+                }
+              }}>
                 <DialogTrigger asChild>
-                  <Button>
+                  <Button onClick={() => {
+                    setEditingId(null);
+                    setNewSupplier({ name: '', contact: '', phone: '', email: '', serviceTypes: [] });
+                  }}>
                     <Plus className="mr-2 h-4 w-4" />
                     Ajouter
                   </Button>
                 </DialogTrigger>
                 <DialogContent className="bg-card">
                   <DialogHeader>
-                    <DialogTitle>Nouveau fournisseur</DialogTitle>
+                    <DialogTitle>{editingId ? 'Modifier le fournisseur' : 'Nouveau fournisseur'}</DialogTitle>
                     <DialogDescription>
-                      Ajoutez un nouveau partenaire à votre réseau
+                      {editingId ? 'Modifiez les informations du fournisseur' : 'Ajoutez un nouveau partenaire à votre réseau'}
                     </DialogDescription>
                   </DialogHeader>
                   <div className="space-y-4 py-4">
@@ -248,8 +283,8 @@ const SuppliersPage = () => {
                     <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
                       Annuler
                     </Button>
-                    <Button onClick={handleAddSupplier} disabled={createSupplier.isPending}>
-                      {createSupplier.isPending ? 'Ajout...' : 'Ajouter'}
+                    <Button onClick={handleSaveSupplier} disabled={createSupplier.isPending || updateSupplier.isPending}>
+                      {createSupplier.isPending || updateSupplier.isPending ? 'Enregistrement...' : (editingId ? 'Modifier' : 'Ajouter')}
                     </Button>
                   </DialogFooter>
                 </DialogContent>
@@ -329,7 +364,7 @@ const SuppliersPage = () => {
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
-                        <Button variant="ghost" size="icon">
+                        <Button variant="ghost" size="icon" onClick={() => handleEditClick(supplier)}>
                           <Edit className="h-4 w-4" />
                         </Button>
                         <Button

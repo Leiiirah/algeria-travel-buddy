@@ -30,20 +30,30 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Plus, Search, Mail, Shield, UserCheck, UserX, Users } from 'lucide-react';
+import { Plus, Search, Mail, Shield, UserCheck, UserX, Users, Pencil } from 'lucide-react';
 import { UserRole } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
-import { useUsers, useCreateUser, useToggleUserStatus } from '@/hooks/useUsers';
+import { useUsers, useCreateUser, useToggleUserStatus, useUpdateUser } from '@/hooks/useUsers';
 import { EmployeesSkeleton } from '@/components/skeletons/EmployeesSkeleton';
 import { ErrorState } from '@/components/ui/error-state';
 import { EmptyState } from '@/components/ui/empty-state';
+import { User } from '@/types';
 
 const EmployeesPage = () => {
   const { isAdmin } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
   const [filters, setFilters] = useState<Record<string, any>>({});
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isEditOpen, setIsEditOpen] = useState(false);
   const [newUser, setNewUser] = useState({
+    firstName: '',
+    lastName: '',
+    email: '',
+    password: '',
+    role: 'employee' as UserRole,
+  });
+  const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [editForm, setEditForm] = useState({
     firstName: '',
     lastName: '',
     email: '',
@@ -54,6 +64,7 @@ const EmployeesPage = () => {
   // React Query hooks
   const { data: users, isLoading, isError, error, refetch } = useUsers();
   const createUser = useCreateUser();
+  const updateUser = useUpdateUser();
   const toggleStatus = useToggleUserStatus();
 
   const filteredUsers = (users ?? []).filter((user) => {
@@ -99,6 +110,38 @@ const EmployeesPage = () => {
 
   const toggleUserStatus = (userId: string) => {
     toggleStatus.mutate(userId);
+  };
+
+  const handleEditUser = (user: User) => {
+    setEditingUser(user);
+    setEditForm({
+      firstName: user.firstName,
+      lastName: user.lastName,
+      email: user.email,
+      password: '',
+      role: user.role,
+    });
+    setIsEditOpen(true);
+  };
+
+  const handleUpdate = () => {
+    if (!editingUser || !editForm.firstName || !editForm.lastName || !editForm.email) return;
+
+    updateUser.mutate(
+      {
+        id: editingUser.id,
+        data: {
+          ...editForm,
+          password: editForm.password || undefined,
+        },
+      },
+      {
+        onSuccess: () => {
+          setIsEditOpen(false);
+          setEditingUser(null);
+        },
+      }
+    );
   };
 
   if (isLoading) {
@@ -250,6 +293,92 @@ const EmployeesPage = () => {
                   </DialogContent>
                 </Dialog>
               )}
+
+              <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
+                <DialogContent className="bg-card">
+                  <DialogHeader>
+                    <DialogTitle>Modifier l'employé</DialogTitle>
+                    <DialogDescription>
+                      Modifiez les informations de l'utilisateur
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="space-y-4 py-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="edit-firstName">Prénom</Label>
+                        <Input
+                          id="edit-firstName"
+                          value={editForm.firstName}
+                          onChange={(e) =>
+                            setEditForm({ ...editForm, firstName: e.target.value })
+                          }
+                          placeholder="Prénom"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="edit-lastName">Nom</Label>
+                        <Input
+                          id="edit-lastName"
+                          value={editForm.lastName}
+                          onChange={(e) =>
+                            setEditForm({ ...editForm, lastName: e.target.value })
+                          }
+                          placeholder="Nom"
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="edit-email">Email</Label>
+                      <Input
+                        id="edit-email"
+                        type="email"
+                        value={editForm.email}
+                        onChange={(e) =>
+                          setEditForm({ ...editForm, email: e.target.value })
+                        }
+                        placeholder="email@agence.dz"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="edit-password">Mot de passe (laisser vide pour ne pas changer)</Label>
+                      <Input
+                        id="edit-password"
+                        type="password"
+                        value={editForm.password}
+                        onChange={(e) =>
+                          setEditForm({ ...editForm, password: e.target.value })
+                        }
+                        placeholder="Nouveau mot de passe"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="edit-role">Rôle</Label>
+                      <Select
+                        value={editForm.role}
+                        onValueChange={(value: UserRole) =>
+                          setEditForm({ ...editForm, role: value })
+                        }
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Sélectionner un rôle" />
+                        </SelectTrigger>
+                        <SelectContent className="bg-popover">
+                          <SelectItem value="employee">Employé</SelectItem>
+                          <SelectItem value="admin">Administrateur</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  <DialogFooter>
+                    <Button variant="outline" onClick={() => setIsEditOpen(false)}>
+                      Annuler
+                    </Button>
+                    <Button onClick={handleUpdate} disabled={updateUser.isPending}>
+                      {updateUser.isPending ? 'Modification...' : 'Enregistrer'}
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
             </div>
           </div>
         </CardHeader>
@@ -327,6 +456,13 @@ const EmployeesPage = () => {
                           ) : (
                             <UserCheck className="h-4 w-4 text-success" />
                           )}
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleEditUser(user)}
+                        >
+                          <Pencil className="h-4 w-4 text-muted-foreground" />
                         </Button>
                       </TableCell>
                     )}

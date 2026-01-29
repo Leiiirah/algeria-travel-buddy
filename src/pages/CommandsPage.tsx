@@ -48,7 +48,7 @@ import { CommandData, calculateRemainingBalance, calculateNetProfit } from '@/ty
 import { CommandFilters } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { AdvancedFilter } from '@/components/search/AdvancedFilter';
-import { useCommands, useCommandStats, useCreateCommand, useDeleteCommand } from '@/hooks/useCommands';
+import { useCommands, useCommandStats, useCreateCommand, useUpdateCommand, useDeleteCommand } from '@/hooks/useCommands';
 import { useActiveServices } from '@/hooks/useServices';
 import { useSuppliers } from '@/hooks/useSuppliers';
 import { useDebounce } from '@/hooks/useDebounce';
@@ -63,6 +63,7 @@ const CommandsPage = () => {
   const [filters, setFilters] = useState<CommandFilters>({});
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedService, setSelectedService] = useState<string>('');
+  const [editingCommandId, setEditingCommandId] = useState<string | null>(null);
 
   // Form states
   const [formData, setFormData] = useState({
@@ -92,6 +93,7 @@ const CommandsPage = () => {
   const { data: services } = useActiveServices();
   const { data: suppliers } = useSuppliers();
   const createCommand = useCreateCommand();
+  const updateCommand = useUpdateCommand();
   const deleteCommand = useDeleteCommand();
 
   const commands = commandsData?.data ?? [];
@@ -151,6 +153,7 @@ const CommandsPage = () => {
       returnDate: '',
       description: '',
     });
+    setEditingCommandId(null);
   };
 
   const handleCreateCommand = () => {
@@ -200,24 +203,73 @@ const CommandsPage = () => {
         return;
     }
 
-    createCommand.mutate(
-      {
-        serviceId: selectedService,
-        data: data as unknown as Record<string, unknown>,
-        destination: formData.destination,
-        sellingPrice: formData.sellingPrice,
-        amountPaid: formData.amountPaid,
-        buyingPrice: formData.buyingPrice,
-        supplierId: formData.supplierId,
-      },
-      {
-        onSuccess: () => {
-          setIsDialogOpen(false);
-          setSelectedService('');
-          resetForm();
+    const commandPayload = {
+      serviceId: selectedService,
+      data: data as unknown as Record<string, unknown>,
+      destination: formData.destination,
+      sellingPrice: formData.sellingPrice,
+      amountPaid: formData.amountPaid,
+      buyingPrice: formData.buyingPrice,
+      supplierId: formData.supplierId,
+    };
+
+    if (editingCommandId) {
+      updateCommand.mutate(
+        {
+          id: editingCommandId,
+          data: commandPayload,
         },
-      }
-    );
+        {
+          onSuccess: () => {
+            setIsDialogOpen(false);
+            setSelectedService('');
+            resetForm();
+          },
+        }
+      );
+    } else {
+      createCommand.mutate(
+        commandPayload,
+        {
+          onSuccess: () => {
+            setIsDialogOpen(false);
+            setSelectedService('');
+            resetForm();
+          },
+        }
+      );
+    }
+  };
+
+  const handleEditCommand = (command: any) => {
+    setEditingCommandId(command.id);
+    setSelectedService(command.serviceId);
+
+    // Flatten data for form
+    const formUpdates: any = {
+      clientFullName: command.data.clientFullName || '',
+      phone: command.data.phone || '',
+      destination: command.destination || '',
+      sellingPrice: command.sellingPrice || 0,
+      amountPaid: command.amountPaid || 0,
+      buyingPrice: command.buyingPrice || 0,
+      supplierId: command.supplierId || '',
+    };
+
+    if (command.data.type === 'visa') {
+      formUpdates.firstName = command.data.firstName || '';
+      formUpdates.lastName = command.data.lastName || '';
+    } else if (command.data.type === 'residence') {
+      formUpdates.hotelName = command.data.hotelName || '';
+    } else if (command.data.type === 'ticket') {
+      formUpdates.departureDate = command.data.departureDate || '';
+      formUpdates.returnDate = command.data.returnDate || '';
+    } else if (command.data.type === 'dossier') {
+      formUpdates.description = command.data.description || '';
+    }
+
+    setFormData(prev => ({ ...prev, ...formUpdates }));
+    setIsDialogOpen(true);
   };
 
   const handleDeleteCommand = (commandId: string) => {
@@ -477,7 +529,7 @@ const CommandsPage = () => {
                 </DialogTrigger>
                 <DialogContent className="bg-card max-w-lg max-h-[90vh] overflow-y-auto">
                   <DialogHeader>
-                    <DialogTitle>Créer une commande</DialogTitle>
+                    <DialogTitle>{editingCommandId ? 'Modifier la commande' : 'Créer une commande'}</DialogTitle>
                     <DialogDescription>
                       Sélectionnez un service et remplissez les informations
                     </DialogDescription>
@@ -645,8 +697,8 @@ const CommandsPage = () => {
                     <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
                       Annuler
                     </Button>
-                    <Button onClick={handleCreateCommand} disabled={!selectedService || createCommand.isPending}>
-                      {createCommand.isPending ? 'Création...' : 'Créer'}
+                    <Button onClick={handleCreateCommand} disabled={!selectedService || createCommand.isPending || updateCommand.isPending}>
+                      {createCommand.isPending || updateCommand.isPending ? 'Enregistrement...' : (editingCommandId ? 'Modifier' : 'Créer')}
                     </Button>
                   </DialogFooter>
                 </DialogContent>
@@ -745,13 +797,13 @@ const CommandsPage = () => {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end" className="bg-popover">
-                              <DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleEditCommand(command)}>
                                 <Eye className="mr-2 h-4 w-4" />
                                 Voir détails
                               </DropdownMenuItem>
                               {canEdit && (
                                 <>
-                                  <DropdownMenuItem>
+                                  <DropdownMenuItem onClick={() => handleEditCommand(command)}>
                                     <Edit className="mr-2 h-4 w-4" />
                                     Modifier
                                   </DropdownMenuItem>
@@ -776,7 +828,7 @@ const CommandsPage = () => {
           )}
         </CardContent>
       </Card>
-    </DashboardLayout>
+    </DashboardLayout >
   );
 };
 

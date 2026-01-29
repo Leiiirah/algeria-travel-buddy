@@ -22,10 +22,10 @@ import { SearchModule } from './search/search.module';
       isGlobal: true,
       envFilePath: '.env',
     }),
-    // Global rate limiting: 10 requests per 60 seconds
+    // Global rate limiting: 100 requests per 60 seconds
     ThrottlerModule.forRoot([{
       ttl: 60000,
-      limit: 10,
+      limit: 100,
     }]),
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
