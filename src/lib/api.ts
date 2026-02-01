@@ -1,4 +1,4 @@
-import { User, Service, Supplier, Command, Payment, SupplierTransaction, Document, OmraHotel, OmraOrder, OmraVisa, OmraRoomType, OmraStatus, EmployeeTransaction, EmployeeBalance, EmployeeTransactionType, Expense, ExpenseStats, ExpenseCategory, PaymentMethod } from '@/types';
+import { User, Service, Supplier, Command, Payment, SupplierTransaction, Document, OmraHotel, OmraOrder, OmraVisa, OmraRoomType, OmraStatus, EmployeeTransaction, EmployeeBalance, EmployeeTransactionType, Expense, ExpenseStats, ExpenseCategory, PaymentMethod, SupplierOrder, SupplierOrderStatus, SupplierReceipt, SupplierInvoice, SupplierInvoiceStatus } from '@/types';
 
 // API base URL - includes /api prefix to match nginx proxy configuration
 const API_URL = (import.meta.env.VITE_API_URL || 'http://69.62.127.134:8080/api')
@@ -243,6 +243,81 @@ export interface ExpenseFilters {
   toDate?: string;
   search?: string;
 }
+
+// ==================== SUPPLIER ORDERS/RECEIPTS/INVOICES DTOs ====================
+
+export interface CreateSupplierOrderDto {
+  supplierId: string;
+  description: string;
+  quantity: number;
+  unitPrice: number;
+  orderDate: string;
+  notes?: string;
+}
+
+export interface UpdateSupplierOrderDto {
+  description?: string;
+  quantity?: number;
+  unitPrice?: number;
+  orderDate?: string;
+  status?: SupplierOrderStatus;
+  deliveredQuantity?: number;
+  notes?: string;
+}
+
+export interface CreateSupplierReceiptDto {
+  supplierId: string;
+  orderId?: string;
+  description: string;
+  quantity: number;
+  unitPrice: number;
+  receiptDate: string;
+  notes?: string;
+}
+
+export interface CreateSupplierInvoiceDto {
+  supplierId: string;
+  invoiceNumber: string;
+  description: string;
+  amount: number;
+  invoiceDate: string;
+  dueDate?: string;
+  fileUrl?: string;
+  notes?: string;
+}
+
+export interface UpdateSupplierInvoiceDto {
+  invoiceNumber?: string;
+  description?: string;
+  amount?: number;
+  invoiceDate?: string;
+  dueDate?: string;
+  status?: SupplierInvoiceStatus;
+  paidAmount?: number;
+  fileUrl?: string;
+  notes?: string;
+}
+
+export interface SupplierOrderStats {
+  totalOrders: number;
+  pendingCount: number;
+  deliveredCount: number;
+  totalValue: number;
+}
+
+export interface SupplierReceiptStats {
+  totalReceipts: number;
+  thisMonthCount: number;
+  totalValue: number;
+}
+
+export interface SupplierInvoiceStats {
+  totalInvoices: number;
+  unpaidCount: number;
+  overdueCount: number;
+  totalDue: number;
+}
+
 
 export interface OmraStats {
   orders: {
@@ -887,6 +962,90 @@ class ApiClient {
 
   deleteExpense = (id: string): Promise<void> =>
     this.request(`/expenses/${id}`, { method: 'DELETE' });
+
+  // ==================== SUPPLIER ORDERS ====================
+
+  getSupplierOrders = (supplierId?: string): Promise<SupplierOrder[]> => {
+    const query = supplierId ? `?supplierId=${supplierId}` : '';
+    return this.request(`/supplier-orders${query}`);
+  };
+
+  getSupplierOrderStats = (): Promise<SupplierOrderStats> =>
+    this.request('/supplier-orders/stats');
+
+  getSupplierOrder = (id: string): Promise<SupplierOrder> =>
+    this.request(`/supplier-orders/${id}`);
+
+  createSupplierOrder = (data: CreateSupplierOrderDto): Promise<SupplierOrder> =>
+    this.request('/supplier-orders', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+
+  updateSupplierOrder = (id: string, data: UpdateSupplierOrderDto): Promise<SupplierOrder> =>
+    this.request(`/supplier-orders/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    });
+
+  deleteSupplierOrder = (id: string): Promise<void> =>
+    this.request(`/supplier-orders/${id}`, { method: 'DELETE' });
+
+  // ==================== SUPPLIER RECEIPTS ====================
+
+  getSupplierReceipts = (supplierId?: string, orderId?: string): Promise<SupplierReceipt[]> => {
+    const params = new URLSearchParams();
+    if (supplierId) params.append('supplierId', supplierId);
+    if (orderId) params.append('orderId', orderId);
+    const query = params.toString();
+    return this.request(`/supplier-receipts${query ? `?${query}` : ''}`);
+  };
+
+  getSupplierReceiptStats = (): Promise<SupplierReceiptStats> =>
+    this.request('/supplier-receipts/stats');
+
+  getSupplierReceipt = (id: string): Promise<SupplierReceipt> =>
+    this.request(`/supplier-receipts/${id}`);
+
+  createSupplierReceipt = (data: CreateSupplierReceiptDto): Promise<SupplierReceipt> =>
+    this.request('/supplier-receipts', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+
+  deleteSupplierReceipt = (id: string): Promise<void> =>
+    this.request(`/supplier-receipts/${id}`, { method: 'DELETE' });
+
+  // ==================== SUPPLIER INVOICES ====================
+
+  getSupplierInvoices = (supplierId?: string, status?: string): Promise<SupplierInvoice[]> => {
+    const params = new URLSearchParams();
+    if (supplierId) params.append('supplierId', supplierId);
+    if (status) params.append('status', status);
+    const query = params.toString();
+    return this.request(`/supplier-invoices${query ? `?${query}` : ''}`);
+  };
+
+  getSupplierInvoiceStats = (): Promise<SupplierInvoiceStats> =>
+    this.request('/supplier-invoices/stats');
+
+  getSupplierInvoice = (id: string): Promise<SupplierInvoice> =>
+    this.request(`/supplier-invoices/${id}`);
+
+  createSupplierInvoice = (data: CreateSupplierInvoiceDto): Promise<SupplierInvoice> =>
+    this.request('/supplier-invoices', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+
+  updateSupplierInvoice = (id: string, data: UpdateSupplierInvoiceDto): Promise<SupplierInvoice> =>
+    this.request(`/supplier-invoices/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    });
+
+  deleteSupplierInvoice = (id: string): Promise<void> =>
+    this.request(`/supplier-invoices/${id}`, { method: 'DELETE' });
 }
 
 export const api = new ApiClient();
