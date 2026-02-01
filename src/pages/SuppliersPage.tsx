@@ -24,13 +24,14 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Plus, Search, Building2, Phone, Mail, Edit, Trash2 } from 'lucide-react';
+import { Plus, Building2, Phone, Mail, Edit, Trash2 } from 'lucide-react';
 import { getServiceTypeLabel } from '@/lib/utils';
 import { ServiceType } from '@/types';
 import { useSuppliers, useCreateSupplier, useDeleteSupplier, useUpdateSupplier } from '@/hooks/useSuppliers';
 import { SuppliersSkeleton } from '@/components/skeletons/SuppliersSkeleton';
 import { ErrorState } from '@/components/ui/error-state';
 import { EmptyState } from '@/components/ui/empty-state';
+import { useAuth } from '@/contexts/AuthContext';
 
 const SuppliersPage = () => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -44,6 +45,9 @@ const SuppliersPage = () => {
     email: '',
     serviceTypes: [] as ServiceType[],
   });
+
+  // Auth hook
+  const { isAdmin } = useAuth();
 
   // React Query hooks
   const { data: suppliers, isLoading, isError, error, refetch } = useSuppliers();
@@ -188,23 +192,24 @@ const SuppliersPage = () => {
                   ]}
                 />
               </div>
-              <Dialog open={isDialogOpen} onOpenChange={(open) => {
-                setIsDialogOpen(open);
-                if (!open) {
-                  setEditingId(null);
-                  setNewSupplier({ name: '', contact: '', phone: '', email: '', serviceTypes: [] });
-                }
-              }}>
-                <DialogTrigger asChild>
-                  <Button onClick={() => {
+              {isAdmin && (
+                <Dialog open={isDialogOpen} onOpenChange={(open) => {
+                  setIsDialogOpen(open);
+                  if (!open) {
                     setEditingId(null);
                     setNewSupplier({ name: '', contact: '', phone: '', email: '', serviceTypes: [] });
-                  }}>
-                    <Plus className="mr-2 h-4 w-4" />
-                    Ajouter
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="bg-card">
+                  }
+                }}>
+                  <DialogTrigger asChild>
+                    <Button onClick={() => {
+                      setEditingId(null);
+                      setNewSupplier({ name: '', contact: '', phone: '', email: '', serviceTypes: [] });
+                    }}>
+                      <Plus className="mr-2 h-4 w-4" />
+                      Ajouter
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="bg-card">
                   <DialogHeader>
                     <DialogTitle>{editingId ? 'Modifier le fournisseur' : 'Nouveau fournisseur'}</DialogTitle>
                     <DialogDescription>
@@ -289,6 +294,7 @@ const SuppliersPage = () => {
                   </DialogFooter>
                 </DialogContent>
               </Dialog>
+              )}
             </div>
           </div>
         </CardHeader>
@@ -308,7 +314,7 @@ const SuppliersPage = () => {
                   <TableHead>Coordonnées</TableHead>
                   <TableHead>Services</TableHead>
                   <TableHead>Statut</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
+                  {isAdmin && <TableHead className="text-right">Actions</TableHead>}
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -362,21 +368,23 @@ const SuppliersPage = () => {
                         {supplier.isActive ? 'Actif' : 'Inactif'}
                       </Badge>
                     </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
-                        <Button variant="ghost" size="icon" onClick={() => handleEditClick(supplier)}>
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleDeleteSupplier(supplier.id)}
-                          disabled={deleteSupplier.isPending}
-                        >
-                          <Trash2 className="h-4 w-4 text-destructive" />
-                        </Button>
-                      </div>
-                    </TableCell>
+                    {isAdmin && (
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-2">
+                          <Button variant="ghost" size="icon" onClick={() => handleEditClick(supplier)}>
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleDeleteSupplier(supplier.id)}
+                            disabled={deleteSupplier.isPending}
+                          >
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    )}
                   </TableRow>
                 ))}
               </TableBody>
