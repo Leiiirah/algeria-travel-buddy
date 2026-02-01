@@ -1,4 +1,4 @@
-import { User, Service, Supplier, Command, Payment, SupplierTransaction, Document, OmraHotel, OmraOrder, OmraVisa, OmraRoomType, OmraStatus } from '@/types';
+import { User, Service, Supplier, Command, Payment, SupplierTransaction, Document, OmraHotel, OmraOrder, OmraVisa, OmraRoomType, OmraStatus, EmployeeTransaction, EmployeeBalance, EmployeeTransactionType } from '@/types';
 
 // API base URL - includes /api prefix to match nginx proxy configuration
 const API_URL = (import.meta.env.VITE_API_URL || 'http://69.62.127.134:8080/api')
@@ -208,6 +208,17 @@ export interface OmraFilters {
   toDate?: string;
   page?: number;
   limit?: number;
+}
+
+// ==================== EMPLOYEE TRANSACTIONS DTOs ====================
+
+export interface CreateEmployeeTransactionDto {
+  employeeId: string;
+  type: EmployeeTransactionType;
+  amount: number;
+  date: string;
+  month?: string;
+  note?: string;
 }
 
 export interface OmraStats {
@@ -794,6 +805,29 @@ class ApiClient {
   // Stats
   getOmraStats = (): Promise<OmraStats> =>
     this.request('/omra/stats');
+
+  // ==================== EMPLOYEE TRANSACTIONS ====================
+
+  getEmployeeTransactions = (): Promise<EmployeeTransaction[]> =>
+    this.request('/employee-transactions');
+
+  getEmployeeTransactionsByEmployee = (employeeId: string): Promise<EmployeeTransaction[]> =>
+    this.request(`/employee-transactions/employee/${employeeId}`);
+
+  getEmployeeBalance = (employeeId: string): Promise<EmployeeBalance> =>
+    this.request(`/employee-transactions/employee/${employeeId}/balance`);
+
+  getAllEmployeeBalances = (): Promise<EmployeeBalance[]> =>
+    this.request('/employee-transactions/balances');
+
+  createEmployeeTransaction = (data: CreateEmployeeTransactionDto): Promise<EmployeeTransaction> =>
+    this.request('/employee-transactions', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+
+  deleteEmployeeTransaction = (id: string): Promise<void> =>
+    this.request(`/employee-transactions/${id}`, { method: 'DELETE' });
 }
 
 export const api = new ApiClient();

@@ -215,3 +215,37 @@ export const omraStatusLabels: Record<OmraStatus, string> = {
   termine: 'Terminé',
   annule: 'Annulé',
 };
+
+// ==================== EMPLOYEE TRANSACTIONS TYPES ====================
+
+export type EmployeeTransactionType = 'avance' | 'credit' | 'salaire';
+
+export interface EmployeeTransaction {
+  id: string;
+  employeeId: string;
+  employee?: User;
+  type: EmployeeTransactionType;
+  amount: number;
+  date: Date;
+  month?: string;
+  note?: string;
+  recordedBy: string;
+  recorder?: User;
+  createdAt: Date;
+}
+
+export interface EmployeeBalance {
+  employeeId: string;
+  firstName: string;
+  lastName: string;
+  totalAvances: number;
+  totalCredits: number;
+  totalSalaires: number;
+  balance: number;
+}
+
+export const employeeTransactionTypeLabels: Record<EmployeeTransactionType, string> = {
+  avance: 'Avance',
+  credit: 'Crédit',
+  salaire: 'Salaire',
+};
