@@ -1,0 +1,48 @@
+name: Deploy El Hikma
+
+on:
+  push:
+    branches:
+      - main  # I assumed 'main' based on your previous logs. Change if different.
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            echo "🚀 Starting Deployment for El Hikma..."
+            
+            # 1. Go to project folder
+            cd /var/www/elhikma
+            
+            # 2. Pull latest code
+            git config --global --add safe.directory /var/www/elhikma
+            git fetch origin main
+            git reset --hard origin/main
+            
+            # 3. Build Frontend (Root folder)
+            echo "📦 Building Frontend..."
+            npm install
+            npm run build
+            
+            # 4. Build Backend (Server folder)
+            echo "📦 Building Backend..."
+            cd server
+            npm install
+            npm run build
+            
+            # 5. Restart Backend
+            echo "🔄 Restarting Server..."
+            pm2 restart elhikma-backend
+            
+            # 6. Fix Permissions
+            cd ..
+            chown -R www-data:www-data /var/www/elhikma
+            
+            echo "✅ El Hikma Deployment Complete!"
