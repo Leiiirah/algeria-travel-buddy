@@ -1,61 +1,49 @@
 
-# Plan: Replace Logo and Favicon
 
-## Overview
+# Plan: Fix API URL Configuration Mismatch
 
-Replace the current El Hikma logo and favicon with the new logo image you provided.
+## Problem
 
----
+The production login returns a **404 Not Found** error because the frontend and backend have mismatched URL configurations.
 
-## Current State
-
-| Location | Current Setup |
-|----------|---------------|
-| Logo (`src/assets/logo-elhikma.png`) | Used in LoginPage and AppSidebar |
-| Favicon (`public/favicon.ico`) | Default favicon (no custom link tag in index.html) |
+**Request URL:** `http://69.62.127.134:8080/api/auth/login`  
+**Expected URL:** `http://69.62.127.134:8080/auth/login`
 
 ---
 
-## Implementation
+## Root Cause
 
-### Step 1: Copy New Logo to Assets Directory
+The backend NestJS server doesn't have a global `/api` prefix, but the frontend is configured to include `/api` in the base URL.
 
-Replace the existing logo file:
-```
-user-uploads://WhatsApp_Image_2026-01-20_at_17.03.35.jpeg 
-  → src/assets/logo-elhikma.png
-```
+---
 
-### Step 2: Copy New Logo for Favicon
+## Solution
 
-Copy the image to public directory for favicon use:
-```
-user-uploads://WhatsApp_Image_2026-01-20_at_17.03.35.jpeg 
-  → public/favicon.png
+Update `src/lib/api.ts` to remove `/api` from the default URL:
+
+**Before:**
+```typescript
+const API_URL = import.meta.env.VITE_API_URL || 'http://69.62.127.134:8080/api';
 ```
 
-### Step 3: Update index.html
-
-Add favicon link tag in the `<head>` section:
-```html
-<link rel="icon" href="/favicon.png" type="image/png">
+**After:**
+```typescript
+const API_URL = import.meta.env.VITE_API_URL || 'http://69.62.127.134:8080';
 ```
 
 ---
 
-## Files to Modify
+## File to Modify
 
-| File | Action |
+| File | Change |
 |------|--------|
-| `src/assets/logo-elhikma.png` | Replace with new image |
-| `public/favicon.png` | Copy new image as favicon |
-| `index.html` | Add favicon link tag |
+| `src/lib/api.ts` | Remove `/api` from the default URL |
 
 ---
 
 ## Result
 
-After the changes:
-- ✅ Login page logo updated
-- ✅ Sidebar logo updated  
-- ✅ Browser tab favicon updated
+After this change:
+- Login request will go to `http://69.62.127.134:8080/auth/login`
+- All other API endpoints will work correctly
+
