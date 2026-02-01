@@ -1,302 +1,396 @@
 
-# Plan: Supplier Orders, Receipts & Invoices in Situation Fournisseurs
+# Plan: Multi-language Support (Arabic & French)
 
 ## Overview
 
-This plan adds three new tabs to the **Situation Fournisseurs** page (`/comptabilite-fournisseurs`) for comprehensive supplier purchase management:
+This plan implements internationalization (i18n) using **react-i18next**, the industry-standard solution for React applications. The system will support:
 
-1. **Commandes** - Bulk purchases from suppliers (e.g., "10 tickets from Turkish Airlines")
-2. **Reçus** - What the agency actually received/bought from suppliers
-3. **Factures** - Invoices received from suppliers
+- **French (fr)** - Current language (default)
+- **Arabic (ar)** - With full RTL (right-to-left) support
 
-The existing tabs (Situation Fournisseurs, Historique Transactions) will remain unchanged.
+Users will be able to switch languages via a dropdown in the header, and their preference will be saved in localStorage.
 
 ---
 
-## Updated Tab Structure
+## Architecture
 
 ```text
-+----------------------------------------------------------+
-| Situation Fournisseurs                                    |
-+----------------------------------------------------------+
-| [Situation] [Historique] [Commandes] [Reçus] [Factures]  |
-+----------------------------------------------------------+
+src/
+├── i18n/
+│   ├── index.ts                 # i18n configuration
+│   ├── locales/
+│   │   ├── fr/
+│   │   │   ├── common.json      # Common UI elements
+│   │   │   ├── auth.json        # Login/auth strings
+│   │   │   ├── dashboard.json   # Dashboard page
+│   │   │   ├── commands.json    # Commands page
+│   │   │   ├── suppliers.json   # Suppliers pages
+│   │   │   ├── employees.json   # Employees pages
+│   │   │   ├── omra.json        # Omra page
+│   │   │   ├── documents.json   # Documents page
+│   │   │   ├── expenses.json    # Expenses page
+│   │   │   └── validation.json  # Form validation messages
+│   │   └── ar/
+│   │       └── ... (same structure)
+│   └── LanguageContext.tsx      # Language state management
 ```
 
 ---
 
-## Data Model
+## Implementation Details
 
-### 1. Supplier Orders (supplier_orders)
+### 1. Dependencies
 
-Tracks bulk purchases made from suppliers.
+Install the required packages:
+- `i18next` - Core i18n library
+- `react-i18next` - React bindings
+- `i18next-browser-languagedetector` - Auto-detect user language
 
-| Column | Type | Description |
-|--------|------|-------------|
-| `id` | UUID | Primary key |
-| `supplierId` | UUID | Foreign key to supplier |
-| `orderNumber` | VARCHAR | Auto-generated: SO-YYYYMMDD-XXX |
-| `description` | TEXT | What was ordered |
-| `quantity` | INTEGER | Number of items ordered |
-| `unitPrice` | DECIMAL | Price per unit |
-| `totalAmount` | DECIMAL | quantity × unitPrice |
-| `orderDate` | DATE | Date of the order |
-| `status` | ENUM | `en_attente`, `livre`, `partiel`, `annule` |
-| `deliveredQuantity` | INTEGER | Items received so far |
-| `notes` | TEXT | Additional notes |
-| `createdBy` | UUID | User who created |
-| `createdAt` | TIMESTAMP | Auto-generated |
+### 2. i18n Configuration
 
-### 2. Receipts (supplier_receipts)
+Create `src/i18n/index.ts`:
 
-Tracks what the agency actually received from suppliers.
+```typescript
+import i18n from 'i18next';
+import { initReactI18next } from 'react-i18next';
+import LanguageDetector from 'i18next-browser-languagedetector';
 
-| Column | Type | Description |
-|--------|------|-------------|
-| `id` | UUID | Primary key |
-| `supplierId` | UUID | Foreign key to supplier |
-| `orderId` | UUID | Optional link to supplier order |
-| `receiptNumber` | VARCHAR | Auto-generated: REC-YYYYMMDD-XXX |
-| `description` | TEXT | What was received |
-| `quantity` | INTEGER | Number of items received |
-| `unitPrice` | DECIMAL | Price per unit |
-| `totalAmount` | DECIMAL | quantity × unitPrice |
-| `receiptDate` | DATE | Date of receipt |
-| `notes` | TEXT | Additional notes |
-| `createdBy` | UUID | User who recorded |
-| `createdAt` | TIMESTAMP | Auto-generated |
+// Import translation files
+import frCommon from './locales/fr/common.json';
+import frAuth from './locales/fr/auth.json';
+// ... more imports
 
-### 3. Invoices (supplier_invoices)
+i18n
+  .use(LanguageDetector)
+  .use(initReactI18next)
+  .init({
+    resources: {
+      fr: {
+        common: frCommon,
+        auth: frAuth,
+        // ...
+      },
+      ar: {
+        common: arCommon,
+        auth: arAuth,
+        // ...
+      },
+    },
+    fallbackLng: 'fr',
+    defaultNS: 'common',
+    interpolation: {
+      escapeValue: false,
+    },
+    detection: {
+      order: ['localStorage', 'navigator'],
+      caches: ['localStorage'],
+    },
+  });
 
-Tracks invoices received from suppliers.
-
-| Column | Type | Description |
-|--------|------|-------------|
-| `id` | UUID | Primary key |
-| `supplierId` | UUID | Foreign key to supplier |
-| `invoiceNumber` | VARCHAR | Invoice number from supplier |
-| `internalRef` | VARCHAR | Auto-generated: INV-YYYYMMDD-XXX |
-| `description` | TEXT | Invoice description |
-| `amount` | DECIMAL | Invoice amount |
-| `invoiceDate` | DATE | Date on the invoice |
-| `dueDate` | DATE | Payment due date |
-| `status` | ENUM | `non_paye`, `partiel`, `paye` |
-| `paidAmount` | DECIMAL | Amount already paid |
-| `fileUrl` | VARCHAR | Path to uploaded file |
-| `notes` | TEXT | Additional notes |
-| `createdBy` | UUID | User who recorded |
-| `createdAt` | TIMESTAMP | Auto-generated |
-
----
-
-## Status Enums
-
-**Order Status:**
-- `en_attente` - Pending
-- `livre` - Fully delivered
-- `partiel` - Partially delivered
-- `annule` - Cancelled
-
-**Invoice Status:**
-- `non_paye` - Not paid
-- `partiel` - Partially paid
-- `paye` - Fully paid
-
----
-
-## Backend Implementation (NestJS)
-
-### New Modules
-
-```text
-server/src/
-├── supplier-orders/
-│   ├── entities/supplier-order.entity.ts
-│   ├── dto/create-supplier-order.dto.ts
-│   ├── dto/update-supplier-order.dto.ts
-│   ├── supplier-orders.service.ts
-│   ├── supplier-orders.controller.ts
-│   └── supplier-orders.module.ts
-├── supplier-receipts/
-│   ├── entities/supplier-receipt.entity.ts
-│   ├── dto/create-supplier-receipt.dto.ts
-│   ├── supplier-receipts.service.ts
-│   ├── supplier-receipts.controller.ts
-│   └── supplier-receipts.module.ts
-└── supplier-invoices/
-    ├── entities/supplier-invoice.entity.ts
-    ├── dto/create-supplier-invoice.dto.ts
-    ├── dto/update-supplier-invoice.dto.ts
-    ├── supplier-invoices.service.ts
-    ├── supplier-invoices.controller.ts
-    └── supplier-invoices.module.ts
+export default i18n;
 ```
 
-### API Endpoints
+### 3. RTL Support
 
-**Supplier Orders:**
-- `GET /supplier-orders` - List all (with optional supplierId filter)
-- `GET /supplier-orders/:id` - Get single order
-- `POST /supplier-orders` - Create new order
-- `PATCH /supplier-orders/:id` - Update order
-- `DELETE /supplier-orders/:id` - Delete order
+Create `src/hooks/useDirection.ts` to manage text direction:
 
-**Supplier Receipts:**
-- `GET /supplier-receipts` - List all (with filters)
-- `GET /supplier-receipts/:id` - Get single receipt
-- `POST /supplier-receipts` - Create receipt (auto-updates linked order)
-- `DELETE /supplier-receipts/:id` - Delete receipt
+```typescript
+export const useDirection = () => {
+  const { i18n } = useTranslation();
+  const direction = i18n.language === 'ar' ? 'rtl' : 'ltr';
+  
+  useEffect(() => {
+    document.documentElement.dir = direction;
+    document.documentElement.lang = i18n.language;
+  }, [direction, i18n.language]);
+  
+  return direction;
+};
+```
 
-**Supplier Invoices:**
-- `GET /supplier-invoices` - List all (with filters)
-- `GET /supplier-invoices/:id` - Get single invoice
-- `POST /supplier-invoices` - Create invoice
-- `PATCH /supplier-invoices/:id` - Update invoice
-- `DELETE /supplier-invoices/:id` - Delete invoice
+### 4. Language Switcher Component
+
+Create `src/components/layout/LanguageSwitcher.tsx`:
+
+```typescript
+// Dropdown with French/Arabic options
+// Shows current language with flag/icon
+// Updates i18n.language and direction on change
+```
+
+### 5. Translation Files Structure
+
+**French (`src/i18n/locales/fr/common.json`):**
+```json
+{
+  "navigation": {
+    "dashboard": "Tableau de bord",
+    "commands": "Commandes",
+    "omra": "Omra",
+    "documents": "Documents",
+    "employees": "Employés",
+    "suppliers": "Fournisseurs",
+    "supplierAccounting": "Situation Fournisseurs",
+    "employeeAccounting": "Comptabilité Employés",
+    "accounting": "Comptabilité",
+    "services": "Services",
+    "expenses": "Dépenses"
+  },
+  "actions": {
+    "add": "Ajouter",
+    "edit": "Modifier",
+    "delete": "Supprimer",
+    "save": "Enregistrer",
+    "cancel": "Annuler",
+    "search": "Rechercher",
+    "filter": "Filtrer",
+    "export": "Exporter",
+    "refresh": "Actualiser"
+  },
+  "status": {
+    "pending": "En attente",
+    "inProgress": "En cours",
+    "completed": "Terminé",
+    "cancelled": "Annulé",
+    "paid": "Payé",
+    "partial": "Partiel",
+    "unpaid": "Non payé"
+  }
+}
+```
+
+**Arabic (`src/i18n/locales/ar/common.json`):**
+```json
+{
+  "navigation": {
+    "dashboard": "لوحة التحكم",
+    "commands": "الطلبات",
+    "omra": "العمرة",
+    "documents": "المستندات",
+    "employees": "الموظفون",
+    "suppliers": "الموردون",
+    "supplierAccounting": "حالة الموردين",
+    "employeeAccounting": "محاسبة الموظفين",
+    "accounting": "المحاسبة",
+    "services": "الخدمات",
+    "expenses": "المصروفات"
+  },
+  "actions": {
+    "add": "إضافة",
+    "edit": "تعديل",
+    "delete": "حذف",
+    "save": "حفظ",
+    "cancel": "إلغاء",
+    "search": "بحث",
+    "filter": "تصفية",
+    "export": "تصدير",
+    "refresh": "تحديث"
+  },
+  "status": {
+    "pending": "قيد الانتظار",
+    "inProgress": "قيد التنفيذ",
+    "completed": "مكتمل",
+    "cancelled": "ملغى",
+    "paid": "مدفوع",
+    "partial": "جزئي",
+    "unpaid": "غير مدفوع"
+  }
+}
+```
+
+### 6. Component Updates
+
+**Usage Example (Before):**
+```tsx
+<CardTitle>Tableau de bord</CardTitle>
+<Button>Ajouter</Button>
+```
+
+**Usage Example (After):**
+```tsx
+import { useTranslation } from 'react-i18next';
+
+const { t } = useTranslation();
+
+<CardTitle>{t('navigation.dashboard')}</CardTitle>
+<Button>{t('actions.add')}</Button>
+```
+
+### 7. Utility Functions Update
+
+Update `src/lib/utils.ts` to use translations:
+
+```typescript
+// Before
+export const getCommandStatusLabel = (status: string): string => {
+  const labels: Record<string, string> = {
+    en_attente: 'En attente',
+    // ...
+  };
+  return labels[status] || status;
+};
+
+// After - Move labels to translation files
+// The component will use t('status.pending') directly
+```
 
 ---
 
-## Frontend Implementation
+## Files to Create
 
-### Updated SupplierAccountingPage
+| File | Description |
+|------|-------------|
+| `src/i18n/index.ts` | i18n configuration |
+| `src/i18n/locales/fr/common.json` | French common translations |
+| `src/i18n/locales/fr/auth.json` | French auth translations |
+| `src/i18n/locales/fr/dashboard.json` | French dashboard translations |
+| `src/i18n/locales/fr/commands.json` | French commands translations |
+| `src/i18n/locales/fr/suppliers.json` | French suppliers translations |
+| `src/i18n/locales/fr/employees.json` | French employees translations |
+| `src/i18n/locales/fr/omra.json` | French Omra translations |
+| `src/i18n/locales/fr/documents.json` | French documents translations |
+| `src/i18n/locales/fr/expenses.json` | French expenses translations |
+| `src/i18n/locales/fr/validation.json` | French validation messages |
+| `src/i18n/locales/ar/common.json` | Arabic common translations |
+| `src/i18n/locales/ar/auth.json` | Arabic auth translations |
+| `src/i18n/locales/ar/dashboard.json` | Arabic dashboard translations |
+| `src/i18n/locales/ar/commands.json` | Arabic commands translations |
+| `src/i18n/locales/ar/suppliers.json` | Arabic suppliers translations |
+| `src/i18n/locales/ar/employees.json` | Arabic employees translations |
+| `src/i18n/locales/ar/omra.json` | Arabic Omra translations |
+| `src/i18n/locales/ar/documents.json` | Arabic documents translations |
+| `src/i18n/locales/ar/expenses.json` | Arabic expenses translations |
+| `src/i18n/locales/ar/validation.json` | Arabic validation messages |
+| `src/hooks/useDirection.ts` | RTL direction hook |
+| `src/components/layout/LanguageSwitcher.tsx` | Language dropdown component |
 
-The page will be restructured to include 5 tabs:
+---
 
-1. **Situation** (existing) - Supplier balances
-2. **Historique** (existing) - Transaction history
-3. **Commandes** (new) - Bulk orders to suppliers
-4. **Reçus** (new) - Items received from suppliers
-5. **Factures** (new) - Supplier invoices
+## Files to Modify
 
-### New Components
-
-| Component | Description |
-|-----------|-------------|
-| `SupplierOrdersTab.tsx` | Orders list with filters, create/edit dialog |
-| `SupplierReceiptsTab.tsx` | Receipts list with filters, create dialog |
-| `SupplierInvoicesTab.tsx` | Invoices list with filters, payment tracking |
-
-### New Hooks
-
-| Hook | Purpose |
+| File | Changes |
 |------|---------|
-| `useSupplierOrders.ts` | CRUD operations for orders |
-| `useSupplierReceipts.ts` | CRUD operations for receipts |
-| `useSupplierInvoices.ts` | CRUD operations for invoices |
+| `package.json` | Add i18next dependencies |
+| `src/main.tsx` | Import i18n configuration |
+| `src/App.tsx` | Add direction management |
+| `src/index.css` | Enhance RTL styles |
+| `src/components/layout/AppHeader.tsx` | Add LanguageSwitcher |
+| `src/components/layout/AppSidebar.tsx` | Use translations |
+| `src/pages/LoginPage.tsx` | Use translations |
+| `src/pages/DashboardPage.tsx` | Use translations |
+| `src/pages/CommandsPage.tsx` | Use translations |
+| `src/pages/SuppliersPage.tsx` | Use translations |
+| `src/pages/SupplierAccountingPage.tsx` | Use translations |
+| `src/pages/EmployeesPage.tsx` | Use translations |
+| `src/pages/EmployeeAccountingPage.tsx` | Use translations |
+| `src/pages/OmraPage.tsx` | Use translations |
+| `src/pages/DocumentsPage.tsx` | Use translations |
+| `src/pages/ExpensesPage.tsx` | Use translations |
+| `src/pages/ServicesPage.tsx` | Use translations |
+| `src/pages/AccountingPage.tsx` | Use translations |
+| `src/pages/NotFound.tsx` | Use translations |
+| `src/lib/utils.ts` | Update label functions to use i18n |
+| `src/contexts/AuthContext.tsx` | Use translations for error messages |
+| `src/components/ui/empty-state.tsx` | Use translations |
+| `src/components/ui/error-state.tsx` | Use translations |
+| `src/components/search/GlobalSearch.tsx` | Use translations |
+| `src/components/search/AdvancedFilter.tsx` | Use translations |
 
 ---
 
-## UI Mockups
+## RTL Styling Enhancements
 
-### Commandes Tab
+Add to `src/index.css`:
+
+```css
+/* RTL-specific adjustments */
+[dir="rtl"] .sidebar {
+  border-left: 1px solid var(--sidebar-border);
+  border-right: none;
+}
+
+[dir="rtl"] .ml-auto {
+  margin-left: 0;
+  margin-right: auto;
+}
+
+[dir="rtl"] .space-x-4 > * + * {
+  margin-right: 1rem;
+  margin-left: 0;
+}
+
+/* RTL icon flipping */
+[dir="rtl"] .icon-directional {
+  transform: scaleX(-1);
+}
+```
+
+---
+
+## Language Switcher UI
+
+The language switcher will be added to the header, showing:
+
 ```text
 +----------------------------------------------------------+
-| [+ Nouvelle Commande]                                    |
-+----------------------------------------------------------+
-| En Attente     | Livrées        | Valeur Totale          |
-| 3 commandes    | 12 commandes   | 1,250,000 DZD          |
-+----------------------------------------------------------+
-| [Search...] [Filtres]                                    |
-+----------------------------------------------------------+
-| N° Commande | Fournisseur | Description      | Statut   |
-| SO-20260201 | Turkish Air | 10 billets IST   | En att.  |
-| SO-20260128 | VFS Global  | 5 RDV visa       | Livré    |
+| [Sidebar] Tableau de bord              [FR/ع] [Bell] ... |
 +----------------------------------------------------------+
 ```
 
-### Reçus Tab
-```text
-+----------------------------------------------------------+
-| [+ Nouveau Reçu]                                         |
-+----------------------------------------------------------+
-| Total Reçus    | Ce Mois         | Valeur Totale         |
-| 45 reçus       | 8 reçus         | 3,200,000 DZD         |
-+----------------------------------------------------------+
-| [Search...] [Filtres]                                    |
-+----------------------------------------------------------+
-| N° Reçu     | Fournisseur | Description      | Montant  |
-| REC-20260201| Turkish Air | 5 billets IST    | 160,000  |
-+----------------------------------------------------------+
-```
-
-### Factures Tab
-```text
-+----------------------------------------------------------+
-| [+ Nouvelle Facture]                                     |
-+----------------------------------------------------------+
-| Non Payées     | En Retard       | Total Dû              |
-| 5 factures     | 2 factures      | 450,000 DZD           |
-+----------------------------------------------------------+
-| [Search...] [Filtres]                                    |
-+----------------------------------------------------------+
-| N° Facture  | Fournisseur | Montant  | Échéance | Statut |
-| INV-001     | VFS Global  | 150,000  | 15/02    | Non payé|
-+----------------------------------------------------------+
-```
+Dropdown options:
+- French flag + "Français"
+- Arabic flag + "العربية"
 
 ---
 
-## Workflow Examples
+## Key Features
 
-### Order → Receipt Flow
-1. Create order: "10 billets Turkish Airlines @ 32,000 DZD"
-2. Order status: `en_attente`
-3. When 5 tickets received, create receipt linked to order
-4. Order auto-updates: status = `partiel`, deliveredQuantity = 5
-5. Remaining 5 received → create receipt → status = `livre`
-
-### Invoice Payment Flow
-1. Receive invoice from supplier
-2. Create invoice entry with amount and due date
-3. Partial payment → update paidAmount
-4. Status auto-updates: `non_paye` → `partiel` → `paye`
+1. **Automatic Language Detection** - Detects browser language preference
+2. **Persistent Selection** - Saves language choice in localStorage
+3. **RTL Support** - Full right-to-left layout for Arabic
+4. **Namespace Organization** - Translations split by feature/page
+5. **Fallback** - Falls back to French if translation missing
+6. **Type Safety** - TypeScript support for translation keys
 
 ---
 
-## Files Summary
+## Implementation Order
 
-| File | Action |
-|------|--------|
-| **Backend - Orders** | |
-| `server/src/supplier-orders/entities/supplier-order.entity.ts` | Create |
-| `server/src/supplier-orders/dto/create-supplier-order.dto.ts` | Create |
-| `server/src/supplier-orders/dto/update-supplier-order.dto.ts` | Create |
-| `server/src/supplier-orders/supplier-orders.service.ts` | Create |
-| `server/src/supplier-orders/supplier-orders.controller.ts` | Create |
-| `server/src/supplier-orders/supplier-orders.module.ts` | Create |
-| **Backend - Receipts** | |
-| `server/src/supplier-receipts/entities/supplier-receipt.entity.ts` | Create |
-| `server/src/supplier-receipts/dto/create-supplier-receipt.dto.ts` | Create |
-| `server/src/supplier-receipts/supplier-receipts.service.ts` | Create |
-| `server/src/supplier-receipts/supplier-receipts.controller.ts` | Create |
-| `server/src/supplier-receipts/supplier-receipts.module.ts` | Create |
-| **Backend - Invoices** | |
-| `server/src/supplier-invoices/entities/supplier-invoice.entity.ts` | Create |
-| `server/src/supplier-invoices/dto/create-supplier-invoice.dto.ts` | Create |
-| `server/src/supplier-invoices/dto/update-supplier-invoice.dto.ts` | Create |
-| `server/src/supplier-invoices/supplier-invoices.service.ts` | Create |
-| `server/src/supplier-invoices/supplier-invoices.controller.ts` | Create |
-| `server/src/supplier-invoices/supplier-invoices.module.ts` | Create |
-| `server/src/app.module.ts` | Modify (add 3 modules) |
-| **Frontend** | |
-| `src/types/index.ts` | Modify (add new types) |
-| `src/lib/api.ts` | Modify (add new API methods) |
-| `src/hooks/useSupplierOrders.ts` | Create |
-| `src/hooks/useSupplierReceipts.ts` | Create |
-| `src/hooks/useSupplierInvoices.ts` | Create |
-| `src/components/suppliers/SupplierOrdersTab.tsx` | Create |
-| `src/components/suppliers/SupplierReceiptsTab.tsx` | Create |
-| `src/components/suppliers/SupplierInvoicesTab.tsx` | Create |
-| `src/pages/SupplierAccountingPage.tsx` | Modify (add 3 tabs) |
+1. Install dependencies and create i18n configuration
+2. Create all French translation files (extracting existing strings)
+3. Create Arabic translation files
+4. Add LanguageSwitcher component
+5. Add useDirection hook for RTL management
+6. Update main.tsx and App.tsx
+7. Update layout components (Header, Sidebar)
+8. Update pages one by one
+9. Update utility functions
+10. Enhance RTL CSS styles
+11. Test both languages thoroughly
 
 ---
 
-## After Implementation
+## Translation Scope
 
-On your VPS, run:
-```bash
-cd server && npm run build
-pm2 restart all
-```
+The following text will be translated:
 
-The new database tables will be created automatically via TypeORM synchronize.
+- Navigation menu items
+- Page titles and subtitles
+- Button labels (Add, Edit, Delete, Save, Cancel)
+- Table headers
+- Form labels and placeholders
+- Status labels (En attente, En cours, Terminé, etc.)
+- Payment status (Payé, Partiel, Non payé)
+- Error messages and validation messages
+- Empty states and loading messages
+- Notification messages (toast)
+- Date/number formatting (locale-aware)
+
+---
+
+## Notes
+
+- The Tajawal font already supports Arabic characters
+- Currency formatting (DZD) remains the same for both languages
+- Dates will be formatted according to locale preferences
+- Numbers use locale-appropriate separators
