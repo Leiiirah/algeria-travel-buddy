@@ -26,95 +26,98 @@ const queryClient = new QueryClient({
   },
 });
 
-const RootRedirect = () => {
+
+const AppRoutes = () => {
   const { user, isLoading } = useAuth();
 
   if (isLoading) {
-    return null; // Or a loading spinner
+    return null;
   }
 
-  return user ? <Navigate to="/dashboard" replace /> : <Navigate to="/login" replace />;
+  return (
+    <Routes>
+      <Route path="/" element={user ? <Navigate to="/dashboard" replace /> : <Navigate to="/login" replace />} />
+      <Route path="/login" element={<LoginPage />} />
+      <Route
+        path="/dashboard"
+        element={
+          <ProtectedRoute>
+            <DashboardPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/employes"
+        element={
+          <ProtectedRoute adminOnly>
+            <EmployeesPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/services"
+        element={
+          <ProtectedRoute adminOnly>
+            <ServicesPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/commandes"
+        element={
+          <ProtectedRoute>
+            <CommandsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/documents"
+        element={
+          <ProtectedRoute>
+            <DocumentsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/fournisseurs"
+        element={
+          <ProtectedRoute>
+            <SuppliersPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/situation-fournisseurs"
+        element={
+          <ProtectedRoute>
+            <SupplierAccountingPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/comptabilite"
+        element={
+          <ProtectedRoute>
+            <AccountingPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route path="*" element={<NotFound />} />
+    </Routes>
+  );
 };
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <AuthProvider>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
-          <Routes>
-            <Route path="/" element={<RootRedirect />} />
-            <Route path="/login" element={<LoginPage />} />
-            <Route
-              path="/dashboard"
-              element={
-                <ProtectedRoute>
-                  <DashboardPage />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/employes"
-              element={
-                <ProtectedRoute adminOnly>
-                  <EmployeesPage />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/services"
-              element={
-                <ProtectedRoute adminOnly>
-                  <ServicesPage />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/commandes"
-              element={
-                <ProtectedRoute>
-                  <CommandsPage />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/documents"
-              element={
-                <ProtectedRoute>
-                  <DocumentsPage />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/fournisseurs"
-              element={
-                <ProtectedRoute>
-                  <SuppliersPage />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/situation-fournisseurs"
-              element={
-                <ProtectedRoute>
-                  <SupplierAccountingPage />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/comptabilite"
-              element={
-                <ProtectedRoute>
-                  <AccountingPage />
-                </ProtectedRoute>
-              }
-            />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
-      </TooltipProvider>
-    </AuthProvider>
+    <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+      <AuthProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <AppRoutes />
+        </TooltipProvider>
+      </AuthProvider>
+    </BrowserRouter>
   </QueryClientProvider>
 );
 
