@@ -14,6 +14,7 @@ import { SupplierTransactionsModule } from './supplier-transactions/supplier-tra
 import { DocumentsModule } from './documents/documents.module';
 import { AnalyticsModule } from './analytics/analytics.module';
 import { SearchModule } from './search/search.module';
+import { OmraModule } from './omra/omra.module';
 
 
 @Module({
@@ -52,6 +53,7 @@ import { SearchModule } from './search/search.module';
     DocumentsModule,
     AnalyticsModule,
     SearchModule,
+    OmraModule,
   ],
   providers: [
     {

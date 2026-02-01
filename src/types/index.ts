@@ -147,3 +147,71 @@ export interface ServiceStats {
   count: number;
   revenue: number;
 }
+
+// ==================== OMRA TYPES ====================
+
+export type OmraRoomType = 'chambre_1' | 'chambre_2' | 'chambre_3' | 'chambre_4' | 'chambre_5' | 'suite';
+export type OmraStatus = 'en_attente' | 'confirme' | 'termine' | 'annule';
+
+export interface OmraHotel {
+  id: string;
+  name: string;
+  location: string;
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface OmraOrder {
+  id: string;
+  clientName: string;
+  phone: string;
+  orderDate: Date;
+  periodFrom: Date;
+  periodTo: Date;
+  hotelId: string;
+  hotel?: OmraHotel;
+  roomType: OmraRoomType;
+  status: OmraStatus;
+  sellingPrice: number;
+  amountPaid: number;
+  buyingPrice: number;
+  notes?: string;
+  createdBy: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface OmraVisa {
+  id: string;
+  clientName: string;
+  phone: string;
+  visaDate: Date;
+  entryDate: Date;
+  hotelId: string;
+  hotel?: OmraHotel;
+  status: OmraStatus;
+  sellingPrice: number;
+  amountPaid: number;
+  buyingPrice: number;
+  notes?: string;
+  createdBy: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export const omraRoomTypeLabels: Record<OmraRoomType, string> = {
+  chambre_1: 'Chambre 1 personne',
+  chambre_2: 'Chambre 2 personnes',
+  chambre_3: 'Chambre 3 personnes',
+  chambre_4: 'Chambre 4 personnes',
+  chambre_5: 'Chambre 5 personnes',
+  suite: 'Suite',
+};
+
+export const omraStatusLabels: Record<OmraStatus, string> = {
+  en_attente: 'En attente',
+  confirme: 'Confirmé',
+  termine: 'Terminé',
+  annule: 'Annulé',
+};

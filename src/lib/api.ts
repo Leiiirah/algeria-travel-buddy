@@ -1,4 +1,4 @@
-import { User, Service, Supplier, Command, Payment, SupplierTransaction, Document } from '@/types';
+import { User, Service, Supplier, Command, Payment, SupplierTransaction, Document, OmraHotel, OmraOrder, OmraVisa, OmraRoomType, OmraStatus } from '@/types';
 
 // API base URL - includes /api prefix to match nginx proxy configuration
 const API_URL = (import.meta.env.VITE_API_URL || 'http://69.62.127.134:8080/api')
@@ -151,6 +151,85 @@ export interface SearchResult {
   label: string;
   sublabel: string;
   url: string;
+}
+
+// ==================== OMRA DTOs ====================
+
+export interface CreateOmraHotelDto {
+  name: string;
+  location?: string;
+}
+
+export interface UpdateOmraHotelDto {
+  name?: string;
+  location?: string;
+  isActive?: boolean;
+}
+
+export interface CreateOmraOrderDto {
+  clientName: string;
+  phone?: string;
+  orderDate: string;
+  periodFrom: string;
+  periodTo: string;
+  hotelId?: string;
+  roomType?: OmraRoomType;
+  sellingPrice?: number;
+  amountPaid?: number;
+  buyingPrice?: number;
+  notes?: string;
+}
+
+export interface UpdateOmraOrderDto extends Partial<CreateOmraOrderDto> {
+  status?: OmraStatus;
+}
+
+export interface CreateOmraVisaDto {
+  clientName: string;
+  phone?: string;
+  visaDate: string;
+  entryDate: string;
+  hotelId?: string;
+  sellingPrice?: number;
+  amountPaid?: number;
+  buyingPrice?: number;
+  notes?: string;
+}
+
+export interface UpdateOmraVisaDto extends Partial<CreateOmraVisaDto> {
+  status?: OmraStatus;
+}
+
+export interface OmraFilters {
+  status?: string;
+  hotelId?: string;
+  search?: string;
+  fromDate?: string;
+  toDate?: string;
+  page?: number;
+  limit?: number;
+}
+
+export interface OmraStats {
+  orders: {
+    total: number;
+    totalRevenue: number;
+    totalPaid: number;
+    totalProfit: number;
+    byStatus: Record<string, number>;
+  };
+  visas: {
+    total: number;
+    totalRevenue: number;
+    totalPaid: number;
+    totalProfit: number;
+    byStatus: Record<string, number>;
+  };
+  combined: {
+    totalRevenue: number;
+    totalPaid: number;
+    totalProfit: number;
+  };
 }
 
 export type ApiErrorType =
@@ -611,6 +690,110 @@ class ApiClient {
 
   search = (query: string, limit?: number): Promise<SearchResult[]> =>
     this.request(`/search?q=${encodeURIComponent(query)}${limit ? `&limit=${limit}` : ''}`);
+
+  // ==================== OMRA ====================
+
+  // Hotels
+  getOmraHotels = (): Promise<OmraHotel[]> =>
+    this.request('/omra/hotels');
+
+  getActiveOmraHotels = (): Promise<OmraHotel[]> =>
+    this.request('/omra/hotels/active');
+
+  createOmraHotel = (data: CreateOmraHotelDto): Promise<OmraHotel> =>
+    this.request('/omra/hotels', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+
+  updateOmraHotel = (id: string, data: UpdateOmraHotelDto): Promise<OmraHotel> =>
+    this.request(`/omra/hotels/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    });
+
+  deleteOmraHotel = (id: string): Promise<void> =>
+    this.request(`/omra/hotels/${id}`, { method: 'DELETE' });
+
+  // Orders
+  getOmraOrders = (filters?: OmraFilters): Promise<PaginatedResponse<OmraOrder>> => {
+    const params = new URLSearchParams();
+    if (filters) {
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value !== undefined && value !== '') {
+          params.append(key, String(value));
+        }
+      });
+    }
+    const query = params.toString();
+    return this.request(`/omra/orders${query ? `?${query}` : ''}`);
+  };
+
+  getOmraOrder = (id: string): Promise<OmraOrder> =>
+    this.request(`/omra/orders/${id}`);
+
+  createOmraOrder = (data: CreateOmraOrderDto): Promise<OmraOrder> =>
+    this.request('/omra/orders', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+
+  updateOmraOrder = (id: string, data: UpdateOmraOrderDto): Promise<OmraOrder> =>
+    this.request(`/omra/orders/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    });
+
+  updateOmraOrderStatus = (id: string, status: string): Promise<OmraOrder> =>
+    this.request(`/omra/orders/${id}/status`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status }),
+    });
+
+  deleteOmraOrder = (id: string): Promise<void> =>
+    this.request(`/omra/orders/${id}`, { method: 'DELETE' });
+
+  // Visas
+  getOmraVisas = (filters?: OmraFilters): Promise<PaginatedResponse<OmraVisa>> => {
+    const params = new URLSearchParams();
+    if (filters) {
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value !== undefined && value !== '') {
+          params.append(key, String(value));
+        }
+      });
+    }
+    const query = params.toString();
+    return this.request(`/omra/visas${query ? `?${query}` : ''}`);
+  };
+
+  getOmraVisa = (id: string): Promise<OmraVisa> =>
+    this.request(`/omra/visas/${id}`);
+
+  createOmraVisa = (data: CreateOmraVisaDto): Promise<OmraVisa> =>
+    this.request('/omra/visas', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+
+  updateOmraVisa = (id: string, data: UpdateOmraVisaDto): Promise<OmraVisa> =>
+    this.request(`/omra/visas/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    });
+
+  updateOmraVisaStatus = (id: string, status: string): Promise<OmraVisa> =>
+    this.request(`/omra/visas/${id}/status`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status }),
+    });
+
+  deleteOmraVisa = (id: string): Promise<void> =>
+    this.request(`/omra/visas/${id}`, { method: 'DELETE' });
+
+  // Stats
+  getOmraStats = (): Promise<OmraStats> =>
+    this.request('/omra/stats');
 }
 
 export const api = new ApiClient();

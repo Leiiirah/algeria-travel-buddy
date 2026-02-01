@@ -1,0 +1,518 @@
+import { useState } from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Badge } from '@/components/ui/badge';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Plus, MoreHorizontal, Edit, Trash2, Package } from 'lucide-react';
+import { OmraOrder, OmraRoomType, omraRoomTypeLabels, omraStatusLabels } from '@/types';
+import { OmraFilters } from '@/lib/api';
+import { formatDZD } from '@/lib/utils';
+import {
+  useOmraOrders,
+  useActiveOmraHotels,
+  useCreateOmraOrder,
+  useUpdateOmraOrder,
+  useUpdateOmraOrderStatus,
+  useDeleteOmraOrder,
+} from '@/hooks/useOmra';
+import { AdvancedFilter } from '@/components/search/AdvancedFilter';
+import { useDebounce } from '@/hooks/useDebounce';
+import { EmptyState } from '@/components/ui/empty-state';
+
+const statusColors: Record<string, string> = {
+  en_attente: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400',
+  confirme: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400',
+  termine: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400',
+  annule: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400',
+};
+
+const roomTypes: OmraRoomType[] = ['chambre_1', 'chambre_2', 'chambre_3', 'chambre_4', 'chambre_5', 'suite'];
+
+export const OmraOrdersTab = () => {
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filters, setFilters] = useState<OmraFilters>({});
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [editingOrder, setEditingOrder] = useState<OmraOrder | null>(null);
+  const [formData, setFormData] = useState({
+    clientName: '',
+    phone: '',
+    orderDate: new Date().toISOString().split('T')[0],
+    periodFrom: '',
+    periodTo: '',
+    hotelId: '',
+    roomType: 'chambre_2' as OmraRoomType,
+    sellingPrice: 0,
+    amountPaid: 0,
+    buyingPrice: 0,
+    notes: '',
+  });
+
+  const debouncedSearch = useDebounce(searchQuery, 500);
+
+  const { data: ordersData, isLoading } = useOmraOrders({
+    ...filters,
+    search: debouncedSearch || undefined,
+  });
+  const { data: hotels = [] } = useActiveOmraHotels();
+  const createOrder = useCreateOmraOrder();
+  const updateOrder = useUpdateOmraOrder();
+  const updateStatus = useUpdateOmraOrderStatus();
+  const deleteOrder = useDeleteOmraOrder();
+
+  const orders = ordersData?.data ?? [];
+
+  const resetForm = () => {
+    setFormData({
+      clientName: '',
+      phone: '',
+      orderDate: new Date().toISOString().split('T')[0],
+      periodFrom: '',
+      periodTo: '',
+      hotelId: '',
+      roomType: 'chambre_2',
+      sellingPrice: 0,
+      amountPaid: 0,
+      buyingPrice: 0,
+      notes: '',
+    });
+    setEditingOrder(null);
+  };
+
+  const handleOpenDialog = (order?: OmraOrder) => {
+    if (order) {
+      setEditingOrder(order);
+      setFormData({
+        clientName: order.clientName,
+        phone: order.phone || '',
+        orderDate: new Date(order.orderDate).toISOString().split('T')[0],
+        periodFrom: new Date(order.periodFrom).toISOString().split('T')[0],
+        periodTo: new Date(order.periodTo).toISOString().split('T')[0],
+        hotelId: order.hotelId || '',
+        roomType: order.roomType,
+        sellingPrice: Number(order.sellingPrice),
+        amountPaid: Number(order.amountPaid),
+        buyingPrice: Number(order.buyingPrice),
+        notes: order.notes || '',
+      });
+    } else {
+      resetForm();
+    }
+    setIsDialogOpen(true);
+  };
+
+  const handleSubmit = () => {
+    if (!formData.clientName.trim() || !formData.periodFrom || !formData.periodTo) return;
+
+    const payload = {
+      ...formData,
+      hotelId: formData.hotelId || undefined,
+    };
+
+    if (editingOrder) {
+      updateOrder.mutate(
+        { id: editingOrder.id, data: payload },
+        {
+          onSuccess: () => {
+            setIsDialogOpen(false);
+            resetForm();
+          },
+        }
+      );
+    } else {
+      createOrder.mutate(payload, {
+        onSuccess: () => {
+          setIsDialogOpen(false);
+          resetForm();
+        },
+      });
+    }
+  };
+
+  const handleDelete = (id: string) => {
+    if (confirm('Êtes-vous sûr de vouloir supprimer cette commande ?')) {
+      deleteOrder.mutate(id);
+    }
+  };
+
+  const handleStatusChange = (id: string, status: string) => {
+    updateStatus.mutate({ id, status });
+  };
+
+  const getHotelName = (hotelId: string) => {
+    return hotels.find((h) => h.id === hotelId)?.name || '-';
+  };
+
+  const formatDate = (date: Date | string) => {
+    return new Date(date).toLocaleDateString('fr-FR');
+  };
+
+  if (isLoading) {
+    return <div className="p-8 text-center text-muted-foreground">Chargement...</div>;
+  }
+
+  return (
+    <div className="space-y-6">
+      <Card className="border-none shadow-sm">
+        <CardHeader>
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <CardTitle>Commandes Omra</CardTitle>
+              <CardDescription>{ordersData?.total ?? 0} commandes au total</CardDescription>
+            </div>
+            <div className="flex flex-wrap gap-3">
+              <AdvancedFilter
+                searchQuery={searchQuery}
+                onSearchChange={setSearchQuery}
+                filters={filters}
+                onFilterChange={setFilters}
+                filterConfig={[
+                  {
+                    key: 'status',
+                    label: 'Statut',
+                    type: 'select',
+                    options: [
+                      { label: 'En attente', value: 'en_attente' },
+                      { label: 'Confirmé', value: 'confirme' },
+                      { label: 'Terminé', value: 'termine' },
+                      { label: 'Annulé', value: 'annule' },
+                    ],
+                  },
+                  {
+                    key: 'hotelId',
+                    label: 'Hôtel',
+                    type: 'select',
+                    options: hotels.map((h) => ({ label: h.name, value: h.id })),
+                  },
+                ]}
+              />
+              <Button onClick={() => handleOpenDialog()} className="gap-2">
+                <Plus className="h-4 w-4" />
+                Nouvelle Commande
+              </Button>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {orders.length === 0 ? (
+            <EmptyState
+              icon={Package}
+              title="Aucune commande"
+              description="Commencez par créer une commande Omra"
+              action={{
+                label: 'Nouvelle commande',
+                onClick: () => handleOpenDialog(),
+              }}
+            />
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Client</TableHead>
+                  <TableHead>Période</TableHead>
+                  <TableHead>Hôtel</TableHead>
+                  <TableHead>Chambre</TableHead>
+                  <TableHead>Prix</TableHead>
+                  <TableHead>Statut</TableHead>
+                  <TableHead className="w-[70px]">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {orders.map((order) => (
+                  <TableRow key={order.id}>
+                    <TableCell>
+                      <div>
+                        <p className="font-medium">{order.clientName}</p>
+                        <p className="text-sm text-muted-foreground">{order.phone}</p>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="text-sm">
+                        <p>{formatDate(order.periodFrom)}</p>
+                        <p className="text-muted-foreground">→ {formatDate(order.periodTo)}</p>
+                      </div>
+                    </TableCell>
+                    <TableCell>{order.hotel?.name || getHotelName(order.hotelId)}</TableCell>
+                    <TableCell>{omraRoomTypeLabels[order.roomType]}</TableCell>
+                    <TableCell>
+                      <div className="text-sm">
+                        <p className="font-medium">{formatDZD(Number(order.sellingPrice))}</p>
+                        <p className="text-muted-foreground">
+                          Reste: {formatDZD(Number(order.sellingPrice) - Number(order.amountPaid))}
+                        </p>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Select
+                        value={order.status}
+                        onValueChange={(value) => handleStatusChange(order.id, value)}
+                      >
+                        <SelectTrigger className="w-[130px] h-8">
+                          <Badge className={`${statusColors[order.status]} border-0`}>
+                            {omraStatusLabels[order.status]}
+                          </Badge>
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="en_attente">En attente</SelectItem>
+                          <SelectItem value="confirme">Confirmé</SelectItem>
+                          <SelectItem value="termine">Terminé</SelectItem>
+                          <SelectItem value="annule">Annulé</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </TableCell>
+                    <TableCell>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon">
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => handleOpenDialog(order)}>
+                            <Edit className="mr-2 h-4 w-4" />
+                            Modifier
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            className="text-destructive"
+                            onClick={() => handleDelete(order.id)}
+                          >
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Supprimer
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Dialog */}
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              {editingOrder ? 'Modifier la commande' : 'Nouvelle commande Omra'}
+            </DialogTitle>
+            <DialogDescription>
+              {editingOrder
+                ? 'Modifiez les informations de la commande'
+                : 'Créez une nouvelle commande pour le pèlerinage Omra'}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            {/* Client Info */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="clientName">Nom du client *</Label>
+                <Input
+                  id="clientName"
+                  value={formData.clientName}
+                  onChange={(e) => setFormData({ ...formData, clientName: e.target.value })}
+                  placeholder="Nom complet"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="phone">Téléphone</Label>
+                <Input
+                  id="phone"
+                  value={formData.phone}
+                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                  placeholder="Ex: 0550123456"
+                />
+              </div>
+            </div>
+
+            {/* Dates */}
+            <div className="grid grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="orderDate">Date commande</Label>
+                <Input
+                  id="orderDate"
+                  type="date"
+                  value={formData.orderDate}
+                  onChange={(e) => setFormData({ ...formData, orderDate: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="periodFrom">Période du *</Label>
+                <Input
+                  id="periodFrom"
+                  type="date"
+                  value={formData.periodFrom}
+                  onChange={(e) => setFormData({ ...formData, periodFrom: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="periodTo">Au *</Label>
+                <Input
+                  id="periodTo"
+                  type="date"
+                  value={formData.periodTo}
+                  onChange={(e) => setFormData({ ...formData, periodTo: e.target.value })}
+                />
+              </div>
+            </div>
+
+            {/* Hotel & Room */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Hôtel</Label>
+                <Select
+                  value={formData.hotelId}
+                  onValueChange={(value) => setFormData({ ...formData, hotelId: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Sélectionner un hôtel" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {hotels.map((hotel) => (
+                      <SelectItem key={hotel.id} value={hotel.id}>
+                        {hotel.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Type de chambre</Label>
+                <Select
+                  value={formData.roomType}
+                  onValueChange={(value) =>
+                    setFormData({ ...formData, roomType: value as OmraRoomType })
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {roomTypes.map((type) => (
+                      <SelectItem key={type} value={type}>
+                        {omraRoomTypeLabels[type]}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            {/* Prices */}
+            <div className="grid grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="sellingPrice">Prix de vente (DA)</Label>
+                <Input
+                  id="sellingPrice"
+                  type="number"
+                  value={formData.sellingPrice}
+                  onChange={(e) =>
+                    setFormData({ ...formData, sellingPrice: parseFloat(e.target.value) || 0 })
+                  }
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="amountPaid">Versement (DA)</Label>
+                <Input
+                  id="amountPaid"
+                  type="number"
+                  value={formData.amountPaid}
+                  onChange={(e) =>
+                    setFormData({ ...formData, amountPaid: parseFloat(e.target.value) || 0 })
+                  }
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="buyingPrice">Prix d'achat (DA)</Label>
+                <Input
+                  id="buyingPrice"
+                  type="number"
+                  value={formData.buyingPrice}
+                  onChange={(e) =>
+                    setFormData({ ...formData, buyingPrice: parseFloat(e.target.value) || 0 })
+                  }
+                />
+              </div>
+            </div>
+
+            {/* Summary */}
+            <div className="grid grid-cols-2 gap-4 p-4 bg-muted rounded-lg">
+              <div>
+                <p className="text-sm text-muted-foreground">Reste à payer</p>
+                <p className="text-lg font-bold">
+                  {formatDZD(formData.sellingPrice - formData.amountPaid)}
+                </p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Bénéfice net</p>
+                <p className="text-lg font-bold text-green-600">
+                  {formatDZD(formData.sellingPrice - formData.buyingPrice)}
+                </p>
+              </div>
+            </div>
+
+            {/* Notes */}
+            <div className="space-y-2">
+              <Label htmlFor="notes">Notes</Label>
+              <Textarea
+                id="notes"
+                value={formData.notes}
+                onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                placeholder="Notes supplémentaires..."
+                rows={2}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
+              Annuler
+            </Button>
+            <Button
+              onClick={handleSubmit}
+              disabled={
+                !formData.clientName.trim() ||
+                !formData.periodFrom ||
+                !formData.periodTo ||
+                createOrder.isPending ||
+                updateOrder.isPending
+              }
+            >
+              {editingOrder ? 'Enregistrer' : 'Créer'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+};
