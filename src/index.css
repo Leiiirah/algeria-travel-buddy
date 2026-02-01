@@ -164,14 +164,40 @@
     @apply font-bold tracking-tight;
     font-family: 'Tajawal', sans-serif;
   }
+}
 
-  /* RTL Support */
-  [dir="rtl"] {
+/* RTL Support */
+@layer utilities {
+  /* RTL-specific adjustments */
+  [dir="rtl"] .rtl\:flex-row-reverse {
+    flex-direction: row-reverse;
+  }
+
+  [dir="rtl"] .rtl\:space-x-reverse > :not([hidden]) ~ :not([hidden]) {
+    --tw-space-x-reverse: 1;
+  }
+
+  [dir="rtl"] .ltr\:ml-auto {
+    margin-left: 0;
+    margin-right: auto;
+  }
+
+  [dir="rtl"] .ltr\:mr-2 {
+    margin-right: 0;
+    margin-left: 0.5rem;
+  }
+
+  [dir="rtl"] .ltr\:text-left {
     text-align: right;
   }
 
-  [dir="rtl"] .flex-row {
-    flex-direction: row-reverse;
+  [dir="rtl"] .ltr\:text-right {
+    text-align: left;
+  }
+
+  /* RTL icon flipping for directional icons */
+  [dir="rtl"] .icon-directional {
+    transform: scaleX(-1);
   }
 }
 

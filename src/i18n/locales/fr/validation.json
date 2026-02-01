@@ -1,0 +1,19 @@
+{
+  "required": "Ce champ est requis",
+  "email": "Adresse email invalide",
+  "minLength": "Minimum {{min}} caractères requis",
+  "maxLength": "Maximum {{max}} caractères autorisés",
+  "min": "La valeur minimum est {{min}}",
+  "max": "La valeur maximum est {{max}}",
+  "number": "Veuillez entrer un nombre valide",
+  "positiveNumber": "Le nombre doit être positif",
+  "phone": "Numéro de téléphone invalide",
+  "date": "Date invalide",
+  "dateRange": "La date de fin doit être après la date de début",
+  "password": {
+    "minLength": "Le mot de passe doit contenir au moins {{min}} caractères",
+    "uppercase": "Le mot de passe doit contenir au moins une majuscule",
+    "lowercase": "Le mot de passe doit contenir au moins une minuscule",
+    "number": "Le mot de passe doit contenir au moins un chiffre"
+  }
+}

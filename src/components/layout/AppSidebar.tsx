@@ -1,4 +1,5 @@
 import { useLocation } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import {
   LayoutDashboard,
   Users,
@@ -31,75 +32,76 @@ import {
 } from '@/components/ui/sidebar';
 import logoElHikma from '@/assets/logo-elhikma.png';
 
-const mainMenuItems = [
-  {
-    title: 'Tableau de bord',
-    url: '/dashboard',
-    icon: LayoutDashboard,
-  },
-  {
-    title: 'Commandes',
-    url: '/commandes',
-    icon: Package,
-  },
-  {
-    title: 'Omra',
-    url: '/omra',
-    icon: Palmtree,
-  },
-  {
-    title: 'Documents',
-    url: '/documents',
-    icon: FolderOpen,
-  },
-];
-
-const managementMenuItems = [
-  {
-    title: 'Employés',
-    url: '/employes',
-    icon: Users,
-  },
-  {
-    title: 'Fournisseurs',
-    url: '/fournisseurs',
-    icon: Building2,
-  },
-  {
-    title: 'Situation Fournisseurs',
-    url: '/situation-fournisseurs',
-    icon: Wallet,
-  },
-  {
-    title: 'Comptabilité Employés',
-    url: '/comptabilite-employes',
-    icon: Users2,
-  },
-  {
-    title: 'Comptabilité',
-    url: '/comptabilite',
-    icon: Calculator,
-  },
-];
-
-const adminMenuItems = [
-  {
-    title: 'Services',
-    url: '/services',
-    icon: Settings,
-  },
-  {
-    title: 'Dépenses',
-    url: '/depenses',
-    icon: Receipt,
-  },
-];
-
 export function AppSidebar() {
+  const { t } = useTranslation();
   const { user, logout, isAdmin } = useAuth();
   const location = useLocation();
   const { state } = useSidebar();
   const isCollapsed = state === 'collapsed';
+
+  const mainMenuItems = [
+    {
+      titleKey: 'navigation.dashboard',
+      url: '/dashboard',
+      icon: LayoutDashboard,
+    },
+    {
+      titleKey: 'navigation.commands',
+      url: '/commandes',
+      icon: Package,
+    },
+    {
+      titleKey: 'navigation.omra',
+      url: '/omra',
+      icon: Palmtree,
+    },
+    {
+      titleKey: 'navigation.documents',
+      url: '/documents',
+      icon: FolderOpen,
+    },
+  ];
+
+  const managementMenuItems = [
+    {
+      titleKey: 'navigation.employees',
+      url: '/employes',
+      icon: Users,
+    },
+    {
+      titleKey: 'navigation.suppliers',
+      url: '/fournisseurs',
+      icon: Building2,
+    },
+    {
+      titleKey: 'navigation.supplierAccounting',
+      url: '/situation-fournisseurs',
+      icon: Wallet,
+    },
+    {
+      titleKey: 'navigation.employeeAccounting',
+      url: '/comptabilite-employes',
+      icon: Users2,
+    },
+    {
+      titleKey: 'navigation.accounting',
+      url: '/comptabilite',
+      icon: Calculator,
+    },
+  ];
+
+  const adminMenuItems = [
+    {
+      titleKey: 'navigation.services',
+      url: '/services',
+      icon: Settings,
+    },
+    {
+      titleKey: 'navigation.expenses',
+      url: '/depenses',
+      icon: Receipt,
+    },
+  ];
 
   return (
     <Sidebar collapsible="icon" className="border-r border-sidebar-border">
@@ -115,10 +117,10 @@ export function AppSidebar() {
           {!isCollapsed && (
             <div className="flex flex-col">
               <span className="text-sm font-bold text-sidebar-foreground">
-                El Hikma Tourisme
+                {t('company.name')}
               </span>
               <span className="text-xs text-sidebar-muted">
-                Tourisme et Voyage
+                {t('company.subtitle')}
               </span>
             </div>
           )}
@@ -128,16 +130,16 @@ export function AppSidebar() {
       <SidebarContent className="scrollbar-thin">
         <SidebarGroup>
           <SidebarGroupLabel className="text-sidebar-muted">
-            Principal
+            {t('groups.main')}
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {mainMenuItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
+                <SidebarMenuItem key={item.titleKey}>
                   <SidebarMenuButton
                     asChild
                     isActive={location.pathname === item.url}
-                    tooltip={item.title}
+                    tooltip={t(item.titleKey)}
                   >
                     <NavLink
                       to={item.url}
@@ -145,7 +147,7 @@ export function AppSidebar() {
                       activeClassName="bg-sidebar-primary/20 text-sidebar-primary"
                     >
                       <item.icon className="h-4 w-4" />
-                      <span>{item.title}</span>
+                      <span>{t(item.titleKey)}</span>
                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -156,16 +158,16 @@ export function AppSidebar() {
 
         <SidebarGroup>
           <SidebarGroupLabel className="text-sidebar-muted">
-            Gestion
+            {t('groups.management')}
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {managementMenuItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
+                <SidebarMenuItem key={item.titleKey}>
                   <SidebarMenuButton
                     asChild
                     isActive={location.pathname === item.url}
-                    tooltip={item.title}
+                    tooltip={t(item.titleKey)}
                   >
                     <NavLink
                       to={item.url}
@@ -173,7 +175,7 @@ export function AppSidebar() {
                       activeClassName="bg-sidebar-primary/20 text-sidebar-primary"
                     >
                       <item.icon className="h-4 w-4" />
-                      <span>{item.title}</span>
+                      <span>{t(item.titleKey)}</span>
                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -185,16 +187,16 @@ export function AppSidebar() {
         {isAdmin && (
           <SidebarGroup>
             <SidebarGroupLabel className="text-sidebar-muted">
-              Administration
+              {t('groups.administration')}
             </SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
                 {adminMenuItems.map((item) => (
-                  <SidebarMenuItem key={item.title}>
+                  <SidebarMenuItem key={item.titleKey}>
                     <SidebarMenuButton
                       asChild
                       isActive={location.pathname === item.url}
-                      tooltip={item.title}
+                      tooltip={t(item.titleKey)}
                     >
                       <NavLink
                         to={item.url}
@@ -202,7 +204,7 @@ export function AppSidebar() {
                         activeClassName="bg-sidebar-primary/20 text-sidebar-primary"
                       >
                         <item.icon className="h-4 w-4" />
-                        <span>{item.title}</span>
+                        <span>{t(item.titleKey)}</span>
                       </NavLink>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
@@ -227,7 +229,7 @@ export function AppSidebar() {
                     {user.firstName} {user.lastName}
                   </span>
                   <span className="text-xs text-sidebar-muted capitalize">
-                    {user.role === 'admin' ? 'Administrateur' : 'Employé'}
+                    {t(`roles.${user.role}`)}
                   </span>
                 </div>
               </div>
@@ -239,7 +241,7 @@ export function AppSidebar() {
               className="w-full justify-start gap-2 text-sidebar-muted hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
             >
               <LogOut className="h-4 w-4" />
-              {!isCollapsed && <span>Déconnexion</span>}
+              {!isCollapsed && <span>{t('user.logout')}</span>}
             </Button>
           </div>
         )}

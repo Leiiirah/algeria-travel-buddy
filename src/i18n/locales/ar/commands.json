@@ -1,0 +1,72 @@
+{
+  "title": "الطلبات",
+  "subtitle": "إدارة طلبات العملاء",
+  "stats": {
+    "totalPayments": "إجمالي المدفوعات",
+    "totalCredit": "إجمالي الدين (المتبقي)",
+    "totalProfit": "إجمالي الربح الصافي"
+  },
+  "list": {
+    "title": "قائمة الطلبات",
+    "count": "{{count}} طلب إجمالاً"
+  },
+  "table": {
+    "client": "العميل",
+    "service": "الخدمة",
+    "destination": "الوجهة",
+    "amounts": "المبالغ",
+    "sellingPrice": "سعر البيع",
+    "buyingPrice": "سعر الشراء",
+    "remaining": "المتبقي",
+    "profit": "الربح",
+    "supplier": "المورد",
+    "status": "الحالة",
+    "payment": "الدفع",
+    "actions": "الإجراءات"
+  },
+  "dialog": {
+    "createTitle": "طلب جديد",
+    "editTitle": "تعديل الطلب",
+    "selectService": "اختر خدمة",
+    "selectServiceDesc": "اختر نوع الخدمة لهذا الطلب"
+  },
+  "form": {
+    "service": "الخدمة",
+    "selectServicePlaceholder": "اختر خدمة",
+    "firstName": "الاسم الأول",
+    "lastName": "الاسم الأخير",
+    "clientFullName": "الاسم الكامل للعميل",
+    "phone": "الهاتف",
+    "destination": "الوجهة",
+    "hotelName": "اسم الفندق",
+    "departureDate": "تاريخ المغادرة",
+    "returnDate": "تاريخ العودة",
+    "description": "وصف الملف",
+    "sellingPrice": "سعر البيع (د.ج)",
+    "amountPaid": "المبلغ المدفوع (د.ج)",
+    "buyingPrice": "سعر الشراء (د.ج)",
+    "supplier": "المورد",
+    "selectSupplier": "اختر مورداً"
+  },
+  "calculations": {
+    "remaining": "المتبقي للدفع",
+    "profit": "الربح"
+  },
+  "status": {
+    "en_attente": "قيد الانتظار",
+    "en_cours": "قيد التنفيذ",
+    "termine": "مكتمل",
+    "annule": "ملغى"
+  },
+  "time": {
+    "locked": "مقفل",
+    "hoursRemaining": "{{hours}} ساعة متبقية",
+    "minutesRemaining": "{{minutes}} دقيقة متبقية"
+  },
+  "filters": {
+    "status": "الحالة",
+    "service": "الخدمة",
+    "supplier": "المورد"
+  },
+  "empty": "لم يتم العثور على طلبات"
+}

@@ -1,0 +1,35 @@
+{
+  "title": "Tableau de bord",
+  "subtitle": "Vue d'ensemble de votre agence",
+  "stats": {
+    "revenue": "Chiffre d'affaires",
+    "todayCommands": "Commandes du jour",
+    "todayCommandsDesc": "Nouvelles commandes aujourd'hui",
+    "inProgress": "En cours",
+    "inProgressDesc": "Commandes en traitement",
+    "unpaid": "Impayés",
+    "unpaidDesc": "Montant restant à percevoir"
+  },
+  "charts": {
+    "weeklyRevenue": "Revenus de la semaine",
+    "weeklyRevenueDesc": "Évolution des revenus sur 7 jours",
+    "serviceDistribution": "Répartition par service",
+    "serviceDistributionDesc": "Distribution des commandes par type",
+    "revenues": "Revenus",
+    "share": "Part"
+  },
+  "recentCommands": {
+    "title": "Commandes récentes",
+    "subtitle": "Les 5 dernières commandes enregistrées",
+    "empty": "Aucune commande récente"
+  },
+  "weekDays": {
+    "mon": "Lun",
+    "tue": "Mar",
+    "wed": "Mer",
+    "thu": "Jeu",
+    "fri": "Ven",
+    "sat": "Sam",
+    "sun": "Dim"
+  }
+}

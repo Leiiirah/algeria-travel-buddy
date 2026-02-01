@@ -3,6 +3,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { useDirection } from "@/hooks/useDirection";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import LoginPage from "./pages/LoginPage";
@@ -32,6 +33,9 @@ const queryClient = new QueryClient({
 
 const AppRoutes = () => {
   const { user, isLoading } = useAuth();
+  
+  // Initialize RTL/LTR direction based on language
+  useDirection();
 
   if (isLoading) {
     return null;

@@ -1,0 +1,45 @@
+{
+  "title": "Bibliothèque de documents",
+  "subtitle": "Gestion électronique des documents (GED)",
+  "categories": {
+    "all": "Tous",
+    "assurance": "Assurance",
+    "cnas": "CNAS",
+    "casnos": "CASNOS",
+    "autre": "Autre"
+  },
+  "list": {
+    "title": "Documents",
+    "count": "{{count}} document(s) trouvé(s)"
+  },
+  "dialog": {
+    "uploadTitle": "Téléverser un document",
+    "uploadDesc": "Ajoutez un nouveau document à la bibliothèque"
+  },
+  "form": {
+    "name": "Nom du document",
+    "namePlaceholder": "Ex: Attestation Assurance 2025",
+    "category": "Catégorie",
+    "selectCategory": "Sélectionner une catégorie",
+    "file": "Fichier PDF",
+    "dropzone": "Glissez-déposez ou cliquez pour sélectionner"
+  },
+  "actions": {
+    "upload": "Téléverser",
+    "uploading": "Téléversement...",
+    "download": "Télécharger",
+    "replace": "Remplacer"
+  },
+  "table": {
+    "updatedAt": "Mis à jour le {{date}}"
+  },
+  "filters": {
+    "category": "Catégorie",
+    "fromDate": "Date début",
+    "toDate": "Date fin"
+  },
+  "empty": {
+    "title": "Aucun document trouvé",
+    "description": "Téléversez un document pour commencer"
+  }
+}

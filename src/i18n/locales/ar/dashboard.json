@@ -1,0 +1,35 @@
+{
+  "title": "لوحة التحكم",
+  "subtitle": "نظرة عامة على وكالتك",
+  "stats": {
+    "revenue": "إجمالي الإيرادات",
+    "todayCommands": "طلبات اليوم",
+    "todayCommandsDesc": "طلبات جديدة اليوم",
+    "inProgress": "قيد التنفيذ",
+    "inProgressDesc": "طلبات قيد المعالجة",
+    "unpaid": "غير مدفوعة",
+    "unpaidDesc": "المبلغ المتبقي للتحصيل"
+  },
+  "charts": {
+    "weeklyRevenue": "إيرادات الأسبوع",
+    "weeklyRevenueDesc": "تطور الإيرادات خلال 7 أيام",
+    "serviceDistribution": "التوزيع حسب الخدمة",
+    "serviceDistributionDesc": "توزيع الطلبات حسب النوع",
+    "revenues": "الإيرادات",
+    "share": "الحصة"
+  },
+  "recentCommands": {
+    "title": "الطلبات الأخيرة",
+    "subtitle": "آخر 5 طلبات مسجلة",
+    "empty": "لا توجد طلبات حديثة"
+  },
+  "weekDays": {
+    "mon": "الإثنين",
+    "tue": "الثلاثاء",
+    "wed": "الأربعاء",
+    "thu": "الخميس",
+    "fri": "الجمعة",
+    "sat": "السبت",
+    "sun": "الأحد"
+  }
+}

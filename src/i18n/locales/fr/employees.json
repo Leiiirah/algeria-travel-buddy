@@ -1,0 +1,89 @@
+{
+  "title": "Employés",
+  "subtitle": "Gestion des comptes utilisateurs",
+  "directory": {
+    "title": "Annuaire des employés",
+    "count": "{{count}} employés enregistrés"
+  },
+  "table": {
+    "employee": "Employé",
+    "email": "Email",
+    "role": "Rôle",
+    "status": "Statut",
+    "addedDate": "Date d'ajout",
+    "actions": "Actions"
+  },
+  "dialog": {
+    "createTitle": "Nouvel employé",
+    "createDesc": "Ajoutez un nouvel utilisateur au système",
+    "editTitle": "Modifier l'employé",
+    "editDesc": "Modifiez les informations de l'utilisateur"
+  },
+  "form": {
+    "firstName": "Prénom",
+    "lastName": "Nom",
+    "email": "Email",
+    "emailPlaceholder": "email@agence.dz",
+    "password": "Mot de passe",
+    "passwordPlaceholder": "Mot de passe",
+    "passwordEdit": "Mot de passe (laisser vide pour ne pas changer)",
+    "newPasswordPlaceholder": "Nouveau mot de passe",
+    "role": "Rôle",
+    "selectRole": "Sélectionner un rôle"
+  },
+  "roles": {
+    "admin": "Administrateur",
+    "employee": "Employé"
+  },
+  "filters": {
+    "role": "Rôle",
+    "status": "Statut"
+  },
+  "empty": {
+    "title": "Aucun employé",
+    "description": "Ajoutez votre premier employé"
+  },
+  "actions": {
+    "activate": "Activer",
+    "deactivate": "Désactiver",
+    "edit": "Modifier",
+    "adding": "Ajout...",
+    "modifying": "Modification..."
+  },
+  "accounting": {
+    "title": "Comptabilité Employés",
+    "subtitle": "Gestion des avances, crédits et salaires",
+    "tabs": {
+      "balances": "Situation Employés",
+      "history": "Historique"
+    },
+    "stats": {
+      "totalAdvances": "Total Avances",
+      "totalCredits": "Total Crédits",
+      "totalSalaries": "Total Salaires"
+    },
+    "table": {
+      "employee": "Employé",
+      "advances": "Avances",
+      "credits": "Crédits",
+      "salaries": "Salaires",
+      "balance": "Solde"
+    },
+    "transactionTypes": {
+      "avance": "Avance",
+      "credit": "Crédit",
+      "salaire": "Salaire"
+    },
+    "dialog": {
+      "title": "Ajouter une Transaction",
+      "selectEmployee": "Sélectionner un employé",
+      "type": "Type",
+      "amount": "Montant (DZD)",
+      "date": "Date",
+      "month": "Mois concerné",
+      "note": "Note (optionnel)",
+      "notePlaceholder": "Ajouter une note..."
+    },
+    "newTransaction": "Nouvelle Transaction"
+  }
+}

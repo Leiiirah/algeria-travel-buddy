@@ -1,0 +1,57 @@
+{
+  "title": "المصروفات",
+  "subtitle": "إدارة مصروفات الشركة",
+  "stats": {
+    "thisMonth": "هذا الشهر",
+    "thisYear": "هذا العام",
+    "totalAll": "الإجمالي الكلي"
+  },
+  "tabs": {
+    "list": "القائمة",
+    "stats": "الإحصائيات"
+  },
+  "categories": {
+    "fournitures": "لوازم",
+    "equipement": "معدات",
+    "factures": "فواتير",
+    "transport": "نقل",
+    "maintenance": "صيانة",
+    "marketing": "تسويق",
+    "autre": "أخرى"
+  },
+  "table": {
+    "date": "التاريخ",
+    "category": "الفئة",
+    "description": "الوصف",
+    "vendor": "المورد",
+    "method": "طريقة الدفع",
+    "amount": "المبلغ"
+  },
+  "dialog": {
+    "createTitle": "إضافة مصروف",
+    "editTitle": "تعديل المصروف"
+  },
+  "form": {
+    "category": "الفئة",
+    "paymentMethod": "طريقة الدفع",
+    "description": "الوصف",
+    "descriptionPlaceholder": "وصف المصروف",
+    "amount": "المبلغ (د.ج)",
+    "date": "التاريخ",
+    "vendor": "المورد (اختياري)",
+    "vendorPlaceholder": "اسم المورد",
+    "note": "ملاحظة (اختياري)",
+    "notePlaceholder": "أضف ملاحظة..."
+  },
+  "actions": {
+    "newExpense": "مصروف جديد"
+  },
+  "delete": {
+    "title": "حذف هذا المصروف؟",
+    "description": "هذا الإجراء لا يمكن التراجع عنه. سيتم حذف المصروف نهائياً."
+  },
+  "chart": {
+    "title": "التوزيع حسب الفئة"
+  },
+  "empty": "لم يتم العثور على مصروفات"
+}
