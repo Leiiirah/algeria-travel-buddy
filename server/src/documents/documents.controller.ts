@@ -5,11 +5,13 @@ import { Response } from 'express';
 import { DocumentsService } from './documents.service';
 import { UploadDocumentDto, UpdateDocumentDto } from './dto/document.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { RolesGuard } from '../common/guards/roles.guard';
+import { Roles } from '../common/decorators/roles.decorator';
 import { v4 as uuidv4 } from 'uuid';
 import * as path from 'path';
 
 @Controller('documents')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
 export class DocumentsController {
   constructor(private readonly documentsService: DocumentsService) { }
 
@@ -19,6 +21,7 @@ export class DocumentsController {
   }
 
   @Post('upload')
+  @Roles('admin')
   @UseInterceptors(FileInterceptor('file', {
     storage: diskStorage({
       destination: './uploads',
@@ -33,11 +36,13 @@ export class DocumentsController {
   }
 
   @Patch(':id')
+  @Roles('admin')
   update(@Param('id') id: string, @Body() updateDto: UpdateDocumentDto) {
     return this.documentsService.update(id, updateDto);
   }
 
   @Delete(':id')
+  @Roles('admin')
   remove(@Param('id') id: string) {
     return this.documentsService.remove(id);
   }

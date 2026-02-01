@@ -40,8 +40,10 @@ import { useDocuments, useUploadDocument, useDeleteDocument, getDocumentDownload
 import { DocumentsSkeleton } from '@/components/skeletons/DocumentsSkeleton';
 import { ErrorState } from '@/components/ui/error-state';
 import { EmptyState } from '@/components/ui/empty-state';
+import { useAuth } from '@/contexts/AuthContext';
 
 const DocumentsPage = () => {
+  const { isAdmin } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
   const [filters, setFilters] = useState<Record<string, any>>({});
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -206,13 +208,14 @@ const DocumentsPage = () => {
                   ]}
                 />
               </div>
-              <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                <DialogTrigger asChild>
-                  <Button>
-                    <Upload className="mr-2 h-4 w-4" />
-                    Téléverser
-                  </Button>
-                </DialogTrigger>
+              {isAdmin && (
+                <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                  <DialogTrigger asChild>
+                    <Button>
+                      <Upload className="mr-2 h-4 w-4" />
+                      Téléverser
+                    </Button>
+                  </DialogTrigger>
                 <DialogContent className="bg-card">
                   <DialogHeader>
                     <DialogTitle>Téléverser un document</DialogTitle>
@@ -276,8 +279,9 @@ const DocumentsPage = () => {
                       {uploadDocument.isPending ? 'Téléversement...' : 'Téléverser'}
                     </Button>
                   </DialogFooter>
-                </DialogContent>
-              </Dialog>
+                  </DialogContent>
+                </Dialog>
+              )}
             </div>
           </div>
         </CardHeader>
@@ -327,17 +331,21 @@ const DocumentsPage = () => {
                           <Download className="mr-2 h-4 w-4" />
                           Télécharger
                         </Button>
-                        <Button variant="outline" size="sm">
-                          <Replace className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleDelete(doc.id)}
-                          disabled={deleteDocument.isPending}
-                        >
-                          <Trash2 className="h-4 w-4 text-destructive" />
-                        </Button>
+                        {isAdmin && (
+                          <>
+                            <Button variant="outline" size="sm">
+                              <Replace className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleDelete(doc.id)}
+                              disabled={deleteDocument.isPending}
+                            >
+                              <Trash2 className="h-4 w-4 text-destructive" />
+                            </Button>
+                          </>
+                        )}
                       </div>
                     </CardContent>
                   </Card>
