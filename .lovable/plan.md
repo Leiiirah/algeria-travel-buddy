@@ -1,191 +1,302 @@
 
-# Plan: Expenses Module (Dépenses)
+# Plan: Supplier Orders, Receipts & Invoices in Situation Fournisseurs
 
 ## Overview
 
-This plan adds a new **Expenses** module for tracking company purchases and expenses. This feature will be **admin-only** - only administrators can view, add, and delete expenses.
+This plan adds three new tabs to the **Situation Fournisseurs** page (`/comptabilite-fournisseurs`) for comprehensive supplier purchase management:
 
-Examples of expenses:
-- Office supplies (fournitures de bureau)
-- Equipment purchases (matériel)
-- Utilities (factures - électricité, internet)
-- Travel expenses (frais de déplacement)
-- Maintenance costs (entretien)
-- Other operational costs
+1. **Commandes** - Bulk purchases from suppliers (e.g., "10 tickets from Turkish Airlines")
+2. **Reçus** - What the agency actually received/bought from suppliers
+3. **Factures** - Invoices received from suppliers
 
-## Database Design
+The existing tabs (Situation Fournisseurs, Historique Transactions) will remain unchanged.
 
-A new `expenses` table will store all company expenses:
+---
+
+## Updated Tab Structure
+
+```text
++----------------------------------------------------------+
+| Situation Fournisseurs                                    |
++----------------------------------------------------------+
+| [Situation] [Historique] [Commandes] [Reçus] [Factures]  |
++----------------------------------------------------------+
+```
+
+---
+
+## Data Model
+
+### 1. Supplier Orders (supplier_orders)
+
+Tracks bulk purchases made from suppliers.
 
 | Column | Type | Description |
 |--------|------|-------------|
 | `id` | UUID | Primary key |
-| `category` | ENUM | Type of expense (see categories below) |
-| `description` | VARCHAR | Description of the expense |
-| `amount` | DECIMAL(10,2) | Expense amount in DZD |
-| `date` | DATE | Date of the expense |
-| `paymentMethod` | ENUM | How the expense was paid |
-| `vendor` | VARCHAR | Supplier/vendor name (optional) |
-| `receiptUrl` | VARCHAR | Path to receipt file (optional) |
-| `note` | TEXT | Additional notes (optional) |
-| `recordedBy` | UUID | Admin who recorded this |
+| `supplierId` | UUID | Foreign key to supplier |
+| `orderNumber` | VARCHAR | Auto-generated: SO-YYYYMMDD-XXX |
+| `description` | TEXT | What was ordered |
+| `quantity` | INTEGER | Number of items ordered |
+| `unitPrice` | DECIMAL | Price per unit |
+| `totalAmount` | DECIMAL | quantity × unitPrice |
+| `orderDate` | DATE | Date of the order |
+| `status` | ENUM | `en_attente`, `livre`, `partiel`, `annule` |
+| `deliveredQuantity` | INTEGER | Items received so far |
+| `notes` | TEXT | Additional notes |
+| `createdBy` | UUID | User who created |
 | `createdAt` | TIMESTAMP | Auto-generated |
 
-**Expense Categories:**
-- `fournitures` - Office supplies
-- `equipement` - Equipment
-- `factures` - Bills (utilities)
-- `transport` - Transportation
-- `maintenance` - Maintenance
-- `marketing` - Marketing/Advertising
-- `autre` - Other
+### 2. Receipts (supplier_receipts)
 
-**Payment Methods:**
-- `especes` - Cash
-- `virement` - Bank transfer
-- `cheque` - Check
-- `carte` - Card
+Tracks what the agency actually received from suppliers.
 
-## Technical Implementation
+| Column | Type | Description |
+|--------|------|-------------|
+| `id` | UUID | Primary key |
+| `supplierId` | UUID | Foreign key to supplier |
+| `orderId` | UUID | Optional link to supplier order |
+| `receiptNumber` | VARCHAR | Auto-generated: REC-YYYYMMDD-XXX |
+| `description` | TEXT | What was received |
+| `quantity` | INTEGER | Number of items received |
+| `unitPrice` | DECIMAL | Price per unit |
+| `totalAmount` | DECIMAL | quantity × unitPrice |
+| `receiptDate` | DATE | Date of receipt |
+| `notes` | TEXT | Additional notes |
+| `createdBy` | UUID | User who recorded |
+| `createdAt` | TIMESTAMP | Auto-generated |
 
-### Backend (NestJS)
+### 3. Invoices (supplier_invoices)
 
-**New Module: `server/src/expenses/`**
+Tracks invoices received from suppliers.
 
-| File | Purpose |
-|------|---------|
-| `entities/expense.entity.ts` | TypeORM entity with enums for category and payment method |
-| `dto/create-expense.dto.ts` | Validation DTO for creating expenses |
-| `dto/update-expense.dto.ts` | Validation DTO for updating expenses |
-| `expenses.service.ts` | Business logic: CRUD operations + statistics |
-| `expenses.controller.ts` | REST endpoints with admin-only guards |
-| `expenses.module.ts` | Module definition |
+| Column | Type | Description |
+|--------|------|-------------|
+| `id` | UUID | Primary key |
+| `supplierId` | UUID | Foreign key to supplier |
+| `invoiceNumber` | VARCHAR | Invoice number from supplier |
+| `internalRef` | VARCHAR | Auto-generated: INV-YYYYMMDD-XXX |
+| `description` | TEXT | Invoice description |
+| `amount` | DECIMAL | Invoice amount |
+| `invoiceDate` | DATE | Date on the invoice |
+| `dueDate` | DATE | Payment due date |
+| `status` | ENUM | `non_paye`, `partiel`, `paye` |
+| `paidAmount` | DECIMAL | Amount already paid |
+| `fileUrl` | VARCHAR | Path to uploaded file |
+| `notes` | TEXT | Additional notes |
+| `createdBy` | UUID | User who recorded |
+| `createdAt` | TIMESTAMP | Auto-generated |
 
-**API Endpoints (all admin-only):**
-- `GET /expenses` - List all expenses (with optional filters)
-- `GET /expenses/stats` - Get expense statistics
-- `GET /expenses/:id` - Get single expense
-- `POST /expenses` - Create expense
-- `PATCH /expenses/:id` - Update expense
-- `DELETE /expenses/:id` - Delete expense
+---
 
-### Frontend (React)
+## Status Enums
 
-**New Page: `src/pages/ExpensesPage.tsx`**
+**Order Status:**
+- `en_attente` - Pending
+- `livre` - Fully delivered
+- `partiel` - Partially delivered
+- `annule` - Cancelled
 
-Features:
-- Header with title and "Nouvelle Dépense" button
-- Summary cards showing:
-  - Total expenses (this month)
-  - Total expenses (this year)
-  - Breakdown by category (top 3)
-- Tabs:
-  - **Liste** - Table of all expenses with filters
-  - **Statistiques** - Charts showing expense breakdown
-- Dialog form to add/edit expenses
-- Filters: search, category, payment method, date range
+**Invoice Status:**
+- `non_paye` - Not paid
+- `partiel` - Partially paid
+- `paye` - Fully paid
 
-**New Hook: `src/hooks/useExpenses.ts`**
+---
 
-React Query hooks for:
-- `useExpenses(filters)` - Fetch all expenses
-- `useExpenseStats()` - Fetch expense statistics
-- `useCreateExpense()` - Create mutation
-- `useUpdateExpense()` - Update mutation
-- `useDeleteExpense()` - Delete mutation
+## Backend Implementation (NestJS)
 
-**New Skeleton: `src/components/skeletons/ExpensesSkeleton.tsx`**
-
-Loading state component matching the page structure.
-
-**API Updates: `src/lib/api.ts`**
-
-New types and methods for expense API calls.
-
-**Type Updates: `src/types/index.ts`**
-
-New types for expenses:
-```typescript
-export type ExpenseCategory = 'fournitures' | 'equipement' | 'factures' | 'transport' | 'maintenance' | 'marketing' | 'autre';
-
-export interface Expense {
-  id: string;
-  category: ExpenseCategory;
-  description: string;
-  amount: number;
-  date: Date;
-  paymentMethod: PaymentMethod;
-  vendor?: string;
-  receiptUrl?: string;
-  note?: string;
-  recordedBy: string;
-  recorder?: User;
-  createdAt: Date;
-}
-
-export const expenseCategoryLabels: Record<ExpenseCategory, string> = {
-  fournitures: 'Fournitures',
-  equipement: 'Équipement',
-  factures: 'Factures',
-  transport: 'Transport',
-  maintenance: 'Maintenance',
-  marketing: 'Marketing',
-  autre: 'Autre',
-};
-```
-
-**Navigation Updates:**
-- `src/components/layout/AppSidebar.tsx` - Add "Dépenses" menu item under Administration (admin-only section)
-- `src/App.tsx` - Add route `/depenses` with `adminOnly` protection
-
-## File Changes Summary
-
-| File | Action |
-|------|--------|
-| `server/src/expenses/entities/expense.entity.ts` | Create |
-| `server/src/expenses/dto/create-expense.dto.ts` | Create |
-| `server/src/expenses/dto/update-expense.dto.ts` | Create |
-| `server/src/expenses/expenses.service.ts` | Create |
-| `server/src/expenses/expenses.controller.ts` | Create |
-| `server/src/expenses/expenses.module.ts` | Create |
-| `server/src/app.module.ts` | Modify (add ExpensesModule import) |
-| `src/types/index.ts` | Modify (add expense types) |
-| `src/lib/api.ts` | Modify (add expense API methods) |
-| `src/hooks/useExpenses.ts` | Create |
-| `src/pages/ExpensesPage.tsx` | Create |
-| `src/components/skeletons/ExpensesSkeleton.tsx` | Create |
-| `src/components/layout/AppSidebar.tsx` | Modify (add menu item) |
-| `src/App.tsx` | Modify (add route) |
-
-## Security
-
-- **Backend**: All endpoints protected with `@Roles('admin')` decorator
-- **Frontend**: Route protected with `<ProtectedRoute adminOnly>`
-- **Sidebar**: Menu item only shown in the "Administration" section (already admin-only)
-
-## User Interface Preview
+### New Modules
 
 ```text
+server/src/
+├── supplier-orders/
+│   ├── entities/supplier-order.entity.ts
+│   ├── dto/create-supplier-order.dto.ts
+│   ├── dto/update-supplier-order.dto.ts
+│   ├── supplier-orders.service.ts
+│   ├── supplier-orders.controller.ts
+│   └── supplier-orders.module.ts
+├── supplier-receipts/
+│   ├── entities/supplier-receipt.entity.ts
+│   ├── dto/create-supplier-receipt.dto.ts
+│   ├── supplier-receipts.service.ts
+│   ├── supplier-receipts.controller.ts
+│   └── supplier-receipts.module.ts
+└── supplier-invoices/
+    ├── entities/supplier-invoice.entity.ts
+    ├── dto/create-supplier-invoice.dto.ts
+    ├── dto/update-supplier-invoice.dto.ts
+    ├── supplier-invoices.service.ts
+    ├── supplier-invoices.controller.ts
+    └── supplier-invoices.module.ts
+```
+
+### API Endpoints
+
+**Supplier Orders:**
+- `GET /supplier-orders` - List all (with optional supplierId filter)
+- `GET /supplier-orders/:id` - Get single order
+- `POST /supplier-orders` - Create new order
+- `PATCH /supplier-orders/:id` - Update order
+- `DELETE /supplier-orders/:id` - Delete order
+
+**Supplier Receipts:**
+- `GET /supplier-receipts` - List all (with filters)
+- `GET /supplier-receipts/:id` - Get single receipt
+- `POST /supplier-receipts` - Create receipt (auto-updates linked order)
+- `DELETE /supplier-receipts/:id` - Delete receipt
+
+**Supplier Invoices:**
+- `GET /supplier-invoices` - List all (with filters)
+- `GET /supplier-invoices/:id` - Get single invoice
+- `POST /supplier-invoices` - Create invoice
+- `PATCH /supplier-invoices/:id` - Update invoice
+- `DELETE /supplier-invoices/:id` - Delete invoice
+
+---
+
+## Frontend Implementation
+
+### Updated SupplierAccountingPage
+
+The page will be restructured to include 5 tabs:
+
+1. **Situation** (existing) - Supplier balances
+2. **Historique** (existing) - Transaction history
+3. **Commandes** (new) - Bulk orders to suppliers
+4. **Reçus** (new) - Items received from suppliers
+5. **Factures** (new) - Supplier invoices
+
+### New Components
+
+| Component | Description |
+|-----------|-------------|
+| `SupplierOrdersTab.tsx` | Orders list with filters, create/edit dialog |
+| `SupplierReceiptsTab.tsx` | Receipts list with filters, create dialog |
+| `SupplierInvoicesTab.tsx` | Invoices list with filters, payment tracking |
+
+### New Hooks
+
+| Hook | Purpose |
+|------|---------|
+| `useSupplierOrders.ts` | CRUD operations for orders |
+| `useSupplierReceipts.ts` | CRUD operations for receipts |
+| `useSupplierInvoices.ts` | CRUD operations for invoices |
+
+---
+
+## UI Mockups
+
+### Commandes Tab
+```text
 +----------------------------------------------------------+
-| Dépenses                          [+ Nouvelle Dépense]   |
+| [+ Nouvelle Commande]                                    |
 +----------------------------------------------------------+
-| Ce Mois        | Cette Année      | Top Catégorie        |
-| 45,000 DZD     | 520,000 DZD      | Fournitures: 35%     |
-+----------------------------------------------------------+
-| [Liste] [Statistiques]                                   |
+| En Attente     | Livrées        | Valeur Totale          |
+| 3 commandes    | 12 commandes   | 1,250,000 DZD          |
 +----------------------------------------------------------+
 | [Search...] [Filtres]                                    |
 +----------------------------------------------------------+
-| Date       | Catégorie    | Description | Montant | ...  |
-| 01/02/2026 | Fournitures  | Papier A4   | 5,000   | ...  |
-| 28/01/2026 | Factures     | Électricité | 12,000  | ...  |
+| N° Commande | Fournisseur | Description      | Statut   |
+| SO-20260201 | Turkish Air | 10 billets IST   | En att.  |
+| SO-20260128 | VFS Global  | 5 RDV visa       | Livré    |
 +----------------------------------------------------------+
 ```
 
+### Reçus Tab
+```text
++----------------------------------------------------------+
+| [+ Nouveau Reçu]                                         |
++----------------------------------------------------------+
+| Total Reçus    | Ce Mois         | Valeur Totale         |
+| 45 reçus       | 8 reçus         | 3,200,000 DZD         |
++----------------------------------------------------------+
+| [Search...] [Filtres]                                    |
++----------------------------------------------------------+
+| N° Reçu     | Fournisseur | Description      | Montant  |
+| REC-20260201| Turkish Air | 5 billets IST    | 160,000  |
++----------------------------------------------------------+
+```
+
+### Factures Tab
+```text
++----------------------------------------------------------+
+| [+ Nouvelle Facture]                                     |
++----------------------------------------------------------+
+| Non Payées     | En Retard       | Total Dû              |
+| 5 factures     | 2 factures      | 450,000 DZD           |
++----------------------------------------------------------+
+| [Search...] [Filtres]                                    |
++----------------------------------------------------------+
+| N° Facture  | Fournisseur | Montant  | Échéance | Statut |
+| INV-001     | VFS Global  | 150,000  | 15/02    | Non payé|
++----------------------------------------------------------+
+```
+
+---
+
+## Workflow Examples
+
+### Order → Receipt Flow
+1. Create order: "10 billets Turkish Airlines @ 32,000 DZD"
+2. Order status: `en_attente`
+3. When 5 tickets received, create receipt linked to order
+4. Order auto-updates: status = `partiel`, deliveredQuantity = 5
+5. Remaining 5 received → create receipt → status = `livre`
+
+### Invoice Payment Flow
+1. Receive invoice from supplier
+2. Create invoice entry with amount and due date
+3. Partial payment → update paidAmount
+4. Status auto-updates: `non_paye` → `partiel` → `paye`
+
+---
+
+## Files Summary
+
+| File | Action |
+|------|--------|
+| **Backend - Orders** | |
+| `server/src/supplier-orders/entities/supplier-order.entity.ts` | Create |
+| `server/src/supplier-orders/dto/create-supplier-order.dto.ts` | Create |
+| `server/src/supplier-orders/dto/update-supplier-order.dto.ts` | Create |
+| `server/src/supplier-orders/supplier-orders.service.ts` | Create |
+| `server/src/supplier-orders/supplier-orders.controller.ts` | Create |
+| `server/src/supplier-orders/supplier-orders.module.ts` | Create |
+| **Backend - Receipts** | |
+| `server/src/supplier-receipts/entities/supplier-receipt.entity.ts` | Create |
+| `server/src/supplier-receipts/dto/create-supplier-receipt.dto.ts` | Create |
+| `server/src/supplier-receipts/supplier-receipts.service.ts` | Create |
+| `server/src/supplier-receipts/supplier-receipts.controller.ts` | Create |
+| `server/src/supplier-receipts/supplier-receipts.module.ts` | Create |
+| **Backend - Invoices** | |
+| `server/src/supplier-invoices/entities/supplier-invoice.entity.ts` | Create |
+| `server/src/supplier-invoices/dto/create-supplier-invoice.dto.ts` | Create |
+| `server/src/supplier-invoices/dto/update-supplier-invoice.dto.ts` | Create |
+| `server/src/supplier-invoices/supplier-invoices.service.ts` | Create |
+| `server/src/supplier-invoices/supplier-invoices.controller.ts` | Create |
+| `server/src/supplier-invoices/supplier-invoices.module.ts` | Create |
+| `server/src/app.module.ts` | Modify (add 3 modules) |
+| **Frontend** | |
+| `src/types/index.ts` | Modify (add new types) |
+| `src/lib/api.ts` | Modify (add new API methods) |
+| `src/hooks/useSupplierOrders.ts` | Create |
+| `src/hooks/useSupplierReceipts.ts` | Create |
+| `src/hooks/useSupplierInvoices.ts` | Create |
+| `src/components/suppliers/SupplierOrdersTab.tsx` | Create |
+| `src/components/suppliers/SupplierReceiptsTab.tsx` | Create |
+| `src/components/suppliers/SupplierInvoicesTab.tsx` | Create |
+| `src/pages/SupplierAccountingPage.tsx` | Modify (add 3 tabs) |
+
+---
+
 ## After Implementation
 
-On your VPS, you'll need to:
-1. Pull the latest code
-2. Run `cd server && npm run build`
-3. Restart the NestJS server (e.g., `pm2 restart all`)
-4. The database table will be created automatically via TypeORM synchronize
+On your VPS, run:
+```bash
+cd server && npm run build
+pm2 restart all
+```
+
+The new database tables will be created automatically via TypeORM synchronize.
