@@ -1,0 +1,324 @@
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { OmraHotel } from './entities/omra-hotel.entity';
+import { OmraOrder, OmraStatus } from './entities/omra-order.entity';
+import { OmraVisa } from './entities/omra-visa.entity';
+import { CreateOmraHotelDto } from './dto/create-omra-hotel.dto';
+import { UpdateOmraHotelDto } from './dto/update-omra-hotel.dto';
+import { CreateOmraOrderDto } from './dto/create-omra-order.dto';
+import { UpdateOmraOrderDto } from './dto/update-omra-order.dto';
+import { CreateOmraVisaDto } from './dto/create-omra-visa.dto';
+import { UpdateOmraVisaDto } from './dto/update-omra-visa.dto';
+
+export interface OmraFilters {
+  status?: string;
+  hotelId?: string;
+  search?: string;
+  fromDate?: string;
+  toDate?: string;
+  page?: number;
+  limit?: number;
+}
+
+export interface PaginatedResponse<T> {
+  data: T[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
+@Injectable()
+export class OmraService {
+  constructor(
+    @InjectRepository(OmraHotel)
+    private hotelsRepository: Repository<OmraHotel>,
+    @InjectRepository(OmraOrder)
+    private ordersRepository: Repository<OmraOrder>,
+    @InjectRepository(OmraVisa)
+    private visasRepository: Repository<OmraVisa>,
+  ) {}
+
+  // ==================== HOTELS ====================
+
+  async findAllHotels(): Promise<OmraHotel[]> {
+    return this.hotelsRepository.find({
+      order: { name: 'ASC' },
+    });
+  }
+
+  async findActiveHotels(): Promise<OmraHotel[]> {
+    return this.hotelsRepository.find({
+      where: { isActive: true },
+      order: { name: 'ASC' },
+    });
+  }
+
+  async findHotelById(id: string): Promise<OmraHotel> {
+    const hotel = await this.hotelsRepository.findOne({ where: { id } });
+    if (!hotel) {
+      throw new NotFoundException(`Hotel with ID ${id} not found`);
+    }
+    return hotel;
+  }
+
+  async createHotel(dto: CreateOmraHotelDto): Promise<OmraHotel> {
+    const hotel = this.hotelsRepository.create(dto);
+    return this.hotelsRepository.save(hotel);
+  }
+
+  async updateHotel(id: string, dto: UpdateOmraHotelDto): Promise<OmraHotel> {
+    const hotel = await this.findHotelById(id);
+    Object.assign(hotel, dto);
+    return this.hotelsRepository.save(hotel);
+  }
+
+  async deleteHotel(id: string): Promise<void> {
+    const hotel = await this.findHotelById(id);
+    await this.hotelsRepository.remove(hotel);
+  }
+
+  // ==================== ORDERS ====================
+
+  async findAllOrders(filters: OmraFilters = {}): Promise<PaginatedResponse<OmraOrder>> {
+    const { status, hotelId, search, fromDate, toDate, page = 1, limit = 20 } = filters;
+
+    const queryBuilder = this.ordersRepository
+      .createQueryBuilder('order')
+      .leftJoinAndSelect('order.hotel', 'hotel')
+      .leftJoinAndSelect('order.creator', 'creator');
+
+    if (status) {
+      queryBuilder.andWhere('order.status = :status', { status });
+    }
+
+    if (hotelId) {
+      queryBuilder.andWhere('order.hotelId = :hotelId', { hotelId });
+    }
+
+    if (search) {
+      queryBuilder.andWhere(
+        '(order.clientName ILIKE :search OR order.phone ILIKE :search)',
+        { search: `%${search}%` },
+      );
+    }
+
+    if (fromDate) {
+      queryBuilder.andWhere('order.orderDate >= :fromDate', {
+        fromDate: new Date(fromDate),
+      });
+    }
+
+    if (toDate) {
+      queryBuilder.andWhere('order.orderDate <= :toDate', {
+        toDate: new Date(toDate),
+      });
+    }
+
+    const total = await queryBuilder.getCount();
+    const skip = (page - 1) * limit;
+
+    const data = await queryBuilder
+      .orderBy('order.createdAt', 'DESC')
+      .skip(skip)
+      .take(limit)
+      .getMany();
+
+    return {
+      data,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    };
+  }
+
+  async findOrderById(id: string): Promise<OmraOrder> {
+    const order = await this.ordersRepository.findOne({
+      where: { id },
+      relations: ['hotel', 'creator'],
+    });
+    if (!order) {
+      throw new NotFoundException(`Omra order with ID ${id} not found`);
+    }
+    return order;
+  }
+
+  async createOrder(dto: CreateOmraOrderDto, userId: string): Promise<OmraOrder> {
+    const order = this.ordersRepository.create({
+      ...dto,
+      createdBy: userId,
+    });
+    return this.ordersRepository.save(order);
+  }
+
+  async updateOrder(id: string, dto: UpdateOmraOrderDto): Promise<OmraOrder> {
+    const order = await this.findOrderById(id);
+    Object.assign(order, dto);
+    return this.ordersRepository.save(order);
+  }
+
+  async updateOrderStatus(id: string, status: string): Promise<OmraOrder> {
+    const order = await this.findOrderById(id);
+    order.status = status as OmraStatus;
+    return this.ordersRepository.save(order);
+  }
+
+  async deleteOrder(id: string): Promise<void> {
+    const order = await this.findOrderById(id);
+    await this.ordersRepository.remove(order);
+  }
+
+  // ==================== VISAS ====================
+
+  async findAllVisas(filters: OmraFilters = {}): Promise<PaginatedResponse<OmraVisa>> {
+    const { status, hotelId, search, fromDate, toDate, page = 1, limit = 20 } = filters;
+
+    const queryBuilder = this.visasRepository
+      .createQueryBuilder('visa')
+      .leftJoinAndSelect('visa.hotel', 'hotel')
+      .leftJoinAndSelect('visa.creator', 'creator');
+
+    if (status) {
+      queryBuilder.andWhere('visa.status = :status', { status });
+    }
+
+    if (hotelId) {
+      queryBuilder.andWhere('visa.hotelId = :hotelId', { hotelId });
+    }
+
+    if (search) {
+      queryBuilder.andWhere(
+        '(visa.clientName ILIKE :search OR visa.phone ILIKE :search)',
+        { search: `%${search}%` },
+      );
+    }
+
+    if (fromDate) {
+      queryBuilder.andWhere('visa.visaDate >= :fromDate', {
+        fromDate: new Date(fromDate),
+      });
+    }
+
+    if (toDate) {
+      queryBuilder.andWhere('visa.visaDate <= :toDate', {
+        toDate: new Date(toDate),
+      });
+    }
+
+    const total = await queryBuilder.getCount();
+    const skip = (page - 1) * limit;
+
+    const data = await queryBuilder
+      .orderBy('visa.createdAt', 'DESC')
+      .skip(skip)
+      .take(limit)
+      .getMany();
+
+    return {
+      data,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    };
+  }
+
+  async findVisaById(id: string): Promise<OmraVisa> {
+    const visa = await this.visasRepository.findOne({
+      where: { id },
+      relations: ['hotel', 'creator'],
+    });
+    if (!visa) {
+      throw new NotFoundException(`Omra visa with ID ${id} not found`);
+    }
+    return visa;
+  }
+
+  async createVisa(dto: CreateOmraVisaDto, userId: string): Promise<OmraVisa> {
+    const visa = this.visasRepository.create({
+      ...dto,
+      createdBy: userId,
+    });
+    return this.visasRepository.save(visa);
+  }
+
+  async updateVisa(id: string, dto: UpdateOmraVisaDto): Promise<OmraVisa> {
+    const visa = await this.findVisaById(id);
+    Object.assign(visa, dto);
+    return this.visasRepository.save(visa);
+  }
+
+  async updateVisaStatus(id: string, status: string): Promise<OmraVisa> {
+    const visa = await this.findVisaById(id);
+    visa.status = status as OmraStatus;
+    return this.visasRepository.save(visa);
+  }
+
+  async deleteVisa(id: string): Promise<void> {
+    const visa = await this.findVisaById(id);
+    await this.visasRepository.remove(visa);
+  }
+
+  // ==================== STATS ====================
+
+  async getStats() {
+    const orders = await this.ordersRepository.find();
+    const visas = await this.visasRepository.find();
+
+    const orderStats = {
+      total: orders.length,
+      totalRevenue: orders.reduce((sum, o) => sum + Number(o.sellingPrice || 0), 0),
+      totalPaid: orders.reduce((sum, o) => sum + Number(o.amountPaid || 0), 0),
+      totalProfit: orders.reduce(
+        (sum, o) => sum + (Number(o.sellingPrice || 0) - Number(o.buyingPrice || 0)),
+        0,
+      ),
+      byStatus: {
+        en_attente: 0,
+        confirme: 0,
+        termine: 0,
+        annule: 0,
+      },
+    };
+
+    orders.forEach((o) => {
+      if (orderStats.byStatus[o.status] !== undefined) {
+        orderStats.byStatus[o.status]++;
+      }
+    });
+
+    const visaStats = {
+      total: visas.length,
+      totalRevenue: visas.reduce((sum, v) => sum + Number(v.sellingPrice || 0), 0),
+      totalPaid: visas.reduce((sum, v) => sum + Number(v.amountPaid || 0), 0),
+      totalProfit: visas.reduce(
+        (sum, v) => sum + (Number(v.sellingPrice || 0) - Number(v.buyingPrice || 0)),
+        0,
+      ),
+      byStatus: {
+        en_attente: 0,
+        confirme: 0,
+        termine: 0,
+        annule: 0,
+      },
+    };
+
+    visas.forEach((v) => {
+      if (visaStats.byStatus[v.status] !== undefined) {
+        visaStats.byStatus[v.status]++;
+      }
+    });
+
+    return {
+      orders: orderStats,
+      visas: visaStats,
+      combined: {
+        totalRevenue: orderStats.totalRevenue + visaStats.totalRevenue,
+        totalPaid: orderStats.totalPaid + visaStats.totalPaid,
+        totalProfit: orderStats.totalProfit + visaStats.totalProfit,
+      },
+    };
+  }
+}

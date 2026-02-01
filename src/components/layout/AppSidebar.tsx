@@ -9,6 +9,7 @@ import {
   LogOut,
   Package,
   Wallet,
+  Palmtree,
 } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
 import { Button } from '@/components/ui/button';
@@ -38,6 +39,11 @@ const mainMenuItems = [
     title: 'Commandes',
     url: '/commandes',
     icon: Package,
+  },
+  {
+    title: 'Omra',
+    url: '/omra',
+    icon: Palmtree,
   },
   {
     title: 'Documents',

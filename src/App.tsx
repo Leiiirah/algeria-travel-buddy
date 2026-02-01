@@ -10,6 +10,7 @@ import DashboardPage from "./pages/DashboardPage";
 import EmployeesPage from "./pages/EmployeesPage";
 import ServicesPage from "./pages/ServicesPage";
 import CommandsPage from "./pages/CommandsPage";
+import OmraPage from "./pages/OmraPage";
 import DocumentsPage from "./pages/DocumentsPage";
 import SuppliersPage from "./pages/SuppliersPage";
 import SupplierAccountingPage from "./pages/SupplierAccountingPage";
@@ -67,6 +68,14 @@ const AppRoutes = () => {
         element={
           <ProtectedRoute>
             <CommandsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/omra"
+        element={
+          <ProtectedRoute>
+            <OmraPage />
           </ProtectedRoute>
         }
       />
