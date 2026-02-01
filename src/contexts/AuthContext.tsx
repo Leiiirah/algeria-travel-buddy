@@ -137,7 +137,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
+    // In dev, fail fast to catch wrong provider hierarchy.
+    // In production, avoid a blank screen if a bad deploy/caching causes the
+    // provider to be missing temporarily.
+    if (import.meta.env.DEV) {
+      throw new Error('useAuth must be used within an AuthProvider');
+    }
+
+    console.error('useAuth was called outside AuthProvider. Falling back to logged-out state.');
+
+    const fallback: AuthContextType = {
+      user: null,
+      isLoading: false,
+      login: async () => ({
+        success: false,
+        error: {
+          type: 'server_error',
+          message: "Erreur de configuration: AuthProvider manquant.",
+        },
+      }),
+      logout: () => {
+        // no-op
+      },
+      isAdmin: false,
+    };
+    return fallback;
   }
   return context;
 };
