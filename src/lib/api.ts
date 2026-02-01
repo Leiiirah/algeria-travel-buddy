@@ -1,6 +1,13 @@
 import { User, Service, Supplier, Command, Payment, SupplierTransaction, Document } from '@/types';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://69.62.127.134:8080';
+// Normalize base URL because some deployments set VITE_API_URL with a trailing `/api`
+// while the NestJS server routes are mounted at `/` (e.g. `/auth/login`).
+const RAW_API_URL = (import.meta.env.VITE_API_URL || 'http://69.62.127.134:8080').trim();
+
+// Remove trailing slashes and an optional trailing `/api`
+const API_URL = RAW_API_URL
+  .replace(/\/+$/, '')
+  .replace(/\/api$/, '');
 
 // DTOs for API requests
 export interface LoginDto {
