@@ -1,0 +1,100 @@
+{
+  "navigation": {
+    "dashboard": "لوحة التحكم",
+    "commands": "الطلبات",
+    "omra": "العمرة",
+    "documents": "المستندات",
+    "employees": "الموظفون",
+    "suppliers": "الموردون",
+    "supplierAccounting": "حالة الموردين",
+    "employeeAccounting": "محاسبة الموظفين",
+    "accounting": "المحاسبة",
+    "services": "الخدمات",
+    "expenses": "المصروفات"
+  },
+  "groups": {
+    "main": "الرئيسية",
+    "management": "الإدارة",
+    "administration": "الإدارة العامة"
+  },
+  "actions": {
+    "add": "إضافة",
+    "edit": "تعديل",
+    "delete": "حذف",
+    "save": "حفظ",
+    "cancel": "إلغاء",
+    "search": "بحث",
+    "filter": "تصفية",
+    "export": "تصدير",
+    "refresh": "تحديث",
+    "download": "تحميل",
+    "upload": "رفع",
+    "close": "إغلاق",
+    "confirm": "تأكيد",
+    "retry": "إعادة المحاولة",
+    "back": "رجوع",
+    "next": "التالي",
+    "view": "عرض",
+    "details": "التفاصيل"
+  },
+  "status": {
+    "pending": "قيد الانتظار",
+    "inProgress": "قيد التنفيذ",
+    "completed": "مكتمل",
+    "cancelled": "ملغى",
+    "paid": "مدفوع",
+    "partial": "جزئي",
+    "unpaid": "غير مدفوع",
+    "active": "نشط",
+    "inactive": "غير نشط",
+    "delivered": "تم التسليم"
+  },
+  "serviceTypes": {
+    "visa": "تأشيرة",
+    "residence": "إقامة",
+    "ticket": "تذاكر",
+    "dossier": "ملف"
+  },
+  "paymentMethods": {
+    "especes": "نقداً",
+    "virement": "تحويل بنكي",
+    "cheque": "شيك",
+    "carte": "بطاقة بنكية"
+  },
+  "roles": {
+    "admin": "مدير",
+    "employee": "موظف"
+  },
+  "time": {
+    "today": "اليوم",
+    "yesterday": "أمس",
+    "thisWeek": "هذا الأسبوع",
+    "thisMonth": "هذا الشهر",
+    "thisYear": "هذا العام"
+  },
+  "errors": {
+    "generic": "حدث خطأ",
+    "loadFailed": "تعذر تحميل البيانات. يرجى المحاولة مرة أخرى.",
+    "saveFailed": "تعذر حفظ البيانات",
+    "deleteFailed": "تعذر الحذف",
+    "networkError": "خطأ في الاتصال بالخادم"
+  },
+  "empty": {
+    "noData": "لا توجد بيانات متاحة",
+    "noResults": "لم يتم العثور على نتائج"
+  },
+  "company": {
+    "name": "الحكمة للسياحة",
+    "subtitle": "السياحة والسفر"
+  },
+  "user": {
+    "logout": "تسجيل الخروج",
+    "profile": "الملف الشخصي"
+  },
+  "currency": "د.ج",
+  "dateFormat": {
+    "short": "yyyy/MM/dd",
+    "long": "yyyy MMMM dd",
+    "time": "HH:mm"
+  }
+}

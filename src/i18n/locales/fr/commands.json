@@ -1,0 +1,72 @@
+{
+  "title": "Commandes",
+  "subtitle": "Gestion des commandes clients",
+  "stats": {
+    "totalPayments": "Total Versements",
+    "totalCredit": "Total Crédit (Reste)",
+    "totalProfit": "Total Bénéfice Net"
+  },
+  "list": {
+    "title": "Liste des commandes",
+    "count": "{{count}} commandes au total"
+  },
+  "table": {
+    "client": "Client",
+    "service": "Service",
+    "destination": "Destination",
+    "amounts": "Montants",
+    "sellingPrice": "P.V.",
+    "buyingPrice": "P.A.",
+    "remaining": "Reste",
+    "profit": "Bénéfice",
+    "supplier": "Fournisseur",
+    "status": "Statut",
+    "payment": "Paiement",
+    "actions": "Actions"
+  },
+  "dialog": {
+    "createTitle": "Nouvelle commande",
+    "editTitle": "Modifier la commande",
+    "selectService": "Sélectionnez un service",
+    "selectServiceDesc": "Choisissez le type de service pour cette commande"
+  },
+  "form": {
+    "service": "Service",
+    "selectServicePlaceholder": "Choisir un service",
+    "firstName": "Prénom",
+    "lastName": "Nom",
+    "clientFullName": "Nom complet du client",
+    "phone": "Téléphone",
+    "destination": "Destination",
+    "hotelName": "Nom de l'hôtel",
+    "departureDate": "Date de départ",
+    "returnDate": "Date de retour",
+    "description": "Description du dossier",
+    "sellingPrice": "Prix de vente (DZD)",
+    "amountPaid": "Montant payé (DZD)",
+    "buyingPrice": "Prix d'achat (DZD)",
+    "supplier": "Fournisseur",
+    "selectSupplier": "Sélectionner un fournisseur"
+  },
+  "calculations": {
+    "remaining": "Reste à payer",
+    "profit": "Bénéfice"
+  },
+  "status": {
+    "en_attente": "En attente",
+    "en_cours": "En cours",
+    "termine": "Terminé",
+    "annule": "Annulé"
+  },
+  "time": {
+    "locked": "Verrouillé",
+    "hoursRemaining": "{{hours}}h restantes",
+    "minutesRemaining": "{{minutes}} min restantes"
+  },
+  "filters": {
+    "status": "Statut",
+    "service": "Service",
+    "supplier": "Fournisseur"
+  },
+  "empty": "Aucune commande trouvée"
+}

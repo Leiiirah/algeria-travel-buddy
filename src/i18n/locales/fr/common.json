@@ -1,0 +1,100 @@
+{
+  "navigation": {
+    "dashboard": "Tableau de bord",
+    "commands": "Commandes",
+    "omra": "Omra",
+    "documents": "Documents",
+    "employees": "Employés",
+    "suppliers": "Fournisseurs",
+    "supplierAccounting": "Situation Fournisseurs",
+    "employeeAccounting": "Comptabilité Employés",
+    "accounting": "Comptabilité",
+    "services": "Services",
+    "expenses": "Dépenses"
+  },
+  "groups": {
+    "main": "Principal",
+    "management": "Gestion",
+    "administration": "Administration"
+  },
+  "actions": {
+    "add": "Ajouter",
+    "edit": "Modifier",
+    "delete": "Supprimer",
+    "save": "Enregistrer",
+    "cancel": "Annuler",
+    "search": "Rechercher",
+    "filter": "Filtrer",
+    "export": "Exporter",
+    "refresh": "Actualiser",
+    "download": "Télécharger",
+    "upload": "Téléverser",
+    "close": "Fermer",
+    "confirm": "Confirmer",
+    "retry": "Réessayer",
+    "back": "Retour",
+    "next": "Suivant",
+    "view": "Voir",
+    "details": "Détails"
+  },
+  "status": {
+    "pending": "En attente",
+    "inProgress": "En cours",
+    "completed": "Terminé",
+    "cancelled": "Annulé",
+    "paid": "Payé",
+    "partial": "Partiel",
+    "unpaid": "Non payé",
+    "active": "Actif",
+    "inactive": "Inactif",
+    "delivered": "Livré"
+  },
+  "serviceTypes": {
+    "visa": "Visa",
+    "residence": "Résidence",
+    "ticket": "Billetterie",
+    "dossier": "Dossier"
+  },
+  "paymentMethods": {
+    "especes": "Espèces",
+    "virement": "Virement",
+    "cheque": "Chèque",
+    "carte": "Carte bancaire"
+  },
+  "roles": {
+    "admin": "Administrateur",
+    "employee": "Employé"
+  },
+  "time": {
+    "today": "Aujourd'hui",
+    "yesterday": "Hier",
+    "thisWeek": "Cette semaine",
+    "thisMonth": "Ce mois",
+    "thisYear": "Cette année"
+  },
+  "errors": {
+    "generic": "Une erreur est survenue",
+    "loadFailed": "Impossible de charger les données. Veuillez réessayer.",
+    "saveFailed": "Impossible d'enregistrer les données",
+    "deleteFailed": "Impossible de supprimer",
+    "networkError": "Erreur de connexion au serveur"
+  },
+  "empty": {
+    "noData": "Aucune donnée disponible",
+    "noResults": "Aucun résultat trouvé"
+  },
+  "company": {
+    "name": "El Hikma Tourisme",
+    "subtitle": "Tourisme et Voyage"
+  },
+  "user": {
+    "logout": "Déconnexion",
+    "profile": "Profil"
+  },
+  "currency": "DZD",
+  "dateFormat": {
+    "short": "dd/MM/yyyy",
+    "long": "dd MMMM yyyy",
+    "time": "HH:mm"
+  }
+}

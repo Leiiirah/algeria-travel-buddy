@@ -1,0 +1,108 @@
+{
+  "title": "Omra",
+  "subtitle": "Gestion des services Omra",
+  "stats": {
+    "totalPayments": "Total Versements",
+    "totalCredit": "Total Crédit (Reste)",
+    "netProfit": "Bénéfice Net"
+  },
+  "tabs": {
+    "orders": "Commandes",
+    "visas": "Visas",
+    "hotels": "Hôtels"
+  },
+  "orders": {
+    "title": "Commandes Omra",
+    "count": "{{count}} commandes",
+    "table": {
+      "client": "Client",
+      "package": "Forfait",
+      "travelers": "Voyageurs",
+      "dates": "Dates",
+      "amounts": "Montants",
+      "status": "Statut"
+    },
+    "dialog": {
+      "createTitle": "Nouvelle commande Omra",
+      "editTitle": "Modifier la commande"
+    },
+    "form": {
+      "clientName": "Nom du client",
+      "phone": "Téléphone",
+      "package": "Type de forfait",
+      "travelers": "Nombre de voyageurs",
+      "departureDate": "Date de départ",
+      "returnDate": "Date de retour",
+      "sellingPrice": "Prix de vente",
+      "buyingPrice": "Prix d'achat",
+      "amountPaid": "Montant payé",
+      "notes": "Notes"
+    }
+  },
+  "visas": {
+    "title": "Visas Omra",
+    "count": "{{count}} visas",
+    "table": {
+      "client": "Client",
+      "passportNumber": "N° Passeport",
+      "supplier": "Fournisseur",
+      "dates": "Dates",
+      "amounts": "Montants",
+      "status": "Statut"
+    },
+    "dialog": {
+      "createTitle": "Nouveau visa Omra",
+      "editTitle": "Modifier le visa"
+    },
+    "form": {
+      "clientName": "Nom du client",
+      "passportNumber": "Numéro de passeport",
+      "supplier": "Fournisseur",
+      "applicationDate": "Date de demande",
+      "expiryDate": "Date d'expiration",
+      "sellingPrice": "Prix de vente",
+      "buyingPrice": "Prix d'achat",
+      "amountPaid": "Montant payé"
+    }
+  },
+  "hotels": {
+    "title": "Réservations Hôtels",
+    "count": "{{count}} réservations",
+    "table": {
+      "client": "Client",
+      "hotel": "Hôtel",
+      "city": "Ville",
+      "dates": "Dates",
+      "nights": "Nuits",
+      "amounts": "Montants",
+      "status": "Statut"
+    },
+    "dialog": {
+      "createTitle": "Nouvelle réservation",
+      "editTitle": "Modifier la réservation"
+    },
+    "form": {
+      "clientName": "Nom du client",
+      "hotelName": "Nom de l'hôtel",
+      "city": "Ville",
+      "checkIn": "Date d'arrivée",
+      "checkOut": "Date de départ",
+      "nights": "Nombre de nuits",
+      "roomType": "Type de chambre",
+      "sellingPrice": "Prix de vente",
+      "buyingPrice": "Prix d'achat",
+      "amountPaid": "Montant payé"
+    }
+  },
+  "packages": {
+    "economic": "Économique",
+    "standard": "Standard",
+    "premium": "Premium",
+    "vip": "VIP"
+  },
+  "cities": {
+    "mecca": "La Mecque",
+    "medina": "Médine"
+  },
+  "empty": "Aucune donnée trouvée"
+}

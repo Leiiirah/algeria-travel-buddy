@@ -1,4 +1,5 @@
 import { LucideIcon, Inbox } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 
 interface EmptyStateProps {
@@ -42,15 +43,18 @@ interface TableEmptyStateProps {
 }
 
 export function TableEmptyState({
-  message = 'Aucune donnée disponible',
+  message,
   colSpan = 5,
 }: TableEmptyStateProps) {
+  const { t } = useTranslation();
+  const displayMessage = message || t('empty.noData');
+  
   return (
     <tr>
       <td colSpan={colSpan} className="h-32 text-center">
         <div className="flex flex-col items-center justify-center text-muted-foreground">
           <Inbox className="h-8 w-8 mb-2 opacity-50" />
-          <span className="text-sm">{message}</span>
+          <span className="text-sm">{displayMessage}</span>
         </div>
       </td>
     </tr>

@@ -1,0 +1,45 @@
+{
+  "title": "مكتبة المستندات",
+  "subtitle": "الإدارة الإلكترونية للوثائق",
+  "categories": {
+    "all": "الكل",
+    "assurance": "التأمين",
+    "cnas": "CNAS",
+    "casnos": "CASNOS",
+    "autre": "أخرى"
+  },
+  "list": {
+    "title": "المستندات",
+    "count": "{{count}} مستند(ات)"
+  },
+  "dialog": {
+    "uploadTitle": "رفع مستند",
+    "uploadDesc": "أضف مستنداً جديداً للمكتبة"
+  },
+  "form": {
+    "name": "اسم المستند",
+    "namePlaceholder": "مثال: شهادة التأمين 2025",
+    "category": "الفئة",
+    "selectCategory": "اختر فئة",
+    "file": "ملف PDF",
+    "dropzone": "اسحب وأفلت أو انقر للاختيار"
+  },
+  "actions": {
+    "upload": "رفع",
+    "uploading": "جاري الرفع...",
+    "download": "تحميل",
+    "replace": "استبدال"
+  },
+  "table": {
+    "updatedAt": "تم التحديث في {{date}}"
+  },
+  "filters": {
+    "category": "الفئة",
+    "fromDate": "من تاريخ",
+    "toDate": "إلى تاريخ"
+  },
+  "empty": {
+    "title": "لم يتم العثور على مستندات",
+    "description": "ارفع مستنداً للبدء"
+  }
+}

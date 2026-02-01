@@ -1,0 +1,90 @@
+{
+  "title": "الموردون",
+  "subtitle": "إدارة الشركاء والموردين",
+  "database": {
+    "title": "قاعدة بيانات الموردين",
+    "activeCount": "{{count}} موردين نشطين"
+  },
+  "table": {
+    "supplier": "المورد",
+    "contact": "جهة الاتصال",
+    "coordinates": "بيانات الاتصال",
+    "services": "الخدمات",
+    "status": "الحالة",
+    "actions": "الإجراءات",
+    "since": "منذ {{date}}"
+  },
+  "dialog": {
+    "createTitle": "مورد جديد",
+    "editTitle": "تعديل المورد",
+    "createDesc": "أضف شريكاً جديداً لشبكتك",
+    "editDesc": "عدّل معلومات المورد"
+  },
+  "form": {
+    "companyName": "اسم الشركة",
+    "companyNamePlaceholder": "اسم المورد",
+    "contactPerson": "جهة الاتصال",
+    "contactPlaceholder": "اسم جهة الاتصال",
+    "phone": "الهاتف",
+    "phonePlaceholder": "+213 555 123 456",
+    "email": "البريد الإلكتروني",
+    "emailPlaceholder": "contact@supplier.dz",
+    "serviceTypes": "أنواع الخدمات"
+  },
+  "empty": {
+    "title": "لا يوجد موردون",
+    "description": "أضف أول مورد لك"
+  },
+  "accounting": {
+    "title": "حالة الموردين",
+    "subtitle": "متابعة المعاملات وأرصدة الموردين",
+    "tabs": {
+      "situation": "الحالة",
+      "history": "السجل",
+      "orders": "الطلبات",
+      "receipts": "الإيصالات",
+      "invoices": "الفواتير"
+    },
+    "balance": {
+      "totalDue": "إجمالي المستحق",
+      "totalPaid": "إجمالي المدفوع",
+      "currentBalance": "الرصيد الحالي"
+    },
+    "transaction": {
+      "payment": "دفعة مرسلة",
+      "refund": "استرداد مستلم"
+    },
+    "orders": {
+      "title": "طلبات الموردين",
+      "pending": "قيد الانتظار",
+      "delivered": "تم التسليم",
+      "totalValue": "القيمة الإجمالية",
+      "orderNumber": "رقم الطلب",
+      "quantity": "الكمية",
+      "unitPrice": "سعر الوحدة",
+      "totalAmount": "المبلغ الإجمالي",
+      "orderDate": "تاريخ الطلب",
+      "deliveredQuantity": "الكمية المسلّمة"
+    },
+    "receipts": {
+      "title": "إيصالات الموردين",
+      "total": "إجمالي الإيصالات",
+      "thisMonth": "هذا الشهر",
+      "totalValue": "القيمة الإجمالية",
+      "receiptNumber": "رقم الإيصال",
+      "receiptDate": "تاريخ الاستلام"
+    },
+    "invoices": {
+      "title": "فواتير الموردين",
+      "unpaid": "غير مدفوعة",
+      "overdue": "متأخرة",
+      "totalDue": "إجمالي المستحق",
+      "invoiceNumber": "رقم الفاتورة",
+      "internalRef": "المرجع الداخلي",
+      "amount": "المبلغ",
+      "invoiceDate": "تاريخ الفاتورة",
+      "dueDate": "تاريخ الاستحقاق",
+      "paidAmount": "المبلغ المدفوع"
+    }
+  }
+}

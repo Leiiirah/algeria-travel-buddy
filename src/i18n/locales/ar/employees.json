@@ -1,0 +1,89 @@
+{
+  "title": "الموظفون",
+  "subtitle": "إدارة حسابات المستخدمين",
+  "directory": {
+    "title": "دليل الموظفين",
+    "count": "{{count}} موظف مسجل"
+  },
+  "table": {
+    "employee": "الموظف",
+    "email": "البريد الإلكتروني",
+    "role": "الدور",
+    "status": "الحالة",
+    "addedDate": "تاريخ الإضافة",
+    "actions": "الإجراءات"
+  },
+  "dialog": {
+    "createTitle": "موظف جديد",
+    "createDesc": "أضف مستخدماً جديداً للنظام",
+    "editTitle": "تعديل الموظف",
+    "editDesc": "عدّل معلومات المستخدم"
+  },
+  "form": {
+    "firstName": "الاسم الأول",
+    "lastName": "الاسم الأخير",
+    "email": "البريد الإلكتروني",
+    "emailPlaceholder": "email@agency.dz",
+    "password": "كلمة المرور",
+    "passwordPlaceholder": "كلمة المرور",
+    "passwordEdit": "كلمة المرور (اتركها فارغة للحفاظ على الحالية)",
+    "newPasswordPlaceholder": "كلمة المرور الجديدة",
+    "role": "الدور",
+    "selectRole": "اختر دوراً"
+  },
+  "roles": {
+    "admin": "مدير",
+    "employee": "موظف"
+  },
+  "filters": {
+    "role": "الدور",
+    "status": "الحالة"
+  },
+  "empty": {
+    "title": "لا يوجد موظفون",
+    "description": "أضف أول موظف لك"
+  },
+  "actions": {
+    "activate": "تفعيل",
+    "deactivate": "تعطيل",
+    "edit": "تعديل",
+    "adding": "جاري الإضافة...",
+    "modifying": "جاري التعديل..."
+  },
+  "accounting": {
+    "title": "محاسبة الموظفين",
+    "subtitle": "إدارة السلف والقروض والرواتب",
+    "tabs": {
+      "balances": "حالة الموظفين",
+      "history": "السجل"
+    },
+    "stats": {
+      "totalAdvances": "إجمالي السلف",
+      "totalCredits": "إجمالي القروض",
+      "totalSalaries": "إجمالي الرواتب"
+    },
+    "table": {
+      "employee": "الموظف",
+      "advances": "السلف",
+      "credits": "القروض",
+      "salaries": "الرواتب",
+      "balance": "الرصيد"
+    },
+    "transactionTypes": {
+      "avance": "سلفة",
+      "credit": "قرض",
+      "salaire": "راتب"
+    },
+    "dialog": {
+      "title": "إضافة معاملة",
+      "selectEmployee": "اختر موظفاً",
+      "type": "النوع",
+      "amount": "المبلغ (د.ج)",
+      "date": "التاريخ",
+      "month": "الشهر المعني",
+      "note": "ملاحظة (اختياري)",
+      "notePlaceholder": "أضف ملاحظة..."
+    },
+    "newTransaction": "معاملة جديدة"
+  }
+}

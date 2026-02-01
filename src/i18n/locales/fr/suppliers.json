@@ -1,0 +1,90 @@
+{
+  "title": "Fournisseurs",
+  "subtitle": "Gestion des partenaires et fournisseurs",
+  "database": {
+    "title": "Base de données fournisseurs",
+    "activeCount": "{{count}} fournisseurs actifs"
+  },
+  "table": {
+    "supplier": "Fournisseur",
+    "contact": "Contact",
+    "coordinates": "Coordonnées",
+    "services": "Services",
+    "status": "Statut",
+    "actions": "Actions",
+    "since": "Depuis {{date}}"
+  },
+  "dialog": {
+    "createTitle": "Nouveau fournisseur",
+    "editTitle": "Modifier le fournisseur",
+    "createDesc": "Ajoutez un nouveau partenaire à votre réseau",
+    "editDesc": "Modifiez les informations du fournisseur"
+  },
+  "form": {
+    "companyName": "Nom de l'entreprise",
+    "companyNamePlaceholder": "Nom du fournisseur",
+    "contactPerson": "Personne de contact",
+    "contactPlaceholder": "Nom du contact",
+    "phone": "Téléphone",
+    "phonePlaceholder": "+213 555 123 456",
+    "email": "Email",
+    "emailPlaceholder": "contact@fournisseur.dz",
+    "serviceTypes": "Types de services"
+  },
+  "empty": {
+    "title": "Aucun fournisseur",
+    "description": "Ajoutez votre premier fournisseur"
+  },
+  "accounting": {
+    "title": "Situation Fournisseurs",
+    "subtitle": "Suivi des transactions et soldes fournisseurs",
+    "tabs": {
+      "situation": "Situation",
+      "history": "Historique",
+      "orders": "Commandes",
+      "receipts": "Reçus",
+      "invoices": "Factures"
+    },
+    "balance": {
+      "totalDue": "Total Dû",
+      "totalPaid": "Total Payé",
+      "currentBalance": "Solde Actuel"
+    },
+    "transaction": {
+      "payment": "Paiement envoyé",
+      "refund": "Remboursement reçu"
+    },
+    "orders": {
+      "title": "Commandes Fournisseurs",
+      "pending": "En attente",
+      "delivered": "Livrées",
+      "totalValue": "Valeur Totale",
+      "orderNumber": "N° Commande",
+      "quantity": "Quantité",
+      "unitPrice": "Prix unitaire",
+      "totalAmount": "Montant total",
+      "orderDate": "Date commande",
+      "deliveredQuantity": "Qté livrée"
+    },
+    "receipts": {
+      "title": "Reçus Fournisseurs",
+      "total": "Total Reçus",
+      "thisMonth": "Ce Mois",
+      "totalValue": "Valeur Totale",
+      "receiptNumber": "N° Reçu",
+      "receiptDate": "Date réception"
+    },
+    "invoices": {
+      "title": "Factures Fournisseurs",
+      "unpaid": "Non Payées",
+      "overdue": "En Retard",
+      "totalDue": "Total Dû",
+      "invoiceNumber": "N° Facture",
+      "internalRef": "Réf. Interne",
+      "amount": "Montant",
+      "invoiceDate": "Date facture",
+      "dueDate": "Échéance",
+      "paidAmount": "Montant payé"
+    }
+  }
+}

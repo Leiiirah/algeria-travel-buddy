@@ -1,0 +1,108 @@
+{
+  "title": "العمرة",
+  "subtitle": "إدارة خدمات العمرة",
+  "stats": {
+    "totalPayments": "إجمالي المدفوعات",
+    "totalCredit": "إجمالي الدين (المتبقي)",
+    "netProfit": "صافي الربح"
+  },
+  "tabs": {
+    "orders": "الطلبات",
+    "visas": "التأشيرات",
+    "hotels": "الفنادق"
+  },
+  "orders": {
+    "title": "طلبات العمرة",
+    "count": "{{count}} طلب",
+    "table": {
+      "client": "العميل",
+      "package": "الباقة",
+      "travelers": "المسافرون",
+      "dates": "التواريخ",
+      "amounts": "المبالغ",
+      "status": "الحالة"
+    },
+    "dialog": {
+      "createTitle": "طلب عمرة جديد",
+      "editTitle": "تعديل الطلب"
+    },
+    "form": {
+      "clientName": "اسم العميل",
+      "phone": "الهاتف",
+      "package": "نوع الباقة",
+      "travelers": "عدد المسافرين",
+      "departureDate": "تاريخ المغادرة",
+      "returnDate": "تاريخ العودة",
+      "sellingPrice": "سعر البيع",
+      "buyingPrice": "سعر الشراء",
+      "amountPaid": "المبلغ المدفوع",
+      "notes": "ملاحظات"
+    }
+  },
+  "visas": {
+    "title": "تأشيرات العمرة",
+    "count": "{{count}} تأشيرة",
+    "table": {
+      "client": "العميل",
+      "passportNumber": "رقم الجواز",
+      "supplier": "المورد",
+      "dates": "التواريخ",
+      "amounts": "المبالغ",
+      "status": "الحالة"
+    },
+    "dialog": {
+      "createTitle": "تأشيرة عمرة جديدة",
+      "editTitle": "تعديل التأشيرة"
+    },
+    "form": {
+      "clientName": "اسم العميل",
+      "passportNumber": "رقم الجواز",
+      "supplier": "المورد",
+      "applicationDate": "تاريخ التقديم",
+      "expiryDate": "تاريخ الانتهاء",
+      "sellingPrice": "سعر البيع",
+      "buyingPrice": "سعر الشراء",
+      "amountPaid": "المبلغ المدفوع"
+    }
+  },
+  "hotels": {
+    "title": "حجوزات الفنادق",
+    "count": "{{count}} حجز",
+    "table": {
+      "client": "العميل",
+      "hotel": "الفندق",
+      "city": "المدينة",
+      "dates": "التواريخ",
+      "nights": "الليالي",
+      "amounts": "المبالغ",
+      "status": "الحالة"
+    },
+    "dialog": {
+      "createTitle": "حجز جديد",
+      "editTitle": "تعديل الحجز"
+    },
+    "form": {
+      "clientName": "اسم العميل",
+      "hotelName": "اسم الفندق",
+      "city": "المدينة",
+      "checkIn": "تاريخ الوصول",
+      "checkOut": "تاريخ المغادرة",
+      "nights": "عدد الليالي",
+      "roomType": "نوع الغرفة",
+      "sellingPrice": "سعر البيع",
+      "buyingPrice": "سعر الشراء",
+      "amountPaid": "المبلغ المدفوع"
+    }
+  },
+  "packages": {
+    "economic": "اقتصادي",
+    "standard": "عادي",
+    "premium": "مميز",
+    "vip": "VIP"
+  },
+  "cities": {
+    "mecca": "مكة المكرمة",
+    "medina": "المدينة المنورة"
+  },
+  "empty": "لم يتم العثور على بيانات"
+}

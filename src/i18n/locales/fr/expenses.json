@@ -1,0 +1,57 @@
+{
+  "title": "Dépenses",
+  "subtitle": "Gestion des dépenses de l'entreprise",
+  "stats": {
+    "thisMonth": "Ce Mois",
+    "thisYear": "Cette Année",
+    "totalAll": "Total Global"
+  },
+  "tabs": {
+    "list": "Liste",
+    "stats": "Statistiques"
+  },
+  "categories": {
+    "fournitures": "Fournitures",
+    "equipement": "Équipement",
+    "factures": "Factures",
+    "transport": "Transport",
+    "maintenance": "Maintenance",
+    "marketing": "Marketing",
+    "autre": "Autre"
+  },
+  "table": {
+    "date": "Date",
+    "category": "Catégorie",
+    "description": "Description",
+    "vendor": "Fournisseur",
+    "method": "Mode",
+    "amount": "Montant"
+  },
+  "dialog": {
+    "createTitle": "Ajouter une dépense",
+    "editTitle": "Modifier la dépense"
+  },
+  "form": {
+    "category": "Catégorie",
+    "paymentMethod": "Mode de paiement",
+    "description": "Description",
+    "descriptionPlaceholder": "Description de la dépense",
+    "amount": "Montant (DZD)",
+    "date": "Date",
+    "vendor": "Fournisseur (optionnel)",
+    "vendorPlaceholder": "Nom du fournisseur",
+    "note": "Note (optionnel)",
+    "notePlaceholder": "Ajouter une note..."
+  },
+  "actions": {
+    "newExpense": "Nouvelle Dépense"
+  },
+  "delete": {
+    "title": "Supprimer cette dépense ?",
+    "description": "Cette action est irréversible. La dépense sera définitivement supprimée."
+  },
+  "chart": {
+    "title": "Répartition par catégorie"
+  },
+  "empty": "Aucune dépense trouvée"
+}
