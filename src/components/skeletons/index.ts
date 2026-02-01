@@ -20,3 +20,4 @@ export { EmployeesSkeleton } from './EmployeesSkeleton';
 export { ServicesSkeleton } from './ServicesSkeleton';
 export { DocumentsSkeleton } from './DocumentsSkeleton';
 export { SupplierAccountingSkeleton } from './SupplierAccountingSkeleton';
+export { ExpensesSkeleton } from './ExpensesSkeleton';

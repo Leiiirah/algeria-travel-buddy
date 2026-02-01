@@ -11,6 +11,7 @@ import {
   Wallet,
   Palmtree,
   Users2,
+  Receipt,
 } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
 import { Button } from '@/components/ui/button';
@@ -86,6 +87,11 @@ const adminMenuItems = [
     title: 'Services',
     url: '/services',
     icon: Settings,
+  },
+  {
+    title: 'Dépenses',
+    url: '/depenses',
+    icon: Receipt,
   },
 ];
 

@@ -1,4 +1,4 @@
-import { User, Service, Supplier, Command, Payment, SupplierTransaction, Document, OmraHotel, OmraOrder, OmraVisa, OmraRoomType, OmraStatus, EmployeeTransaction, EmployeeBalance, EmployeeTransactionType } from '@/types';
+import { User, Service, Supplier, Command, Payment, SupplierTransaction, Document, OmraHotel, OmraOrder, OmraVisa, OmraRoomType, OmraStatus, EmployeeTransaction, EmployeeBalance, EmployeeTransactionType, Expense, ExpenseStats, ExpenseCategory, PaymentMethod } from '@/types';
 
 // API base URL - includes /api prefix to match nginx proxy configuration
 const API_URL = (import.meta.env.VITE_API_URL || 'http://69.62.127.134:8080/api')
@@ -219,6 +219,29 @@ export interface CreateEmployeeTransactionDto {
   date: string;
   month?: string;
   note?: string;
+}
+
+// ==================== EXPENSES DTOs ====================
+
+export interface CreateExpenseDto {
+  category: ExpenseCategory;
+  description: string;
+  amount: number;
+  date: string;
+  paymentMethod: PaymentMethod;
+  vendor?: string;
+  receiptUrl?: string;
+  note?: string;
+}
+
+export interface UpdateExpenseDto extends Partial<CreateExpenseDto> {}
+
+export interface ExpenseFilters {
+  category?: string;
+  paymentMethod?: string;
+  fromDate?: string;
+  toDate?: string;
+  search?: string;
 }
 
 export interface OmraStats {
@@ -828,6 +851,42 @@ class ApiClient {
 
   deleteEmployeeTransaction = (id: string): Promise<void> =>
     this.request(`/employee-transactions/${id}`, { method: 'DELETE' });
+
+  // ==================== EXPENSES ====================
+
+  getExpenses = (filters?: ExpenseFilters): Promise<Expense[]> => {
+    const params = new URLSearchParams();
+    if (filters) {
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value !== undefined && value !== '') {
+          params.append(key, String(value));
+        }
+      });
+    }
+    const query = params.toString();
+    return this.request(`/expenses${query ? `?${query}` : ''}`);
+  };
+
+  getExpenseStats = (): Promise<ExpenseStats> =>
+    this.request('/expenses/stats');
+
+  getExpense = (id: string): Promise<Expense> =>
+    this.request(`/expenses/${id}`);
+
+  createExpense = (data: CreateExpenseDto): Promise<Expense> =>
+    this.request('/expenses', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+
+  updateExpense = (id: string, data: UpdateExpenseDto): Promise<Expense> =>
+    this.request(`/expenses/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    });
+
+  deleteExpense = (id: string): Promise<void> =>
+    this.request(`/expenses/${id}`, { method: 'DELETE' });
 }
 
 export const api = new ApiClient();
