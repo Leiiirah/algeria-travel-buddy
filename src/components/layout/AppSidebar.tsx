@@ -10,6 +10,7 @@ import {
   Package,
   Wallet,
   Palmtree,
+  Users2,
 } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
 import { Button } from '@/components/ui/button';
@@ -67,6 +68,11 @@ const managementMenuItems = [
     title: 'Situation Fournisseurs',
     url: '/situation-fournisseurs',
     icon: Wallet,
+  },
+  {
+    title: 'Comptabilité Employés',
+    url: '/comptabilite-employes',
+    icon: Users2,
   },
   {
     title: 'Comptabilité',
