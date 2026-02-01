@@ -249,3 +249,39 @@ export const employeeTransactionTypeLabels: Record<EmployeeTransactionType, stri
   credit: 'Crédit',
   salaire: 'Salaire',
 };
+
+// ==================== EXPENSES TYPES ====================
+
+export type ExpenseCategory = 'fournitures' | 'equipement' | 'factures' | 'transport' | 'maintenance' | 'marketing' | 'autre';
+
+export interface Expense {
+  id: string;
+  category: ExpenseCategory;
+  description: string;
+  amount: number;
+  date: Date;
+  paymentMethod: PaymentMethod;
+  vendor?: string;
+  receiptUrl?: string;
+  note?: string;
+  recordedBy: string;
+  recorder?: User;
+  createdAt: Date;
+}
+
+export interface ExpenseStats {
+  totalThisMonth: number;
+  totalThisYear: number;
+  totalAll: number;
+  byCategory: { category: string; total: number; count: number }[];
+}
+
+export const expenseCategoryLabels: Record<ExpenseCategory, string> = {
+  fournitures: 'Fournitures',
+  equipement: 'Équipement',
+  factures: 'Factures',
+  transport: 'Transport',
+  maintenance: 'Maintenance',
+  marketing: 'Marketing',
+  autre: 'Autre',
+};

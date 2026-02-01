@@ -16,6 +16,7 @@ import { AnalyticsModule } from './analytics/analytics.module';
 import { SearchModule } from './search/search.module';
 import { OmraModule } from './omra/omra.module';
 import { EmployeeTransactionsModule } from './employee-transactions/employee-transactions.module';
+import { ExpensesModule } from './expenses/expenses.module';
 
 
 @Module({
@@ -56,6 +57,7 @@ import { EmployeeTransactionsModule } from './employee-transactions/employee-tra
     SearchModule,
     OmraModule,
     EmployeeTransactionsModule,
+    ExpensesModule,
   ],
   providers: [
     {
