@@ -285,3 +285,75 @@ export const expenseCategoryLabels: Record<ExpenseCategory, string> = {
   marketing: 'Marketing',
   autre: 'Autre',
 };
+
+// ==================== SUPPLIER ORDERS/RECEIPTS/INVOICES TYPES ====================
+
+export type SupplierOrderStatus = 'en_attente' | 'livre' | 'partiel' | 'annule';
+export type SupplierInvoiceStatus = 'non_paye' | 'partiel' | 'paye';
+
+export interface SupplierOrder {
+  id: string;
+  supplierId: string;
+  supplier?: Supplier;
+  orderNumber: string;
+  description: string;
+  quantity: number;
+  unitPrice: number;
+  totalAmount: number;
+  orderDate: Date;
+  status: SupplierOrderStatus;
+  deliveredQuantity: number;
+  notes?: string;
+  createdBy: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface SupplierReceipt {
+  id: string;
+  supplierId: string;
+  supplier?: Supplier;
+  orderId?: string;
+  order?: SupplierOrder;
+  receiptNumber: string;
+  description: string;
+  quantity: number;
+  unitPrice: number;
+  totalAmount: number;
+  receiptDate: Date;
+  notes?: string;
+  createdBy: string;
+  createdAt: Date;
+}
+
+export interface SupplierInvoice {
+  id: string;
+  supplierId: string;
+  supplier?: Supplier;
+  invoiceNumber: string;
+  internalRef: string;
+  description: string;
+  amount: number;
+  invoiceDate: Date;
+  dueDate?: Date;
+  status: SupplierInvoiceStatus;
+  paidAmount: number;
+  fileUrl?: string;
+  notes?: string;
+  createdBy: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export const supplierOrderStatusLabels: Record<SupplierOrderStatus, string> = {
+  en_attente: 'En attente',
+  livre: 'Livré',
+  partiel: 'Partiel',
+  annule: 'Annulé',
+};
+
+export const supplierInvoiceStatusLabels: Record<SupplierInvoiceStatus, string> = {
+  non_paye: 'Non payé',
+  partiel: 'Partiellement payé',
+  paye: 'Payé',
+};

@@ -41,6 +41,9 @@ import { useCommands } from '@/hooks/useCommands';
 import { SupplierAccountingSkeleton } from '@/components/skeletons/SupplierAccountingSkeleton';
 import { ErrorState } from '@/components/ui/error-state';
 import { EmptyState } from '@/components/ui/empty-state';
+import { SupplierOrdersTab } from '@/components/suppliers/SupplierOrdersTab';
+import { SupplierReceiptsTab } from '@/components/suppliers/SupplierReceiptsTab';
+import { SupplierInvoicesTab } from '@/components/suppliers/SupplierInvoicesTab';
 
 const SupplierAccountingPage = () => {
   const navigate = useNavigate();
@@ -56,7 +59,7 @@ const SupplierAccountingPage = () => {
   });
 
   // React Query hooks
-  const { data: suppliers } = useSuppliers(); // Keep for simple list if needed, or replace
+  const { data: suppliers } = useSuppliers();
   const { data: suppliersWithBalance, isLoading: suppliersLoading, isError: suppliersError, error, refetch } = useSuppliersWithBalance();
   const { data: transactions, isLoading: transactionsLoading } = useSupplierTransactions();
   const { data: supplierCommands } = useCommands(
@@ -90,10 +93,8 @@ const SupplierAccountingPage = () => {
     if (!suppliersWithBalance) return [];
 
     return suppliersWithBalance.map((supplier) => {
-      // Logic inside service already calculated totals, but let's map it to the shape we used
-      // Or simply return the supplier object since it now has the totals
       return {
-        supplier: supplier, // It has id, name etc
+        supplier: supplier,
         totalPurchased: supplier.totalBuyingPrice || 0,
         totalPaid: (supplier.totalTransactionsSortie || 0) - (supplier.totalTransactionsEntree || 0),
         remainingBalance: supplier.balance || 0,
@@ -422,9 +423,12 @@ const SupplierAccountingPage = () => {
 
         {/* Tabs */}
         <Tabs defaultValue="situation" className="space-y-4">
-          <TabsList>
-            <TabsTrigger value="situation">Situation Fournisseurs</TabsTrigger>
-            <TabsTrigger value="historique">Historique Transactions</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-5">
+            <TabsTrigger value="situation">Situation</TabsTrigger>
+            <TabsTrigger value="historique">Historique</TabsTrigger>
+            <TabsTrigger value="commandes">Commandes</TabsTrigger>
+            <TabsTrigger value="recus">Reçus</TabsTrigger>
+            <TabsTrigger value="factures">Factures</TabsTrigger>
           </TabsList>
 
           {/* Supplier Situation Tab */}
@@ -560,6 +564,21 @@ const SupplierAccountingPage = () => {
                 )}
               </CardContent>
             </Card>
+          </TabsContent>
+
+          {/* Orders Tab */}
+          <TabsContent value="commandes">
+            <SupplierOrdersTab suppliers={suppliers || []} />
+          </TabsContent>
+
+          {/* Receipts Tab */}
+          <TabsContent value="recus">
+            <SupplierReceiptsTab suppliers={suppliers || []} />
+          </TabsContent>
+
+          {/* Invoices Tab */}
+          <TabsContent value="factures">
+            <SupplierInvoicesTab suppliers={suppliers || []} />
           </TabsContent>
         </Tabs>
       </div>

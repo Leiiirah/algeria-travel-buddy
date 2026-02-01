@@ -17,6 +17,9 @@ import { SearchModule } from './search/search.module';
 import { OmraModule } from './omra/omra.module';
 import { EmployeeTransactionsModule } from './employee-transactions/employee-transactions.module';
 import { ExpensesModule } from './expenses/expenses.module';
+import { SupplierOrdersModule } from './supplier-orders/supplier-orders.module';
+import { SupplierReceiptsModule } from './supplier-receipts/supplier-receipts.module';
+import { SupplierInvoicesModule } from './supplier-invoices/supplier-invoices.module';
 
 
 @Module({
@@ -58,6 +61,9 @@ import { ExpensesModule } from './expenses/expenses.module';
     OmraModule,
     EmployeeTransactionsModule,
     ExpensesModule,
+    SupplierOrdersModule,
+    SupplierReceiptsModule,
+    SupplierInvoicesModule,
   ],
   providers: [
     {
