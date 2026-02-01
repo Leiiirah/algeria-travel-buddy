@@ -1,126 +1,136 @@
 
 
-# Plan: Employee Accounting Module (Comptabilite Employes)
+# Plan: Add Filters to Employee Accounting Page
 
 ## Overview
 
-This plan adds a new module for tracking financial transactions between the admin and employees, including:
-- **Avances (Salary Advances)**: Money given to employees before payday
-- **Credits (Debts)**: Money owed by employees  
-- **Salaires (Salaries)**: Monthly salary payments
+This plan adds comprehensive filtering capabilities to the `/comptabilite-employes` page, following the same patterns used in other pages like AccountingPage and SupplierAccountingPage.
 
-Only admins can add transactions. Both admins and employees can view the data.
+## Filters to Add
 
-## Database Design
-
-A new `employee_transactions` table will store all financial interactions:
-
-| Column | Type | Description |
-|--------|------|-------------|
-| `id` | UUID | Primary key |
-| `employeeId` | UUID | References user being paid/credited |
-| `type` | ENUM | `avance`, `credit`, `salaire` |
-| `amount` | DECIMAL(10,2) | Transaction amount |
-| `date` | DATE | Transaction date |
-| `month` | VARCHAR | For salaries: "2026-01" format |
-| `note` | TEXT | Optional description |
-| `recordedBy` | UUID | Admin who recorded this |
-| `createdAt` | TIMESTAMP | Auto-generated |
+| Filter | Type | Purpose |
+|--------|------|---------|
+| Search | Text input | Search by employee name or note content |
+| Employee | Select dropdown | Filter transactions by specific employee |
+| Transaction Type | Select dropdown | Filter by avance, credit, or salaire |
+| Date From | Date picker | Show transactions from this date |
+| Date To | Date picker | Show transactions until this date |
 
 ## Technical Implementation
 
-### Backend (NestJS)
+### Frontend Changes
 
-**New Module: `server/src/employee-transactions/`**
+**File: `src/pages/EmployeeAccountingPage.tsx`**
 
-| File | Purpose |
-|------|---------|
-| `entities/employee-transaction.entity.ts` | TypeORM entity with enum for transaction types |
-| `dto/create-employee-transaction.dto.ts` | Validation DTO for creating transactions |
-| `employee-transactions.service.ts` | Business logic: CRUD + balance calculations |
-| `employee-transactions.controller.ts` | REST endpoints with admin-only guards on mutations |
-| `employee-transactions.module.ts` | Module definition |
+1. **Add state for filters:**
+   - `searchQuery` for text search
+   - `filters` object containing: `employeeId`, `type`, `fromDate`, `toDate`
 
-**API Endpoints:**
-- `GET /employee-transactions` - List all transactions (admin only)
-- `GET /employee-transactions/employee/:id` - Get transactions for specific employee
-- `GET /employee-transactions/employee/:id/balance` - Get employee's current balance
-- `POST /employee-transactions` - Create transaction (admin only)
-- `DELETE /employee-transactions/:id` - Delete transaction (admin only)
+2. **Import AdvancedFilter component** from `@/components/search/AdvancedFilter`
 
-### Frontend (React)
+3. **Add useDebounce hook** for search input optimization
 
-**New Page: `src/pages/EmployeeAccountingPage.tsx`**
+4. **Configure filter options:**
+   ```typescript
+   const filterConfig = [
+     {
+       key: 'employeeId',
+       label: 'Employe',
+       type: 'select',
+       options: employees.map(e => ({ value: e.id, label: `${e.firstName} ${e.lastName}` }))
+     },
+     {
+       key: 'type',
+       label: 'Type',
+       type: 'select',
+       options: [
+         { value: 'avance', label: 'Avance' },
+         { value: 'credit', label: 'Credit' },
+         { value: 'salaire', label: 'Salaire' }
+       ]
+     },
+     {
+       key: 'fromDate',
+       label: 'Date debut',
+       type: 'date-range'
+     },
+     {
+       key: 'toDate',
+       label: 'Date fin',
+       type: 'date-range'
+     }
+   ];
+   ```
 
-Features:
-- Summary cards showing total advances, credits, and salaries paid
-- Tabs: "Situation Employes" (balances per employee) and "Historique" (all transactions)
-- Dialog form to add new transactions (admin only)
-- Employee detail dialog showing their transaction history
-- Balance calculation: `Total Avances + Total Credits - Total Salaires`
+5. **Add filtering logic** using `useMemo` to filter transactions based on:
+   - Search query (matches employee name or note)
+   - Selected employee ID
+   - Transaction type
+   - Date range (from/to)
 
-**New Hook: `src/hooks/useEmployeeTransactions.ts`**
+6. **Add AdvancedFilter component** above the History tab table with appropriate placeholder text
 
-React Query hooks for:
-- `useEmployeeTransactions()` - Fetch all transactions
-- `useEmployeeTransactionsByEmployee(id)` - Fetch by employee
-- `useCreateEmployeeTransaction()` - Create mutation
-- `useDeleteEmployeeTransaction()` - Delete mutation
+7. **Update totals calculation** to use filtered transactions for the summary cards (optional - could keep global totals)
 
-**API Updates: `src/lib/api.ts`**
+### Filter Logic
 
-New types and methods for employee transactions API calls.
+The filtering will be applied client-side since all transactions are already loaded:
 
-**Type Updates: `src/types/index.ts`**
+```typescript
+const filteredTransactions = useMemo(() => {
+  if (!transactions) return [];
+  
+  return transactions.filter(t => {
+    // Search filter
+    if (debouncedSearch) {
+      const searchLower = debouncedSearch.toLowerCase();
+      const employeeName = `${t.employee?.firstName} ${t.employee?.lastName}`.toLowerCase();
+      const noteMatch = t.note?.toLowerCase().includes(searchLower);
+      if (!employeeName.includes(searchLower) && !noteMatch) return false;
+    }
+    
+    // Employee filter
+    if (filters.employeeId && t.employeeId !== filters.employeeId) return false;
+    
+    // Type filter
+    if (filters.type && t.type !== filters.type) return false;
+    
+    // Date range filter
+    if (filters.fromDate && new Date(t.date) < new Date(filters.fromDate)) return false;
+    if (filters.toDate && new Date(t.date) > new Date(filters.toDate)) return false;
+    
+    return true;
+  });
+}, [transactions, debouncedSearch, filters]);
+```
 
-New types for employee transactions.
+## UI Layout
 
-**Navigation Updates:**
-- `src/components/layout/AppSidebar.tsx` - Add menu item under "Gestion"
-- `src/App.tsx` - Add route `/comptabilite-employes`
+The filter bar will be placed in the "Historique" tab content, above the transactions table:
 
-**New Skeleton: `src/components/skeletons/EmployeeAccountingSkeleton.tsx`**
+```
++--------------------------------------------------+
+| Historique Tab                                    |
++--------------------------------------------------+
+| [Search input...] [Filtres (badge count)]        |
+|                                                   |
+| Filter popover contains:                          |
+|   - Employe (dropdown)                            |
+|   - Type (dropdown)                               |
+|   - Date debut (date picker)                      |
+|   - Date fin (date picker)                        |
++--------------------------------------------------+
+| Table: Date | Employe | Type | Montant | Note    |
++--------------------------------------------------+
+```
 
-Loading state component matching the page structure.
+## Files to Modify
 
-## File Changes Summary
-
-| File | Action |
+| File | Change |
 |------|--------|
-| `server/src/employee-transactions/entities/employee-transaction.entity.ts` | Create |
-| `server/src/employee-transactions/dto/create-employee-transaction.dto.ts` | Create |
-| `server/src/employee-transactions/employee-transactions.service.ts` | Create |
-| `server/src/employee-transactions/employee-transactions.controller.ts` | Create |
-| `server/src/employee-transactions/employee-transactions.module.ts` | Create |
-| `server/src/app.module.ts` | Modify (add module import) |
-| `src/types/index.ts` | Modify (add types) |
-| `src/lib/api.ts` | Modify (add API methods) |
-| `src/hooks/useEmployeeTransactions.ts` | Create |
-| `src/pages/EmployeeAccountingPage.tsx` | Create |
-| `src/components/skeletons/EmployeeAccountingSkeleton.tsx` | Create |
-| `src/components/layout/AppSidebar.tsx` | Modify (add menu item) |
-| `src/App.tsx` | Modify (add route) |
+| `src/pages/EmployeeAccountingPage.tsx` | Add filter state, AdvancedFilter component, and filtering logic |
 
-## Security
+## Summary Card Behavior
 
-- Backend: `@Roles('admin')` decorator on POST and DELETE endpoints
-- Frontend: Conditionally render "Add Transaction" button based on `isAdmin`
-- All GET endpoints accessible to authenticated users (employees can see their own data)
-
-## User Interface Preview
-
-The page will have:
-1. Header with title and "Nouvelle Transaction" button (admin only)
-2. Three summary cards: Total Avances, Total Credits, Total Salaires
-3. Tabbed interface:
-   - **Situation Employes**: Table with employee name, total avances, total credits, total salaires, balance
-   - **Historique**: Chronological list of all transactions with filters
-
-## After Implementation
-
-On your VPS, you'll need to:
-1. Pull the latest code
-2. Run `cd server && npm run build`
-3. Restart the NestJS server (e.g., `pm2 restart all`)
-4. The database table will be created automatically via TypeORM synchronize
+The summary cards (Total Avances, Total Credits, Total Salaires) will continue to show **global totals** regardless of filters applied. This is consistent with how other accounting pages work - the cards show the overall situation while the table can be filtered.
 
