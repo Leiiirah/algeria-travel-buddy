@@ -1,49 +1,84 @@
 
 
-# Plan: Fix API URL Configuration Mismatch
+# Plan: Fix API Routing Between Nginx and NestJS
 
-## Problem
+## Problem Summary
 
-The production login returns a **404 Not Found** error because the frontend and backend have mismatched URL configurations.
-
-**Request URL:** `http://69.62.127.134:8080/api/auth/login`  
-**Expected URL:** `http://69.62.127.134:8080/auth/login`
-
----
-
-## Root Cause
-
-The backend NestJS server doesn't have a global `/api` prefix, but the frontend is configured to include `/api` in the base URL.
-
----
+The nginx configuration proxies `/api/*` requests to NestJS, but it sends the full path including `/api`. Since NestJS routes don't have the `/api` prefix, requests fail with 404/405 errors.
 
 ## Solution
 
-Update `src/lib/api.ts` to remove `/api` from the default URL:
+Two changes are needed:
 
-**Before:**
+### 1. Revert Frontend API URL (Lovable Code Change)
+
+The frontend should include `/api` in requests to match nginx configuration.
+
+**File:** `src/lib/api.ts`
+
+**Change:** Remove the normalization that strips `/api`:
+
 ```typescript
-const API_URL = import.meta.env.VITE_API_URL || 'http://69.62.127.134:8080/api';
+// Before (current broken state):
+const RAW_API_URL = (import.meta.env.VITE_API_URL || 'http://69.62.127.134:8080').trim();
+const API_URL = RAW_API_URL
+  .replace(/\/+$/, '')
+  .replace(/\/api$/, '');
+
+// After (fixed):
+const API_URL = (import.meta.env.VITE_API_URL || 'http://69.62.127.134:8080/api')
+  .trim()
+  .replace(/\/+$/, '');
 ```
 
-**After:**
-```typescript
-const API_URL = import.meta.env.VITE_API_URL || 'http://69.62.127.134:8080';
+### 2. Update Nginx Configuration (VPS Change)
+
+Modify nginx to **strip the `/api` prefix** when proxying to NestJS.
+
+**File on VPS:** `/etc/nginx/sites-available/default`
+
+**Change the `/api` location block:**
+
+```nginx
+# Before:
+location /api {
+    proxy_pass http://127.0.0.1:3000;
+    ...
+}
+
+# After:
+location /api/ {
+    rewrite ^/api/(.*) /$1 break;
+    proxy_pass http://127.0.0.1:3000;
+    proxy_http_version 1.1;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection 'upgrade';
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_cache_bypass $http_upgrade;
+}
 ```
 
----
+**After editing, run these commands on your VPS:**
+```bash
+sudo nginx -t          # Test configuration
+sudo systemctl reload nginx   # Apply changes
+```
 
-## File to Modify
+## Expected Result
 
-| File | Change |
-|------|--------|
-| `src/lib/api.ts` | Remove `/api` from the default URL |
+After both changes:
 
----
+```
+Frontend → /api/auth/login → Nginx (strips /api) → http://127.0.0.1:3000/auth/login → NestJS ✓
+```
 
-## Result
+## Files to Modify
 
-After this change:
-- Login request will go to `http://69.62.127.134:8080/auth/login`
-- All other API endpoints will work correctly
+| Location | File | Change |
+|----------|------|--------|
+| Lovable | `src/lib/api.ts` | Restore `/api` suffix in base URL |
+| VPS | `/etc/nginx/sites-available/default` | Add rewrite rule to strip `/api` prefix |
 
