@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { OmraHotel } from './entities/omra-hotel.entity';
@@ -76,6 +76,17 @@ export class OmraService {
 
   async deleteHotel(id: string): Promise<void> {
     const hotel = await this.findHotelById(id);
+
+    // Check if hotel is referenced by orders or visas
+    const ordersCount = await this.ordersRepository.count({ where: { hotelId: id } });
+    const visasCount = await this.visasRepository.count({ where: { hotelId: id } });
+
+    if (ordersCount > 0 || visasCount > 0) {
+      throw new BadRequestException(
+        `Impossible de supprimer cet hôtel car il est utilisé par ${ordersCount} commande(s) et ${visasCount} visa(s). Veuillez d'abord supprimer ou modifier ces enregistrements.`,
+      );
+    }
+
     await this.hotelsRepository.remove(hotel);
   }
 
