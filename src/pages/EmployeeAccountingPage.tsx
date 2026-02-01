@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { Plus, Wallet, CreditCard, Banknote, Trash2, Eye } from 'lucide-react';
@@ -53,6 +53,8 @@ import {
   useDeleteEmployeeTransaction,
 } from '@/hooks/useEmployeeTransactions';
 import { EmployeeTransactionType, employeeTransactionTypeLabels } from '@/types';
+import { AdvancedFilter, FilterConfig } from '@/components/search/AdvancedFilter';
+import { useDebounce } from '@/hooks/useDebounce';
 
 export default function EmployeeAccountingPage() {
   const { isAdmin } = useAuth();
@@ -73,6 +75,11 @@ export default function EmployeeAccountingPage() {
     note: '',
   });
 
+  // Filter state
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filters, setFilters] = useState<Record<string, any>>({});
+  const debouncedSearch = useDebounce(searchQuery, 300);
+
   const isLoading = loadingTransactions || loadingBalances;
 
   // Calculate totals
@@ -84,6 +91,71 @@ export default function EmployeeAccountingPage() {
 
   // Filter employees (exclude admin)
   const employees = users?.filter(u => u.role === 'employee' && u.isActive) || [];
+
+  // Filter configuration for AdvancedFilter component
+  const filterConfig: FilterConfig[] = useMemo(() => [
+    {
+      key: 'employeeId',
+      label: 'Employé',
+      type: 'select',
+      options: employees.map(e => ({ value: e.id, label: `${e.firstName} ${e.lastName}` })),
+    },
+    {
+      key: 'type',
+      label: 'Type',
+      type: 'select',
+      options: [
+        { value: 'avance', label: 'Avance' },
+        { value: 'credit', label: 'Crédit' },
+        { value: 'salaire', label: 'Salaire' },
+      ],
+    },
+    {
+      key: 'fromDate',
+      label: 'Date début',
+      type: 'date-range',
+    },
+    {
+      key: 'toDate',
+      label: 'Date fin',
+      type: 'date-range',
+    },
+  ], [employees]);
+
+  // Filtered transactions based on search and filters
+  const filteredTransactions = useMemo(() => {
+    if (!transactions) return [];
+
+    return transactions.filter(t => {
+      // Search filter
+      if (debouncedSearch) {
+        const searchLower = debouncedSearch.toLowerCase();
+        const employeeName = `${t.employee?.firstName || ''} ${t.employee?.lastName || ''}`.toLowerCase();
+        const noteMatch = t.note?.toLowerCase().includes(searchLower);
+        if (!employeeName.includes(searchLower) && !noteMatch) return false;
+      }
+
+      // Employee filter
+      if (filters.employeeId && t.employeeId !== filters.employeeId) return false;
+
+      // Type filter
+      if (filters.type && t.type !== filters.type) return false;
+
+      // Date range filter
+      if (filters.fromDate) {
+        const fromDate = new Date(filters.fromDate);
+        fromDate.setHours(0, 0, 0, 0);
+        if (new Date(t.date) < fromDate) return false;
+      }
+      if (filters.toDate) {
+        const toDate = new Date(filters.toDate);
+        toDate.setHours(23, 59, 59, 999);
+        if (new Date(t.date) > toDate) return false;
+      }
+
+      return true;
+    });
+  }, [transactions, debouncedSearch, filters]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -380,7 +452,15 @@ export default function EmployeeAccountingPage() {
 
           <TabsContent value="history" className="mt-4">
             <Card>
-              <CardContent className="pt-6">
+              <CardContent className="pt-6 space-y-4">
+                <AdvancedFilter
+                  searchQuery={searchQuery}
+                  onSearchChange={setSearchQuery}
+                  filters={filters}
+                  onFilterChange={setFilters}
+                  filterConfig={filterConfig}
+                  placeholder="Rechercher par employé ou note..."
+                />
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -393,7 +473,7 @@ export default function EmployeeAccountingPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {transactions?.map((transaction) => (
+                    {filteredTransactions.map((transaction) => (
                       <TableRow key={transaction.id}>
                         <TableCell>
                           {format(new Date(transaction.date), 'dd MMM yyyy', { locale: fr })}
@@ -445,9 +525,10 @@ export default function EmployeeAccountingPage() {
                         )}
                       </TableRow>
                     ))}
-                    {(!transactions || transactions.length === 0) && (
+                    {filteredTransactions.length === 0 && (
                       <TableRow>
                         <TableCell colSpan={isAdmin ? 6 : 5} className="text-center text-muted-foreground py-8">
+                          {transactions?.length === 0 ? 'Aucune transaction enregistrée' : 'Aucun résultat pour ces filtres'}
                           Aucune transaction enregistrée
                         </TableCell>
                       </TableRow>
