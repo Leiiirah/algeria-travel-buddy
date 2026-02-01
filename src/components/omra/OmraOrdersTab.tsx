@@ -34,7 +34,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Plus, MoreHorizontal, Edit, Trash2, Package } from 'lucide-react';
+import { Plus, MoreHorizontal, Edit, Trash2, Package, Building2 } from 'lucide-react';
 import { OmraOrder, OmraRoomType, omraRoomTypeLabels, omraStatusLabels } from '@/types';
 import { OmraFilters } from '@/lib/api';
 import { formatDZD } from '@/lib/utils';
@@ -45,6 +45,7 @@ import {
   useUpdateOmraOrder,
   useUpdateOmraOrderStatus,
   useDeleteOmraOrder,
+  useCreateOmraHotel,
 } from '@/hooks/useOmra';
 import { AdvancedFilter } from '@/components/search/AdvancedFilter';
 import { useDebounce } from '@/hooks/useDebounce';
@@ -64,6 +65,8 @@ export const OmraOrdersTab = () => {
   const [filters, setFilters] = useState<OmraFilters>({});
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingOrder, setEditingOrder] = useState<OmraOrder | null>(null);
+  const [isAddingHotel, setIsAddingHotel] = useState(false);
+  const [newHotelName, setNewHotelName] = useState('');
   const [formData, setFormData] = useState({
     clientName: '',
     phone: '',
@@ -89,6 +92,21 @@ export const OmraOrdersTab = () => {
   const updateOrder = useUpdateOmraOrder();
   const updateStatus = useUpdateOmraOrderStatus();
   const deleteOrder = useDeleteOmraOrder();
+  const createHotel = useCreateOmraHotel();
+
+  const handleAddHotel = () => {
+    if (!newHotelName.trim()) return;
+    createHotel.mutate(
+      { name: newHotelName.trim() },
+      {
+        onSuccess: (newHotel) => {
+          setFormData({ ...formData, hotelId: newHotel.id });
+          setNewHotelName('');
+          setIsAddingHotel(false);
+        },
+      }
+    );
+  };
 
   const orders = ordersData?.data ?? [];
 
@@ -391,21 +409,76 @@ export const OmraOrdersTab = () => {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Hôtel</Label>
-                <Select
-                  value={formData.hotelId}
-                  onValueChange={(value) => setFormData({ ...formData, hotelId: value })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Sélectionner un hôtel" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {hotels.map((hotel) => (
-                      <SelectItem key={hotel.id} value={hotel.id}>
-                        {hotel.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                {hotels.length === 0 && !isAddingHotel ? (
+                  <div className="flex flex-col gap-2">
+                    <p className="text-sm text-muted-foreground">Aucun hôtel disponible</p>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setIsAddingHotel(true)}
+                      className="gap-2"
+                    >
+                      <Building2 className="h-4 w-4" />
+                      Ajouter un hôtel
+                    </Button>
+                  </div>
+                ) : isAddingHotel ? (
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder="Nom de l'hôtel"
+                      value={newHotelName}
+                      onChange={(e) => setNewHotelName(e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && handleAddHotel()}
+                    />
+                    <Button
+                      type="button"
+                      size="sm"
+                      onClick={handleAddHotel}
+                      disabled={createHotel.isPending || !newHotelName.trim()}
+                    >
+                      {createHotel.isPending ? '...' : 'Ajouter'}
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setIsAddingHotel(false);
+                        setNewHotelName('');
+                      }}
+                    >
+                      Annuler
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="flex gap-2">
+                    <Select
+                      value={formData.hotelId}
+                      onValueChange={(value) => setFormData({ ...formData, hotelId: value })}
+                    >
+                      <SelectTrigger className="flex-1">
+                        <SelectValue placeholder="Sélectionner un hôtel" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {hotels.map((hotel) => (
+                          <SelectItem key={hotel.id} value={hotel.id}>
+                            {hotel.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      onClick={() => setIsAddingHotel(true)}
+                      title="Ajouter un hôtel"
+                    >
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </div>
+                )}
               </div>
               <div className="space-y-2">
                 <Label>Type de chambre</Label>
