@@ -1,136 +1,191 @@
 
-
-# Plan: Add Filters to Employee Accounting Page
+# Plan: Expenses Module (Dépenses)
 
 ## Overview
 
-This plan adds comprehensive filtering capabilities to the `/comptabilite-employes` page, following the same patterns used in other pages like AccountingPage and SupplierAccountingPage.
+This plan adds a new **Expenses** module for tracking company purchases and expenses. This feature will be **admin-only** - only administrators can view, add, and delete expenses.
 
-## Filters to Add
+Examples of expenses:
+- Office supplies (fournitures de bureau)
+- Equipment purchases (matériel)
+- Utilities (factures - électricité, internet)
+- Travel expenses (frais de déplacement)
+- Maintenance costs (entretien)
+- Other operational costs
 
-| Filter | Type | Purpose |
-|--------|------|---------|
-| Search | Text input | Search by employee name or note content |
-| Employee | Select dropdown | Filter transactions by specific employee |
-| Transaction Type | Select dropdown | Filter by avance, credit, or salaire |
-| Date From | Date picker | Show transactions from this date |
-| Date To | Date picker | Show transactions until this date |
+## Database Design
+
+A new `expenses` table will store all company expenses:
+
+| Column | Type | Description |
+|--------|------|-------------|
+| `id` | UUID | Primary key |
+| `category` | ENUM | Type of expense (see categories below) |
+| `description` | VARCHAR | Description of the expense |
+| `amount` | DECIMAL(10,2) | Expense amount in DZD |
+| `date` | DATE | Date of the expense |
+| `paymentMethod` | ENUM | How the expense was paid |
+| `vendor` | VARCHAR | Supplier/vendor name (optional) |
+| `receiptUrl` | VARCHAR | Path to receipt file (optional) |
+| `note` | TEXT | Additional notes (optional) |
+| `recordedBy` | UUID | Admin who recorded this |
+| `createdAt` | TIMESTAMP | Auto-generated |
+
+**Expense Categories:**
+- `fournitures` - Office supplies
+- `equipement` - Equipment
+- `factures` - Bills (utilities)
+- `transport` - Transportation
+- `maintenance` - Maintenance
+- `marketing` - Marketing/Advertising
+- `autre` - Other
+
+**Payment Methods:**
+- `especes` - Cash
+- `virement` - Bank transfer
+- `cheque` - Check
+- `carte` - Card
 
 ## Technical Implementation
 
-### Frontend Changes
+### Backend (NestJS)
 
-**File: `src/pages/EmployeeAccountingPage.tsx`**
+**New Module: `server/src/expenses/`**
 
-1. **Add state for filters:**
-   - `searchQuery` for text search
-   - `filters` object containing: `employeeId`, `type`, `fromDate`, `toDate`
+| File | Purpose |
+|------|---------|
+| `entities/expense.entity.ts` | TypeORM entity with enums for category and payment method |
+| `dto/create-expense.dto.ts` | Validation DTO for creating expenses |
+| `dto/update-expense.dto.ts` | Validation DTO for updating expenses |
+| `expenses.service.ts` | Business logic: CRUD operations + statistics |
+| `expenses.controller.ts` | REST endpoints with admin-only guards |
+| `expenses.module.ts` | Module definition |
 
-2. **Import AdvancedFilter component** from `@/components/search/AdvancedFilter`
+**API Endpoints (all admin-only):**
+- `GET /expenses` - List all expenses (with optional filters)
+- `GET /expenses/stats` - Get expense statistics
+- `GET /expenses/:id` - Get single expense
+- `POST /expenses` - Create expense
+- `PATCH /expenses/:id` - Update expense
+- `DELETE /expenses/:id` - Delete expense
 
-3. **Add useDebounce hook** for search input optimization
+### Frontend (React)
 
-4. **Configure filter options:**
-   ```typescript
-   const filterConfig = [
-     {
-       key: 'employeeId',
-       label: 'Employe',
-       type: 'select',
-       options: employees.map(e => ({ value: e.id, label: `${e.firstName} ${e.lastName}` }))
-     },
-     {
-       key: 'type',
-       label: 'Type',
-       type: 'select',
-       options: [
-         { value: 'avance', label: 'Avance' },
-         { value: 'credit', label: 'Credit' },
-         { value: 'salaire', label: 'Salaire' }
-       ]
-     },
-     {
-       key: 'fromDate',
-       label: 'Date debut',
-       type: 'date-range'
-     },
-     {
-       key: 'toDate',
-       label: 'Date fin',
-       type: 'date-range'
-     }
-   ];
-   ```
+**New Page: `src/pages/ExpensesPage.tsx`**
 
-5. **Add filtering logic** using `useMemo` to filter transactions based on:
-   - Search query (matches employee name or note)
-   - Selected employee ID
-   - Transaction type
-   - Date range (from/to)
+Features:
+- Header with title and "Nouvelle Dépense" button
+- Summary cards showing:
+  - Total expenses (this month)
+  - Total expenses (this year)
+  - Breakdown by category (top 3)
+- Tabs:
+  - **Liste** - Table of all expenses with filters
+  - **Statistiques** - Charts showing expense breakdown
+- Dialog form to add/edit expenses
+- Filters: search, category, payment method, date range
 
-6. **Add AdvancedFilter component** above the History tab table with appropriate placeholder text
+**New Hook: `src/hooks/useExpenses.ts`**
 
-7. **Update totals calculation** to use filtered transactions for the summary cards (optional - could keep global totals)
+React Query hooks for:
+- `useExpenses(filters)` - Fetch all expenses
+- `useExpenseStats()` - Fetch expense statistics
+- `useCreateExpense()` - Create mutation
+- `useUpdateExpense()` - Update mutation
+- `useDeleteExpense()` - Delete mutation
 
-### Filter Logic
+**New Skeleton: `src/components/skeletons/ExpensesSkeleton.tsx`**
 
-The filtering will be applied client-side since all transactions are already loaded:
+Loading state component matching the page structure.
 
+**API Updates: `src/lib/api.ts`**
+
+New types and methods for expense API calls.
+
+**Type Updates: `src/types/index.ts`**
+
+New types for expenses:
 ```typescript
-const filteredTransactions = useMemo(() => {
-  if (!transactions) return [];
-  
-  return transactions.filter(t => {
-    // Search filter
-    if (debouncedSearch) {
-      const searchLower = debouncedSearch.toLowerCase();
-      const employeeName = `${t.employee?.firstName} ${t.employee?.lastName}`.toLowerCase();
-      const noteMatch = t.note?.toLowerCase().includes(searchLower);
-      if (!employeeName.includes(searchLower) && !noteMatch) return false;
-    }
-    
-    // Employee filter
-    if (filters.employeeId && t.employeeId !== filters.employeeId) return false;
-    
-    // Type filter
-    if (filters.type && t.type !== filters.type) return false;
-    
-    // Date range filter
-    if (filters.fromDate && new Date(t.date) < new Date(filters.fromDate)) return false;
-    if (filters.toDate && new Date(t.date) > new Date(filters.toDate)) return false;
-    
-    return true;
-  });
-}, [transactions, debouncedSearch, filters]);
+export type ExpenseCategory = 'fournitures' | 'equipement' | 'factures' | 'transport' | 'maintenance' | 'marketing' | 'autre';
+
+export interface Expense {
+  id: string;
+  category: ExpenseCategory;
+  description: string;
+  amount: number;
+  date: Date;
+  paymentMethod: PaymentMethod;
+  vendor?: string;
+  receiptUrl?: string;
+  note?: string;
+  recordedBy: string;
+  recorder?: User;
+  createdAt: Date;
+}
+
+export const expenseCategoryLabels: Record<ExpenseCategory, string> = {
+  fournitures: 'Fournitures',
+  equipement: 'Équipement',
+  factures: 'Factures',
+  transport: 'Transport',
+  maintenance: 'Maintenance',
+  marketing: 'Marketing',
+  autre: 'Autre',
+};
 ```
 
-## UI Layout
+**Navigation Updates:**
+- `src/components/layout/AppSidebar.tsx` - Add "Dépenses" menu item under Administration (admin-only section)
+- `src/App.tsx` - Add route `/depenses` with `adminOnly` protection
 
-The filter bar will be placed in the "Historique" tab content, above the transactions table:
+## File Changes Summary
 
-```
-+--------------------------------------------------+
-| Historique Tab                                    |
-+--------------------------------------------------+
-| [Search input...] [Filtres (badge count)]        |
-|                                                   |
-| Filter popover contains:                          |
-|   - Employe (dropdown)                            |
-|   - Type (dropdown)                               |
-|   - Date debut (date picker)                      |
-|   - Date fin (date picker)                        |
-+--------------------------------------------------+
-| Table: Date | Employe | Type | Montant | Note    |
-+--------------------------------------------------+
-```
-
-## Files to Modify
-
-| File | Change |
+| File | Action |
 |------|--------|
-| `src/pages/EmployeeAccountingPage.tsx` | Add filter state, AdvancedFilter component, and filtering logic |
+| `server/src/expenses/entities/expense.entity.ts` | Create |
+| `server/src/expenses/dto/create-expense.dto.ts` | Create |
+| `server/src/expenses/dto/update-expense.dto.ts` | Create |
+| `server/src/expenses/expenses.service.ts` | Create |
+| `server/src/expenses/expenses.controller.ts` | Create |
+| `server/src/expenses/expenses.module.ts` | Create |
+| `server/src/app.module.ts` | Modify (add ExpensesModule import) |
+| `src/types/index.ts` | Modify (add expense types) |
+| `src/lib/api.ts` | Modify (add expense API methods) |
+| `src/hooks/useExpenses.ts` | Create |
+| `src/pages/ExpensesPage.tsx` | Create |
+| `src/components/skeletons/ExpensesSkeleton.tsx` | Create |
+| `src/components/layout/AppSidebar.tsx` | Modify (add menu item) |
+| `src/App.tsx` | Modify (add route) |
 
-## Summary Card Behavior
+## Security
 
-The summary cards (Total Avances, Total Credits, Total Salaires) will continue to show **global totals** regardless of filters applied. This is consistent with how other accounting pages work - the cards show the overall situation while the table can be filtered.
+- **Backend**: All endpoints protected with `@Roles('admin')` decorator
+- **Frontend**: Route protected with `<ProtectedRoute adminOnly>`
+- **Sidebar**: Menu item only shown in the "Administration" section (already admin-only)
 
+## User Interface Preview
+
+```text
++----------------------------------------------------------+
+| Dépenses                          [+ Nouvelle Dépense]   |
++----------------------------------------------------------+
+| Ce Mois        | Cette Année      | Top Catégorie        |
+| 45,000 DZD     | 520,000 DZD      | Fournitures: 35%     |
++----------------------------------------------------------+
+| [Liste] [Statistiques]                                   |
++----------------------------------------------------------+
+| [Search...] [Filtres]                                    |
++----------------------------------------------------------+
+| Date       | Catégorie    | Description | Montant | ...  |
+| 01/02/2026 | Fournitures  | Papier A4   | 5,000   | ...  |
+| 28/01/2026 | Factures     | Électricité | 12,000  | ...  |
++----------------------------------------------------------+
+```
+
+## After Implementation
+
+On your VPS, you'll need to:
+1. Pull the latest code
+2. Run `cd server && npm run build`
+3. Restart the NestJS server (e.g., `pm2 restart all`)
+4. The database table will be created automatically via TypeORM synchronize
