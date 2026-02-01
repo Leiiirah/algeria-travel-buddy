@@ -1,30 +1,31 @@
 
-# Plan: Restrict Supplier Management to Admin Only
+
+# Plan: Restrict Document Management to Admin Only
 
 ## Overview
 
-This plan restricts the ability to add, edit, and delete suppliers to admin users only. Regular employees will still be able to view the suppliers list but won't see the management buttons.
+This plan restricts the ability to upload, update, and delete documents to admin users only. Regular employees will still be able to view and download documents but won't see the management buttons (Upload, Replace, Delete).
 
 ## Changes Required
 
 ### Backend (NestJS)
 
-**File: `server/src/suppliers/suppliers.controller.ts`**
+**File: `server/src/documents/documents.controller.ts`**
 
-Add the `RolesGuard` and `@Roles('admin')` decorator to the create, update, and delete endpoints, following the same pattern used in `UsersController`:
+Add the `RolesGuard` and `@Roles('admin')` decorator to the upload, update, and delete endpoints:
 
 ```typescript
 import { RolesGuard } from '../common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
 
-@Controller('suppliers')
-@UseGuards(JwtAuthGuard, RolesGuard)  // Add RolesGuard here
-export class SuppliersController {
+@Controller('documents')
+@UseGuards(JwtAuthGuard, RolesGuard)  // Add RolesGuard
+export class DocumentsController {
   // GET endpoints remain accessible to all authenticated users
   
-  @Post()
-  @Roles('admin')  // Only admin can create
-  create(...) { }
+  @Post('upload')
+  @Roles('admin')  // Only admin can upload
+  upload(...) { }
 
   @Patch(':id')
   @Roles('admin')  // Only admin can update
@@ -38,28 +39,45 @@ export class SuppliersController {
 
 ### Frontend (React)
 
-**File: `src/pages/SuppliersPage.tsx`**
+**File: `src/pages/DocumentsPage.tsx`**
 
-Hide the "Add", "Edit", and "Delete" buttons for non-admin users using the `isAdmin` flag from `useAuth()`:
+Hide the upload, replace, and delete buttons for non-admin users:
 
-- Import `useAuth` from `@/contexts/AuthContext`
-- Conditionally render the "Ajouter" button only for admins
-- Conditionally render the Edit and Delete action buttons only for admins
+1. Import `useAuth` from `@/contexts/AuthContext`
+2. Get the `isAdmin` flag from the hook
+3. Conditionally render the "Téléverser" (Upload) button only for admins
+4. Conditionally render the Replace and Delete action buttons only for admins
+5. Adjust empty state message for non-admin users
 
 ## Files to Modify
 
 | File | Change |
 |------|--------|
-| `server/src/suppliers/suppliers.controller.ts` | Add RolesGuard and @Roles('admin') to POST, PATCH, DELETE |
-| `src/pages/SuppliersPage.tsx` | Hide add/edit/delete buttons for non-admin users |
+| `server/src/documents/documents.controller.ts` | Add RolesGuard and @Roles('admin') to POST, PATCH, DELETE |
+| `src/pages/DocumentsPage.tsx` | Hide upload/replace/delete buttons for non-admin users |
+
+## Technical Details
+
+### Backend Changes
+- Import `RolesGuard` from `../common/guards/roles.guard`
+- Import `Roles` decorator from `../common/decorators/roles.decorator`
+- Add `RolesGuard` to the controller-level `@UseGuards()` decorator
+- Add `@Roles('admin')` to `upload()`, `update()`, and `remove()` methods
+
+### Frontend Changes
+- Add `const { isAdmin } = useAuth();` after existing hooks
+- Wrap the Upload Dialog trigger in `{isAdmin && ...}`
+- Wrap the Replace and Delete buttons in `{isAdmin && ...}`
+- Download button remains visible to all users
 
 ## Security Note
 
-This implementation uses server-side role validation (via `RolesGuard` on the backend) to ensure security. The frontend changes are purely for UX - even if someone bypasses the UI, the backend will reject unauthorized requests with a 403 Forbidden error.
+The backend validation ensures that even if someone bypasses the UI, non-admin requests to upload/update/delete will be rejected with a 403 Forbidden error.
 
 ## After Implementation
 
 On your VPS, you'll need to:
 1. Pull the latest code
 2. Run `npm run build` in the server directory
-3. Restart the NestJS server
+3. Restart the NestJS server (e.g., `pm2 restart all`)
+
