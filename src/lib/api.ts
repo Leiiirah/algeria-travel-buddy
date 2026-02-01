@@ -1,6 +1,6 @@
 import { User, Service, Supplier, Command, Payment, SupplierTransaction, Document } from '@/types';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://69.62.127.134:8080/api';
+const API_URL = import.meta.env.VITE_API_URL || 'http://69.62.127.134:8080';
 
 // DTOs for API requests
 export interface LoginDto {
