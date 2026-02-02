@@ -79,7 +79,37 @@
   "actions": {
     "saving": "جاري الحفظ...",
     "create": "إنشاء",
-    "edit": "تعديل"
+    "edit": "تعديل",
+    "printInvoice": "طباعة الفاتورة"
+  },
+  "invoice": {
+    "title": "فاتورة",
+    "reference": "المرجع",
+    "date": "التاريخ",
+    "client": "العميل",
+    "name": "الاسم",
+    "phone": "الهاتف",
+    "orderDetails": "تفاصيل الطلب",
+    "service": "الخدمة",
+    "destination": "الوجهة",
+    "supplier": "المورد",
+    "passengers": "الركاب",
+    "passenger": "الراكب",
+    "ticketNumber": "رقم التذكرة",
+    "status": "الحالة",
+    "itinerary": "خط السير",
+    "from": "من",
+    "to": "إلى",
+    "departure": "المغادرة",
+    "arrival": "الوصول",
+    "flight": "الرحلة",
+    "class": "الدرجة",
+    "financialSummary": "الملخص المالي",
+    "totalPrice": "السعر الإجمالي",
+    "amountPaid": "المبلغ المدفوع",
+    "remaining": "المتبقي",
+    "thankYou": "شكراً لثقتكم!",
+    "generatedOn": "تم الإنشاء في"
   },
   "empty": {
     "title": "لا توجد طلبات",

@@ -79,7 +79,37 @@
   "actions": {
     "saving": "Enregistrement...",
     "create": "Créer",
-    "edit": "Modifier"
+    "edit": "Modifier",
+    "printInvoice": "Imprimer la facture"
+  },
+  "invoice": {
+    "title": "FACTURE",
+    "reference": "Référence",
+    "date": "Date",
+    "client": "CLIENT",
+    "name": "Nom",
+    "phone": "Téléphone",
+    "orderDetails": "DÉTAILS DE LA COMMANDE",
+    "service": "Service",
+    "destination": "Destination",
+    "supplier": "Fournisseur",
+    "passengers": "PASSAGER(S)",
+    "passenger": "Passager",
+    "ticketNumber": "N° Ticket",
+    "status": "Statut",
+    "itinerary": "ITINÉRAIRE",
+    "from": "De",
+    "to": "À",
+    "departure": "Départ",
+    "arrival": "Arrivée",
+    "flight": "Vol",
+    "class": "Classe",
+    "financialSummary": "RÉSUMÉ FINANCIER",
+    "totalPrice": "Prix Total",
+    "amountPaid": "Montant Payé",
+    "remaining": "Reste à Payer",
+    "thankYou": "Merci de votre confiance !",
+    "generatedOn": "Généré le"
   },
   "empty": {
     "title": "Aucune commande",
