@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -35,7 +36,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Plus, MoreHorizontal, Edit, Trash2, Package, Building2 } from 'lucide-react';
-import { OmraOrder, OmraRoomType, omraRoomTypeLabels, omraStatusLabels } from '@/types';
+import { OmraOrder, OmraRoomType } from '@/types';
 import { OmraFilters } from '@/lib/api';
 import { formatDZD } from '@/lib/utils';
 import {
@@ -61,6 +62,8 @@ const statusColors: Record<string, string> = {
 const roomTypes: OmraRoomType[] = ['chambre_1', 'chambre_2', 'chambre_3', 'chambre_4', 'chambre_5', 'suite'];
 
 export const OmraOrdersTab = () => {
+  const { t } = useTranslation('omra');
+  const { t: tCommon } = useTranslation('common');
   const [searchQuery, setSearchQuery] = useState('');
   const [filters, setFilters] = useState<OmraFilters>({});
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -178,7 +181,7 @@ export const OmraOrdersTab = () => {
   };
 
   const handleDelete = (id: string) => {
-    if (confirm('Êtes-vous sûr de vouloir supprimer cette commande ?')) {
+    if (confirm(t('orders.confirm.delete'))) {
       deleteOrder.mutate(id);
     }
   };
@@ -196,7 +199,7 @@ export const OmraOrdersTab = () => {
   };
 
   if (isLoading) {
-    return <div className="p-8 text-center text-muted-foreground">Chargement...</div>;
+    return <div className="p-8 text-center text-muted-foreground">{t('loading')}</div>;
   }
 
   return (
@@ -205,8 +208,8 @@ export const OmraOrdersTab = () => {
         <CardHeader>
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <CardTitle>Commandes Omra</CardTitle>
-              <CardDescription>{ordersData?.total ?? 0} commandes au total</CardDescription>
+              <CardTitle>{t('orders.title')}</CardTitle>
+              <CardDescription>{t('orders.count', { count: ordersData?.total ?? 0 })}</CardDescription>
             </div>
             <div className="flex flex-wrap gap-3">
               <AdvancedFilter
@@ -217,18 +220,18 @@ export const OmraOrdersTab = () => {
                 filterConfig={[
                   {
                     key: 'status',
-                    label: 'Statut',
+                    label: t('filters.status'),
                     type: 'select',
                     options: [
-                      { label: 'En attente', value: 'en_attente' },
-                      { label: 'Confirmé', value: 'confirme' },
-                      { label: 'Terminé', value: 'termine' },
-                      { label: 'Annulé', value: 'annule' },
+                      { label: t('status.en_attente'), value: 'en_attente' },
+                      { label: t('status.confirme'), value: 'confirme' },
+                      { label: t('status.termine'), value: 'termine' },
+                      { label: t('status.annule'), value: 'annule' },
                     ],
                   },
                   {
                     key: 'hotelId',
-                    label: 'Hôtel',
+                    label: t('filters.hotel'),
                     type: 'select',
                     options: hotels.map((h) => ({ label: h.name, value: h.id })),
                   },
@@ -236,7 +239,7 @@ export const OmraOrdersTab = () => {
               />
               <Button onClick={() => handleOpenDialog()} className="gap-2">
                 <Plus className="h-4 w-4" />
-                Nouvelle Commande
+                {t('orders.newOrder')}
               </Button>
             </div>
           </div>
@@ -245,10 +248,10 @@ export const OmraOrdersTab = () => {
           {orders.length === 0 ? (
             <EmptyState
               icon={Package}
-              title="Aucune commande"
-              description="Commencez par créer une commande Omra"
+              title={t('orders.empty.title')}
+              description={t('orders.empty.description')}
               action={{
-                label: 'Nouvelle commande',
+                label: t('orders.empty.action'),
                 onClick: () => handleOpenDialog(),
               }}
             />
@@ -256,13 +259,13 @@ export const OmraOrdersTab = () => {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Client</TableHead>
-                  <TableHead>Période</TableHead>
-                  <TableHead>Hôtel</TableHead>
-                  <TableHead>Chambre</TableHead>
-                  <TableHead>Prix</TableHead>
-                  <TableHead>Statut</TableHead>
-                  <TableHead className="w-[70px]">Actions</TableHead>
+                  <TableHead>{t('orders.table.client')}</TableHead>
+                  <TableHead>{t('orders.table.period')}</TableHead>
+                  <TableHead>{t('orders.table.hotel')}</TableHead>
+                  <TableHead>{t('orders.table.room')}</TableHead>
+                  <TableHead>{t('orders.table.price')}</TableHead>
+                  <TableHead>{t('orders.table.status')}</TableHead>
+                  <TableHead className="w-[70px]">{t('orders.table.actions')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -281,12 +284,12 @@ export const OmraOrdersTab = () => {
                       </div>
                     </TableCell>
                     <TableCell>{order.hotel?.name || getHotelName(order.hotelId)}</TableCell>
-                    <TableCell>{omraRoomTypeLabels[order.roomType]}</TableCell>
+                    <TableCell>{t(`roomTypes.${order.roomType}`)}</TableCell>
                     <TableCell>
                       <div className="text-sm">
                         <p className="font-medium">{formatDZD(Number(order.sellingPrice))}</p>
                         <p className="text-muted-foreground">
-                          Reste: {formatDZD(Number(order.sellingPrice) - Number(order.amountPaid))}
+                          {t('orders.table.remaining')}: {formatDZD(Number(order.sellingPrice) - Number(order.amountPaid))}
                         </p>
                       </div>
                     </TableCell>
@@ -297,14 +300,14 @@ export const OmraOrdersTab = () => {
                       >
                         <SelectTrigger className="w-[130px] h-8">
                           <Badge className={`${statusColors[order.status]} border-0`}>
-                            {omraStatusLabels[order.status]}
+                            {t(`status.${order.status}`)}
                           </Badge>
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="en_attente">En attente</SelectItem>
-                          <SelectItem value="confirme">Confirmé</SelectItem>
-                          <SelectItem value="termine">Terminé</SelectItem>
-                          <SelectItem value="annule">Annulé</SelectItem>
+                          <SelectItem value="en_attente">{t('status.en_attente')}</SelectItem>
+                          <SelectItem value="confirme">{t('status.confirme')}</SelectItem>
+                          <SelectItem value="termine">{t('status.termine')}</SelectItem>
+                          <SelectItem value="annule">{t('status.annule')}</SelectItem>
                         </SelectContent>
                       </Select>
                     </TableCell>
@@ -317,15 +320,15 @@ export const OmraOrdersTab = () => {
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                           <DropdownMenuItem onClick={() => handleOpenDialog(order)}>
-                            <Edit className="mr-2 h-4 w-4" />
-                            Modifier
+                            <Edit className="ltr:mr-2 rtl:ml-2 h-4 w-4" />
+                            {tCommon('actions.edit')}
                           </DropdownMenuItem>
                           <DropdownMenuItem
                             className="text-destructive"
                             onClick={() => handleDelete(order.id)}
                           >
-                            <Trash2 className="mr-2 h-4 w-4" />
-                            Supprimer
+                            <Trash2 className="ltr:mr-2 rtl:ml-2 h-4 w-4" />
+                            {tCommon('actions.delete')}
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
@@ -343,33 +346,33 @@ export const OmraOrdersTab = () => {
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
-              {editingOrder ? 'Modifier la commande' : 'Nouvelle commande Omra'}
+              {editingOrder ? t('orders.dialog.editTitle') : t('orders.dialog.createTitle')}
             </DialogTitle>
             <DialogDescription>
               {editingOrder
-                ? 'Modifiez les informations de la commande'
-                : 'Créez une nouvelle commande pour le pèlerinage Omra'}
+                ? t('orders.dialog.editDescription')
+                : t('orders.dialog.createDescription')}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             {/* Client Info */}
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="clientName">Nom du client *</Label>
+                <Label htmlFor="clientName">{t('orders.form.clientName')} *</Label>
                 <Input
                   id="clientName"
                   value={formData.clientName}
                   onChange={(e) => setFormData({ ...formData, clientName: e.target.value })}
-                  placeholder="Nom complet"
+                  placeholder={t('orders.form.clientNamePlaceholder')}
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="phone">Téléphone</Label>
+                <Label htmlFor="phone">{t('orders.form.phone')}</Label>
                 <Input
                   id="phone"
                   value={formData.phone}
                   onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                  placeholder="Ex: 0550123456"
+                  placeholder={t('orders.form.phonePlaceholder')}
                 />
               </div>
             </div>
@@ -377,7 +380,7 @@ export const OmraOrdersTab = () => {
             {/* Dates */}
             <div className="grid grid-cols-3 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="orderDate">Date commande</Label>
+                <Label htmlFor="orderDate">{t('orders.form.orderDate')}</Label>
                 <Input
                   id="orderDate"
                   type="date"
@@ -386,7 +389,7 @@ export const OmraOrdersTab = () => {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="periodFrom">Période du *</Label>
+                <Label htmlFor="periodFrom">{t('orders.form.periodFrom')} *</Label>
                 <Input
                   id="periodFrom"
                   type="date"
@@ -395,7 +398,7 @@ export const OmraOrdersTab = () => {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="periodTo">Au *</Label>
+                <Label htmlFor="periodTo">{t('orders.form.periodTo')} *</Label>
                 <Input
                   id="periodTo"
                   type="date"
@@ -408,10 +411,10 @@ export const OmraOrdersTab = () => {
             {/* Hotel & Room */}
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>Hôtel</Label>
+                <Label>{t('orders.form.hotel')}</Label>
                 {hotels.length === 0 && !isAddingHotel ? (
                   <div className="flex flex-col gap-2">
-                    <p className="text-sm text-muted-foreground">Aucun hôtel disponible</p>
+                    <p className="text-sm text-muted-foreground">{t('orders.form.noHotelAvailable')}</p>
                     <Button
                       type="button"
                       variant="outline"
@@ -420,13 +423,13 @@ export const OmraOrdersTab = () => {
                       className="gap-2"
                     >
                       <Building2 className="h-4 w-4" />
-                      Ajouter un hôtel
+                      {t('orders.form.addHotel')}
                     </Button>
                   </div>
                 ) : isAddingHotel ? (
                   <div className="flex gap-2">
                     <Input
-                      placeholder="Nom de l'hôtel"
+                      placeholder={t('orders.form.hotelPlaceholder')}
                       value={newHotelName}
                       onChange={(e) => setNewHotelName(e.target.value)}
                       onKeyDown={(e) => e.key === 'Enter' && handleAddHotel()}
@@ -437,7 +440,7 @@ export const OmraOrdersTab = () => {
                       onClick={handleAddHotel}
                       disabled={createHotel.isPending || !newHotelName.trim()}
                     >
-                      {createHotel.isPending ? '...' : 'Ajouter'}
+                      {createHotel.isPending ? '...' : t('actions.add')}
                     </Button>
                     <Button
                       type="button"
@@ -448,7 +451,7 @@ export const OmraOrdersTab = () => {
                         setNewHotelName('');
                       }}
                     >
-                      Annuler
+                      {tCommon('actions.cancel')}
                     </Button>
                   </div>
                 ) : (
@@ -458,7 +461,7 @@ export const OmraOrdersTab = () => {
                       onValueChange={(value) => setFormData({ ...formData, hotelId: value })}
                     >
                       <SelectTrigger className="flex-1">
-                        <SelectValue placeholder="Sélectionner un hôtel" />
+                        <SelectValue placeholder={t('orders.form.selectHotel')} />
                       </SelectTrigger>
                       <SelectContent>
                         {hotels.map((hotel) => (
@@ -473,7 +476,7 @@ export const OmraOrdersTab = () => {
                       variant="outline"
                       size="icon"
                       onClick={() => setIsAddingHotel(true)}
-                      title="Ajouter un hôtel"
+                      title={t('orders.form.addHotel')}
                     >
                       <Plus className="h-4 w-4" />
                     </Button>
@@ -481,7 +484,7 @@ export const OmraOrdersTab = () => {
                 )}
               </div>
               <div className="space-y-2">
-                <Label>Type de chambre</Label>
+                <Label>{t('orders.form.roomType')}</Label>
                 <Select
                   value={formData.roomType}
                   onValueChange={(value) =>
@@ -494,7 +497,7 @@ export const OmraOrdersTab = () => {
                   <SelectContent>
                     {roomTypes.map((type) => (
                       <SelectItem key={type} value={type}>
-                        {omraRoomTypeLabels[type]}
+                        {t(`roomTypes.${type}`)}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -505,7 +508,7 @@ export const OmraOrdersTab = () => {
             {/* Prices */}
             <div className="grid grid-cols-3 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="sellingPrice">Prix de vente (DA)</Label>
+                <Label htmlFor="sellingPrice">{t('orders.form.sellingPrice')}</Label>
                 <Input
                   id="sellingPrice"
                   type="number"
@@ -516,7 +519,7 @@ export const OmraOrdersTab = () => {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="amountPaid">Versement (DA)</Label>
+                <Label htmlFor="amountPaid">{t('orders.form.amountPaid')}</Label>
                 <Input
                   id="amountPaid"
                   type="number"
@@ -527,7 +530,7 @@ export const OmraOrdersTab = () => {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="buyingPrice">Prix d'achat (DA)</Label>
+                <Label htmlFor="buyingPrice">{t('orders.form.buyingPrice')}</Label>
                 <Input
                   id="buyingPrice"
                   type="number"
@@ -542,13 +545,13 @@ export const OmraOrdersTab = () => {
             {/* Summary */}
             <div className="grid grid-cols-2 gap-4 p-4 bg-muted rounded-lg">
               <div>
-                <p className="text-sm text-muted-foreground">Reste à payer</p>
+                <p className="text-sm text-muted-foreground">{t('calculations.remaining')}</p>
                 <p className="text-lg font-bold">
                   {formatDZD(formData.sellingPrice - formData.amountPaid)}
                 </p>
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">Bénéfice net</p>
+                <p className="text-sm text-muted-foreground">{t('calculations.profit')}</p>
                 <p className="text-lg font-bold text-green-600">
                   {formatDZD(formData.sellingPrice - formData.buyingPrice)}
                 </p>
@@ -557,19 +560,19 @@ export const OmraOrdersTab = () => {
 
             {/* Notes */}
             <div className="space-y-2">
-              <Label htmlFor="notes">Notes</Label>
+              <Label htmlFor="notes">{t('orders.form.notes')}</Label>
               <Textarea
                 id="notes"
                 value={formData.notes}
                 onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                placeholder="Notes supplémentaires..."
+                placeholder={t('orders.form.notesPlaceholder')}
                 rows={2}
               />
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
-              Annuler
+              {tCommon('actions.cancel')}
             </Button>
             <Button
               onClick={handleSubmit}
@@ -581,7 +584,7 @@ export const OmraOrdersTab = () => {
                 updateOrder.isPending
               }
             >
-              {editingOrder ? 'Enregistrer' : 'Créer'}
+              {editingOrder ? tCommon('actions.save') : t('actions.create')}
             </Button>
           </DialogFooter>
         </DialogContent>

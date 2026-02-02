@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -37,6 +38,8 @@ import {
 import { EmptyState } from '@/components/ui/empty-state';
 
 export const OmraHotelsTab = () => {
+  const { t } = useTranslation('omra');
+  const { t: tCommon } = useTranslation('common');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingHotel, setEditingHotel] = useState<OmraHotel | null>(null);
   const [formData, setFormData] = useState({ name: '', location: '' });
@@ -85,7 +88,7 @@ export const OmraHotelsTab = () => {
   };
 
   const handleDelete = (id: string) => {
-    if (confirm('Êtes-vous sûr de vouloir supprimer cet hôtel ?')) {
+    if (confirm(t('hotels.confirm.delete'))) {
       deleteHotel.mutate(id);
     }
   };
@@ -98,7 +101,7 @@ export const OmraHotelsTab = () => {
   };
 
   if (isLoading) {
-    return <div className="p-8 text-center text-muted-foreground">Chargement...</div>;
+    return <div className="p-8 text-center text-muted-foreground">{t('loading')}</div>;
   }
 
   return (
@@ -107,12 +110,12 @@ export const OmraHotelsTab = () => {
         <CardHeader>
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <CardTitle>Gestion des Hôtels</CardTitle>
-              <CardDescription>{hotels.length} hôtels enregistrés</CardDescription>
+              <CardTitle>{t('hotels.title')}</CardTitle>
+              <CardDescription>{t('hotels.count', { count: hotels.length })}</CardDescription>
             </div>
             <Button onClick={() => handleOpenDialog()} className="gap-2">
               <Plus className="h-4 w-4" />
-              Nouvel Hôtel
+              {t('hotels.newHotel')}
             </Button>
           </div>
         </CardHeader>
@@ -120,10 +123,10 @@ export const OmraHotelsTab = () => {
           {hotels.length === 0 ? (
             <EmptyState
               icon={Building2}
-              title="Aucun hôtel"
-              description="Commencez par ajouter un hôtel pour vos services Omra"
+              title={t('hotels.empty.title')}
+              description={t('hotels.empty.description')}
               action={{
-                label: 'Ajouter un hôtel',
+                label: t('hotels.empty.action'),
                 onClick: () => handleOpenDialog(),
               }}
             />
@@ -131,10 +134,10 @@ export const OmraHotelsTab = () => {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Nom</TableHead>
-                  <TableHead>Localisation</TableHead>
-                  <TableHead>Statut</TableHead>
-                  <TableHead className="w-[70px]">Actions</TableHead>
+                  <TableHead>{t('hotels.table.name')}</TableHead>
+                  <TableHead>{t('hotels.table.location')}</TableHead>
+                  <TableHead>{t('hotels.table.status')}</TableHead>
+                  <TableHead className="w-[70px]">{t('hotels.table.actions')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -148,7 +151,7 @@ export const OmraHotelsTab = () => {
                         className="cursor-pointer"
                         onClick={() => handleToggleStatus(hotel)}
                       >
-                        {hotel.isActive ? 'Actif' : 'Inactif'}
+                        {hotel.isActive ? t('status.active') : t('status.inactive')}
                       </Badge>
                     </TableCell>
                     <TableCell>
@@ -160,15 +163,15 @@ export const OmraHotelsTab = () => {
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                           <DropdownMenuItem onClick={() => handleOpenDialog(hotel)}>
-                            <Edit className="mr-2 h-4 w-4" />
-                            Modifier
+                            <Edit className="ltr:mr-2 rtl:ml-2 h-4 w-4" />
+                            {tCommon('actions.edit')}
                           </DropdownMenuItem>
                           <DropdownMenuItem
                             className="text-destructive"
                             onClick={() => handleDelete(hotel.id)}
                           >
-                            <Trash2 className="mr-2 h-4 w-4" />
-                            Supprimer
+                            <Trash2 className="ltr:mr-2 rtl:ml-2 h-4 w-4" />
+                            {tCommon('actions.delete')}
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
@@ -185,42 +188,42 @@ export const OmraHotelsTab = () => {
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{editingHotel ? 'Modifier l\'hôtel' : 'Nouvel hôtel'}</DialogTitle>
+            <DialogTitle>{editingHotel ? t('hotels.dialog.editTitle') : t('hotels.dialog.createTitle')}</DialogTitle>
             <DialogDescription>
               {editingHotel
-                ? 'Modifiez les informations de l\'hôtel'
-                : 'Ajoutez un nouvel hôtel pour vos services Omra'}
+                ? t('hotels.dialog.editDescription')
+                : t('hotels.dialog.createDescription')}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="name">Nom de l'hôtel *</Label>
+              <Label htmlFor="name">{t('hotels.form.hotelName')} *</Label>
               <Input
                 id="name"
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                placeholder="Ex: Hotel Makkah Towers"
+                placeholder={t('hotels.form.hotelPlaceholder')}
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="location">Localisation</Label>
+              <Label htmlFor="location">{t('hotels.form.location')}</Label>
               <Input
                 id="location"
                 value={formData.location}
                 onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                placeholder="Ex: La Mecque, Arabie Saoudite"
+                placeholder={t('hotels.form.locationPlaceholder')}
               />
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
-              Annuler
+              {tCommon('actions.cancel')}
             </Button>
             <Button
               onClick={handleSubmit}
               disabled={!formData.name.trim() || createHotel.isPending || updateHotel.isPending}
             >
-              {editingHotel ? 'Enregistrer' : 'Créer'}
+              {editingHotel ? tCommon('actions.save') : t('actions.create')}
             </Button>
           </DialogFooter>
         </DialogContent>

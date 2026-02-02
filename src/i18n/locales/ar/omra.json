@@ -1,6 +1,7 @@
 {
   "title": "العمرة",
   "subtitle": "إدارة خدمات العمرة",
+  "loading": "جاري التحميل...",
   "stats": {
     "totalPayments": "إجمالي المدفوعات",
     "totalCredit": "إجمالي الدين (المتبقي)",
@@ -11,88 +12,161 @@
     "visas": "التأشيرات",
     "hotels": "الفنادق"
   },
+  "calculations": {
+    "remaining": "المتبقي للدفع",
+    "profit": "صافي الربح"
+  },
+  "filters": {
+    "status": "الحالة",
+    "hotel": "الفندق"
+  },
+  "status": {
+    "en_attente": "قيد الانتظار",
+    "confirme": "مؤكد",
+    "termine": "منتهي",
+    "annule": "ملغى",
+    "active": "نشط",
+    "inactive": "غير نشط"
+  },
+  "roomTypes": {
+    "chambre_1": "غرفة لشخص واحد",
+    "chambre_2": "غرفة لشخصين",
+    "chambre_3": "غرفة لثلاثة أشخاص",
+    "chambre_4": "غرفة لأربعة أشخاص",
+    "chambre_5": "غرفة لخمسة أشخاص",
+    "suite": "جناح"
+  },
   "orders": {
     "title": "طلبات العمرة",
-    "count": "{{count}} طلب",
+    "count": "{{count}} طلب إجمالاً",
+    "newOrder": "طلب جديد",
+    "empty": {
+      "title": "لا توجد طلبات",
+      "description": "ابدأ بإنشاء طلب عمرة",
+      "action": "طلب جديد"
+    },
     "table": {
       "client": "العميل",
-      "package": "الباقة",
-      "travelers": "المسافرون",
-      "dates": "التواريخ",
-      "amounts": "المبالغ",
-      "status": "الحالة"
+      "period": "الفترة",
+      "hotel": "الفندق",
+      "room": "الغرفة",
+      "price": "السعر",
+      "status": "الحالة",
+      "actions": "الإجراءات",
+      "remaining": "المتبقي"
     },
     "dialog": {
       "createTitle": "طلب عمرة جديد",
-      "editTitle": "تعديل الطلب"
+      "editTitle": "تعديل الطلب",
+      "createDescription": "أنشئ طلباً جديداً لرحلة العمرة",
+      "editDescription": "عدّل معلومات الطلب"
     },
     "form": {
       "clientName": "اسم العميل",
+      "clientNamePlaceholder": "الاسم الكامل",
       "phone": "الهاتف",
-      "package": "نوع الباقة",
-      "travelers": "عدد المسافرين",
-      "departureDate": "تاريخ المغادرة",
-      "returnDate": "تاريخ العودة",
-      "sellingPrice": "سعر البيع",
-      "buyingPrice": "سعر الشراء",
-      "amountPaid": "المبلغ المدفوع",
-      "notes": "ملاحظات"
+      "phonePlaceholder": "مثال: 0550123456",
+      "orderDate": "تاريخ الطلب",
+      "periodFrom": "الفترة من",
+      "periodTo": "إلى",
+      "hotel": "الفندق",
+      "roomType": "نوع الغرفة",
+      "sellingPrice": "سعر البيع (د.ج)",
+      "amountPaid": "الدفعة (د.ج)",
+      "buyingPrice": "سعر الشراء (د.ج)",
+      "notes": "ملاحظات",
+      "notesPlaceholder": "ملاحظات إضافية...",
+      "noHotelAvailable": "لا توجد فنادق متاحة",
+      "addHotel": "إضافة فندق",
+      "selectHotel": "اختر فندقاً",
+      "hotelPlaceholder": "اسم الفندق"
+    },
+    "confirm": {
+      "delete": "هل أنت متأكد من حذف هذا الطلب؟"
     }
   },
   "visas": {
     "title": "تأشيرات العمرة",
-    "count": "{{count}} تأشيرة",
+    "count": "{{count}} تأشيرة إجمالاً",
+    "newVisa": "تأشيرة جديدة",
+    "empty": {
+      "title": "لا توجد تأشيرات",
+      "description": "ابدأ بإنشاء تأشيرة عمرة",
+      "action": "تأشيرة جديدة"
+    },
     "table": {
       "client": "العميل",
-      "passportNumber": "رقم الجواز",
-      "supplier": "المورد",
-      "dates": "التواريخ",
-      "amounts": "المبالغ",
-      "status": "الحالة"
+      "visaDate": "تاريخ التأشيرة",
+      "entryDate": "تاريخ الدخول",
+      "hotel": "الفندق",
+      "price": "السعر",
+      "status": "الحالة",
+      "actions": "الإجراءات",
+      "remaining": "المتبقي"
     },
     "dialog": {
       "createTitle": "تأشيرة عمرة جديدة",
-      "editTitle": "تعديل التأشيرة"
+      "editTitle": "تعديل التأشيرة",
+      "createDescription": "أنشئ تأشيرة جديدة لرحلة العمرة",
+      "editDescription": "عدّل معلومات التأشيرة"
     },
     "form": {
       "clientName": "اسم العميل",
-      "passportNumber": "رقم الجواز",
-      "supplier": "المورد",
-      "applicationDate": "تاريخ التقديم",
-      "expiryDate": "تاريخ الانتهاء",
-      "sellingPrice": "سعر البيع",
-      "buyingPrice": "سعر الشراء",
-      "amountPaid": "المبلغ المدفوع"
+      "clientNamePlaceholder": "الاسم الكامل",
+      "phone": "الهاتف",
+      "phonePlaceholder": "مثال: 0550123456",
+      "visaDate": "تاريخ التأشيرة",
+      "entryDate": "تاريخ الدخول",
+      "hotel": "الفندق",
+      "selectHotel": "اختر فندقاً",
+      "sellingPrice": "سعر البيع (د.ج)",
+      "amountPaid": "الدفعة (د.ج)",
+      "buyingPrice": "سعر الشراء (د.ج)",
+      "notes": "ملاحظات",
+      "notesPlaceholder": "ملاحظات إضافية..."
+    },
+    "confirm": {
+      "delete": "هل أنت متأكد من حذف هذه التأشيرة؟"
     }
   },
   "hotels": {
-    "title": "حجوزات الفنادق",
-    "count": "{{count}} حجز",
+    "title": "إدارة الفنادق",
+    "count": "{{count}} فندق مسجل",
+    "newHotel": "فندق جديد",
+    "empty": {
+      "title": "لا توجد فنادق",
+      "description": "ابدأ بإضافة فندق لخدمات العمرة",
+      "action": "إضافة فندق"
+    },
     "table": {
-      "client": "العميل",
-      "hotel": "الفندق",
-      "city": "المدينة",
-      "dates": "التواريخ",
-      "nights": "الليالي",
-      "amounts": "المبالغ",
-      "status": "الحالة"
+      "name": "الاسم",
+      "location": "الموقع",
+      "status": "الحالة",
+      "actions": "الإجراءات"
     },
     "dialog": {
-      "createTitle": "حجز جديد",
-      "editTitle": "تعديل الحجز"
+      "createTitle": "فندق جديد",
+      "editTitle": "تعديل الفندق",
+      "createDescription": "أضف فندقاً جديداً لخدمات العمرة",
+      "editDescription": "عدّل معلومات الفندق"
     },
     "form": {
-      "clientName": "اسم العميل",
       "hotelName": "اسم الفندق",
-      "city": "المدينة",
-      "checkIn": "تاريخ الوصول",
-      "checkOut": "تاريخ المغادرة",
-      "nights": "عدد الليالي",
-      "roomType": "نوع الغرفة",
-      "sellingPrice": "سعر البيع",
-      "buyingPrice": "سعر الشراء",
-      "amountPaid": "المبلغ المدفوع"
+      "location": "الموقع",
+      "hotelPlaceholder": "مثال: أبراج مكة",
+      "locationPlaceholder": "مثال: مكة المكرمة، المملكة العربية السعودية"
+    },
+    "confirm": {
+      "delete": "هل أنت متأكد من حذف هذا الفندق؟"
     }
+  },
+  "actions": {
+    "add": "إضافة",
+    "cancel": "إلغاء",
+    "save": "حفظ",
+    "create": "إنشاء",
+    "edit": "تعديل",
+    "delete": "حذف"
   },
   "packages": {
     "economic": "اقتصادي",
