@@ -50,7 +50,7 @@ export interface Supplier {
 }
 
 // Command Types
-export type CommandStatus = 'en_attente' | 'en_cours' | 'termine' | 'annule';
+export type CommandStatus = 'dossier_incomplet' | 'depose' | 'en_traitement' | 'accepte' | 'refuse' | 'visa_delivre' | 'retire';
 
 export interface BaseCommandData {
   clientFullName: string;

@@ -59,10 +59,13 @@
     "profit": "Bénéfice net"
   },
   "status": {
-    "en_attente": "En attente",
-    "en_cours": "En cours",
-    "termine": "Terminé",
-    "annule": "Annulé"
+    "dossier_incomplet": "Dossier incomplet",
+    "depose": "Déposé",
+    "en_traitement": "En traitement",
+    "accepte": "Accepté",
+    "refuse": "Refusé",
+    "visa_delivre": "Visa délivré",
+    "retire": "Retiré"
   },
   "time": {
     "locked": "Verrouillé",

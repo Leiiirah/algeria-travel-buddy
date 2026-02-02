@@ -95,7 +95,7 @@ export interface CreateCommandDto {
 
 export interface UpdateCommandDto {
   data?: Record<string, unknown>;
-  status?: 'en_attente' | 'en_cours' | 'termine' | 'annule';
+  status?: 'dossier_incomplet' | 'depose' | 'en_traitement' | 'accepte' | 'refuse' | 'visa_delivre' | 'retire';
   destination?: string;
   sellingPrice?: number;
   amountPaid?: number;
