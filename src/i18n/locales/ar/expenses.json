@@ -44,7 +44,8 @@
     "notePlaceholder": "أضف ملاحظة..."
   },
   "actions": {
-    "newExpense": "مصروف جديد"
+    "newExpense": "مصروف جديد",
+    "exportPdf": "تصدير PDF"
   },
   "delete": {
     "title": "حذف هذا المصروف؟",

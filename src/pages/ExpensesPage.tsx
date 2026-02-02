@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { format } from 'date-fns';
 import { fr, ar } from 'date-fns/locale';
-import { Plus, Receipt, Calendar, TrendingDown, Trash2, Pencil } from 'lucide-react';
+import { Plus, Receipt, Calendar, TrendingDown, Trash2, Pencil, FileDown } from 'lucide-react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -56,6 +56,7 @@ import { AdvancedFilter, FilterConfig } from '@/components/search/AdvancedFilter
 import { useDebounce } from '@/hooks/useDebounce';
 import { ExpensesSkeleton } from '@/components/skeletons';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
+import { generateExpensesPdf } from '@/utils/pdfGenerator';
 
 const categoryColors: Record<ExpenseCategory, string> = {
   fournitures: '#3b82f6',
@@ -248,6 +249,31 @@ export default function ExpensesPage() {
     }));
   }, [stats, expenseCategoryLabels]);
 
+  // Handle PDF export
+  const handleExportPdf = async () => {
+    if (!filteredExpenses || !stats) return;
+
+    const total = filteredExpenses.reduce((sum, e) => sum + Number(e.amount), 0);
+
+    await generateExpensesPdf({
+      expenses: filteredExpenses.map(exp => ({
+        date: format(new Date(exp.date), 'dd/MM/yyyy'),
+        category: expenseCategoryLabels[exp.category],
+        description: exp.description,
+        vendor: exp.vendor || '',
+        paymentMethod: paymentMethodLabels[exp.paymentMethod],
+        amount: Number(exp.amount),
+      })),
+      stats: {
+        totalThisMonth: stats.totalThisMonth || 0,
+        totalThisYear: stats.totalThisYear || 0,
+        totalAll: stats.totalAll || 0,
+      },
+      language: i18n.language as 'fr' | 'ar',
+      filterTotal: total,
+    });
+  };
+
   if (isLoading) {
     return (
       <DashboardLayout title={t('title')}>
@@ -262,13 +288,18 @@ export default function ExpensesPage() {
         {/* Header */}
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold text-foreground">{t('title')}</h1>
-          <Dialog open={isDialogOpen} onOpenChange={(open) => open ? handleOpenDialog() : handleCloseDialog()}>
-            <DialogTrigger asChild>
-              <Button>
-                <Plus className="ltr:mr-2 rtl:ml-2 h-4 w-4" />
-                {t('actions.newExpense')}
-              </Button>
-            </DialogTrigger>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" onClick={handleExportPdf} disabled={!filteredExpenses?.length}>
+              <FileDown className="ltr:mr-2 rtl:ml-2 h-4 w-4" />
+              {t('actions.exportPdf')}
+            </Button>
+            <Dialog open={isDialogOpen} onOpenChange={(open) => open ? handleOpenDialog() : handleCloseDialog()}>
+              <DialogTrigger asChild>
+                <Button>
+                  <Plus className="ltr:mr-2 rtl:ml-2 h-4 w-4" />
+                  {t('actions.newExpense')}
+                </Button>
+              </DialogTrigger>
             <DialogContent>
               <DialogHeader>
                 <DialogTitle>
@@ -380,7 +411,8 @@ export default function ExpensesPage() {
                 </div>
               </form>
             </DialogContent>
-          </Dialog>
+            </Dialog>
+          </div>
         </div>
 
         {/* Summary Cards */}
