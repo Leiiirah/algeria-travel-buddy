@@ -18,6 +18,7 @@ import SupplierAccountingPage from "./pages/SupplierAccountingPage";
 import AccountingPage from "./pages/AccountingPage";
 import EmployeeAccountingPage from "./pages/EmployeeAccountingPage";
 import ExpensesPage from "./pages/ExpensesPage";
+import ServiceTypesPage from "./pages/ServiceTypesPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient({
@@ -130,6 +131,14 @@ const AppRoutes = () => {
         element={
           <ProtectedRoute adminOnly>
             <ExpensesPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/types-services"
+        element={
+          <ProtectedRoute adminOnly>
+            <ServiceTypesPage />
           </ProtectedRoute>
         }
       />

@@ -26,9 +26,8 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Plus, Building2, Phone, Mail, Edit, Trash2 } from 'lucide-react';
-import { getServiceTypeLabel } from '@/lib/utils';
-import { ServiceType } from '@/types';
 import { useSuppliers, useCreateSupplier, useDeleteSupplier, useUpdateSupplier } from '@/hooks/useSuppliers';
+import { useActiveServiceTypes } from '@/hooks/useServiceTypes';
 import { SuppliersSkeleton } from '@/components/skeletons/SuppliersSkeleton';
 import { ErrorState } from '@/components/ui/error-state';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -46,7 +45,7 @@ const SuppliersPage = () => {
     contact: '',
     phone: '',
     email: '',
-    serviceTypes: [] as ServiceType[],
+    serviceTypes: [] as string[],
   });
 
   // Auth hook
@@ -54,6 +53,7 @@ const SuppliersPage = () => {
 
   // React Query hooks
   const { data: suppliers, isLoading, isError, error, refetch } = useSuppliers();
+  const { data: serviceTypes } = useActiveServiceTypes();
   const createSupplier = useCreateSupplier();
   const updateSupplier = useUpdateSupplier();
   const deleteSupplier = useDeleteSupplier();
@@ -66,6 +66,19 @@ const SuppliersPage = () => {
     );
   };
 
+  // Get label for a service type code
+  const getServiceTypeLabel = (code: string) => {
+    const st = serviceTypes?.find(s => s.code === code);
+    if (!st) return code;
+    return i18n.language === 'ar' ? st.nameAr : st.nameFr;
+  };
+
+  // Build service type options from dynamic data
+  const serviceTypeOptions = (serviceTypes ?? []).map(st => ({
+    value: st.code,
+    label: i18n.language === 'ar' ? st.nameAr : st.nameFr,
+  }));
+
   const filteredSuppliers = (suppliers ?? []).filter((supplier) => {
     const matchesSearch =
       supplier.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -74,7 +87,7 @@ const SuppliersPage = () => {
     const matchesService =
       !filters.serviceType ||
       filters.serviceType === 'all' ||
-      supplier.serviceTypes.includes(filters.serviceType as ServiceType);
+      supplier.serviceTypes.includes(filters.serviceType);
 
     const matchesStatus =
       !filters.status ||
@@ -83,13 +96,6 @@ const SuppliersPage = () => {
 
     return matchesSearch && matchesService && matchesStatus;
   });
-
-  const serviceTypeOptions: { value: ServiceType; label: string }[] = [
-    { value: 'visa', label: tCommon('serviceTypes.visa') },
-    { value: 'residence', label: tCommon('serviceTypes.residence') },
-    { value: 'ticket', label: tCommon('serviceTypes.ticket') },
-    { value: 'dossier', label: tCommon('serviceTypes.dossier') },
-  ];
 
   const handleSaveSupplier = () => {
     if (!newSupplier.name || !newSupplier.contact || !newSupplier.phone) {
@@ -141,12 +147,12 @@ const SuppliersPage = () => {
     deleteSupplier.mutate(supplierId);
   };
 
-  const toggleServiceType = (type: ServiceType) => {
+  const toggleServiceType = (typeCode: string) => {
     setNewSupplier((prev) => ({
       ...prev,
-      serviceTypes: prev.serviceTypes.includes(type)
-        ? prev.serviceTypes.filter((t) => t !== type)
-        : [...prev.serviceTypes, type],
+      serviceTypes: prev.serviceTypes.includes(typeCode)
+        ? prev.serviceTypes.filter((t) => t !== typeCode)
+        : [...prev.serviceTypes, typeCode],
     }));
   };
 

@@ -1,0 +1,46 @@
+{
+  "title": "أنواع الخدمات",
+  "subtitle": "إدارة فئات الخدمات المقدمة",
+  "activeCount": "{{active}} نوع نشط من أصل {{total}}",
+  "dialog": {
+    "createTitle": "نوع خدمة جديد",
+    "editTitle": "تعديل النوع",
+    "createDesc": "أضف فئة خدمة جديدة",
+    "editDesc": "عدّل معلومات النوع"
+  },
+  "form": {
+    "code": "الرمز",
+    "codePlaceholder": "مثال: visa_schengen",
+    "codeHint": "معرّف فريد (حروف، أرقام، شرطة سفلية)",
+    "nameFr": "الاسم (بالفرنسية)",
+    "nameFrPlaceholder": "مثال: Visa Schengen",
+    "nameAr": "الاسم (بالعربية)",
+    "nameArPlaceholder": "مثال: تأشيرة شنغن",
+    "icon": "الأيقونة",
+    "selectIcon": "اختر أيقونة"
+  },
+  "actions": {
+    "newType": "نوع جديد",
+    "create": "إنشاء",
+    "edit": "تعديل"
+  },
+  "card": {
+    "code": "الرمز: {{code}}"
+  },
+  "empty": {
+    "title": "لا توجد أنواع خدمات",
+    "description": "أنشئ أول نوع خدمة لك"
+  },
+  "messages": {
+    "created": "تم إنشاء نوع الخدمة بنجاح",
+    "updated": "تم تعديل نوع الخدمة بنجاح",
+    "deleted": "تم تعطيل نوع الخدمة"
+  },
+  "errors": {
+    "codeExists": "هذا الرمز موجود بالفعل",
+    "inUse": "هذا النوع مستخدم من قبل خدمات ولا يمكن حذفه",
+    "createFailed": "خطأ أثناء الإنشاء",
+    "updateFailed": "خطأ أثناء التعديل",
+    "deleteFailed": "خطأ أثناء الحذف"
+  }
+}

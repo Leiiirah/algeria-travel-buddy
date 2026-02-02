@@ -10,6 +10,7 @@
     "employeeAccounting": "Comptabilité Employés",
     "accounting": "Comptabilité",
     "services": "Services",
+    "serviceTypes": "Types de services",
     "expenses": "Dépenses"
   },
   "groups": {

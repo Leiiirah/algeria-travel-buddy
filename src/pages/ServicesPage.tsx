@@ -24,15 +24,36 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Plus, Settings, FileText, Plane, Hotel, Folder, Ship, Bus, Ticket } from 'lucide-react';
-import { ServiceType } from '@/types';
+import { Plus, Settings, FileText, Plane, Hotel, Folder, Ship, Bus, Ticket, Globe, CreditCard, Briefcase, MapPin, Users, Package } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Navigate } from 'react-router-dom';
 import { useServices, useCreateService, useUpdateService, useToggleServiceStatus } from '@/hooks/useServices';
 import { useSuppliers } from '@/hooks/useSuppliers';
+import { useActiveServiceTypes } from '@/hooks/useServiceTypes';
 import { ServicesSkeleton } from '@/components/skeletons/ServicesSkeleton';
 import { ErrorState } from '@/components/ui/error-state';
 import { EmptyState } from '@/components/ui/empty-state';
+
+// Icon mapping for dynamic icons
+const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
+  FileText,
+  Plane,
+  Hotel,
+  Folder,
+  Ship,
+  Bus,
+  Ticket,
+  Globe,
+  CreditCard,
+  Briefcase,
+  MapPin,
+  Users,
+  Package,
+};
+
+const getIconComponent = (iconName: string) => {
+  return iconMap[iconName] || FileText;
+};
 
 const ServicesPage = () => {
   const { t, i18n } = useTranslation('services');
@@ -42,7 +63,7 @@ const ServicesPage = () => {
   const [editingServiceId, setEditingServiceId] = useState<string | null>(null);
   const [newService, setNewService] = useState({
     name: '',
-    type: 'visa' as ServiceType,
+    type: '',
     description: '',
     defaultSupplierId: '',
     defaultBuyingPrice: '',
@@ -56,6 +77,7 @@ const ServicesPage = () => {
   // React Query hooks
   const { data: services, isLoading, isError, error, refetch } = useServices();
   const { data: suppliers } = useSuppliers();
+  const { data: serviceTypes } = useActiveServiceTypes();
   const createService = useCreateService();
   const updateService = useUpdateService();
   const toggleStatus = useToggleServiceStatus();
@@ -68,29 +90,19 @@ const ServicesPage = () => {
     );
   };
 
-  const getServiceIcon = (type: ServiceType) => {
-    switch (type) {
-      case 'visa':
-        return FileText;
-      case 'residence':
-        return Hotel;
-      case 'ticket':
-        return Plane;
-      case 'dossier':
-        return Folder;
-      case 'billet_bateau':
-        return Ship;
-      case 'billet_tilex':
-        return Bus;
-      case 'billets':
-        return Ticket;
-      default:
-        return FileText;
-    }
+  const getServiceTypeIcon = (typeCode: string) => {
+    const serviceType = serviceTypes?.find(st => st.code === typeCode);
+    return getIconComponent(serviceType?.icon || 'FileText');
+  };
+
+  const getServiceTypeLabel = (typeCode: string) => {
+    const serviceType = serviceTypes?.find(st => st.code === typeCode);
+    if (!serviceType) return typeCode;
+    return i18n.language === 'ar' ? serviceType.nameAr : serviceType.nameFr;
   };
 
   const handleSaveService = () => {
-    if (!newService.name || !newService.description) {
+    if (!newService.name || !newService.description || !newService.type) {
       return;
     }
 
@@ -143,7 +155,7 @@ const ServicesPage = () => {
   const resetForm = () => {
     setNewService({
       name: '',
-      type: 'visa',
+      type: serviceTypes?.[0]?.code || '',
       description: '',
       defaultSupplierId: '',
       defaultBuyingPrice: '',
@@ -224,7 +236,7 @@ const ServicesPage = () => {
                 <Label htmlFor="serviceType">{t('form.type')}</Label>
                 <Select
                   value={newService.type}
-                  onValueChange={(value: ServiceType) =>
+                  onValueChange={(value) =>
                     setNewService({ ...newService, type: value })
                   }
                 >
@@ -232,13 +244,17 @@ const ServicesPage = () => {
                     <SelectValue placeholder={t('form.selectType')} />
                   </SelectTrigger>
                   <SelectContent className="bg-popover">
-                    <SelectItem value="visa">{t('types.visa')}</SelectItem>
-                    <SelectItem value="residence">{t('types.residence')}</SelectItem>
-                    <SelectItem value="ticket">{t('types.ticket')}</SelectItem>
-                    <SelectItem value="dossier">{t('types.dossier')}</SelectItem>
-                    <SelectItem value="billet_bateau">{t('types.billet_bateau')}</SelectItem>
-                    <SelectItem value="billet_tilex">{t('types.billet_tilex')}</SelectItem>
-                    <SelectItem value="billets">{t('types.billets')}</SelectItem>
+                    {serviceTypes?.map((st) => {
+                      const IconComp = getIconComponent(st.icon);
+                      return (
+                        <SelectItem key={st.id} value={st.code}>
+                          <div className="flex items-center gap-2">
+                            <IconComp className="h-4 w-4" />
+                            <span>{i18n.language === 'ar' ? st.nameAr : st.nameFr}</span>
+                          </div>
+                        </SelectItem>
+                      );
+                    })}
                   </SelectContent>
                 </Select>
               </div>
@@ -311,7 +327,7 @@ const ServicesPage = () => {
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {allServices.map((service) => {
-            const IconComponent = getServiceIcon(service.type);
+            const IconComponent = getServiceTypeIcon(service.type);
             return (
               <Card
                 key={service.id}
@@ -327,7 +343,7 @@ const ServicesPage = () => {
                       <div>
                         <CardTitle className="text-base">{service.name}</CardTitle>
                         <Badge variant="outline" className="mt-1">
-                          {t(`types.${service.type}`)}
+                          {getServiceTypeLabel(service.type)}
                         </Badge>
                       </div>
                     </div>

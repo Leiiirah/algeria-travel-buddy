@@ -11,13 +11,25 @@ export interface User {
   isActive: boolean;
 }
 
-// Service Types
-export type ServiceType = 'visa' | 'residence' | 'ticket' | 'dossier' | 'billet_bateau' | 'billet_tilex' | 'billets';
+// Service Type Entity (dynamic from database)
+export interface ServiceTypeEntity {
+  id: string;
+  code: string;
+  nameFr: string;
+  nameAr: string;
+  icon: string;
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+// Service Types - now dynamic string (references ServiceTypeEntity.code)
+export type ServiceType = string;
 
 export interface Service {
   id: string;
   name: string;
-  type: ServiceType;
+  type: string; // Dynamic reference to ServiceTypeEntity.code
   description: string;
   isActive: boolean;
   defaultSupplierId?: string;

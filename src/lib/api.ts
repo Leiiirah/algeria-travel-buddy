@@ -1,4 +1,4 @@
-import { User, Service, Supplier, Command, Payment, SupplierTransaction, Document, OmraHotel, OmraOrder, OmraVisa, OmraRoomType, OmraStatus, EmployeeTransaction, EmployeeBalance, EmployeeTransactionType, Expense, ExpenseStats, ExpenseCategory, PaymentMethod, SupplierOrder, SupplierOrderStatus, SupplierReceipt, SupplierInvoice, SupplierInvoiceStatus } from '@/types';
+import { User, Service, Supplier, Command, Payment, SupplierTransaction, Document, OmraHotel, OmraOrder, OmraVisa, OmraRoomType, OmraStatus, EmployeeTransaction, EmployeeBalance, EmployeeTransactionType, Expense, ExpenseStats, ExpenseCategory, PaymentMethod, SupplierOrder, SupplierOrderStatus, SupplierReceipt, SupplierInvoice, SupplierInvoiceStatus, ServiceTypeEntity } from '@/types';
 
 // API base URL - includes /api prefix to match nginx proxy configuration
 const API_URL = (import.meta.env.VITE_API_URL || 'http://69.62.127.134:8080/api')
@@ -35,7 +35,7 @@ export interface UpdateUserDto {
 
 export interface CreateServiceDto {
   name: string;
-  type: 'visa' | 'residence' | 'ticket' | 'dossier' | 'billet_bateau' | 'billet_tilex' | 'billets';
+  type: string; // Dynamic reference to ServiceType.code
   description: string;
   defaultSupplierId?: string;
   defaultBuyingPrice?: number;
@@ -43,11 +43,27 @@ export interface CreateServiceDto {
 
 export interface UpdateServiceDto {
   name?: string;
-  type?: 'visa' | 'residence' | 'ticket' | 'dossier' | 'billet_bateau' | 'billet_tilex' | 'billets';
+  type?: string; // Dynamic reference to ServiceType.code
   description?: string;
   isActive?: boolean;
   defaultSupplierId?: string;
   defaultBuyingPrice?: number;
+}
+
+// Service Type DTOs
+export interface CreateServiceTypeDto {
+  code: string;
+  nameFr: string;
+  nameAr: string;
+  icon?: string;
+}
+
+export interface UpdateServiceTypeDto {
+  code?: string;
+  nameFr?: string;
+  nameAr?: string;
+  icon?: string;
+  isActive?: boolean;
 }
 
 export interface CreateSupplierDto {
@@ -622,7 +638,36 @@ class ApiClient {
   toggleServiceStatus = (id: string): Promise<Service> =>
     this.request(`/services/${id}/status`, { method: 'PATCH' });
 
-  // ==================== SUPPLIERS ====================
+  // ==================== SERVICE TYPES ====================
+
+  serviceTypes = {
+    getAll: (): Promise<ServiceTypeEntity[]> =>
+      this.request('/service-types'),
+
+    getActive: (): Promise<ServiceTypeEntity[]> =>
+      this.request('/service-types/active'),
+
+    getOne: (id: string): Promise<ServiceTypeEntity> =>
+      this.request(`/service-types/${id}`),
+
+    create: (data: CreateServiceTypeDto): Promise<ServiceTypeEntity> =>
+      this.request('/service-types', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
+
+    update: (id: string, data: UpdateServiceTypeDto): Promise<ServiceTypeEntity> =>
+      this.request(`/service-types/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify(data),
+      }),
+
+    toggleStatus: (id: string): Promise<ServiceTypeEntity> =>
+      this.request(`/service-types/${id}/toggle`, { method: 'PATCH' }),
+
+    delete: (id: string): Promise<void> =>
+      this.request(`/service-types/${id}`, { method: 'DELETE' }),
+  };
   // Suppliers
   getSuppliers = (): Promise<Supplier[]> =>
     this.request('/suppliers');

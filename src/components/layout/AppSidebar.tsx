@@ -98,6 +98,11 @@ export function AppSidebar() {
       icon: Settings,
     },
     {
+      titleKey: 'navigation.serviceTypes',
+      url: '/types-services',
+      icon: Package,
+    },
+    {
       titleKey: 'navigation.expenses',
       url: '/depenses',
       icon: Receipt,

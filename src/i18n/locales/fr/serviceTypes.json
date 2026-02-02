@@ -1,0 +1,46 @@
+{
+  "title": "Types de services",
+  "subtitle": "Gérez les catégories de services proposés",
+  "activeCount": "{{active}} types actifs sur {{total}}",
+  "dialog": {
+    "createTitle": "Nouveau type de service",
+    "editTitle": "Modifier le type",
+    "createDesc": "Ajoutez une nouvelle catégorie de service",
+    "editDesc": "Modifiez les informations du type"
+  },
+  "form": {
+    "code": "Code",
+    "codePlaceholder": "ex: visa_schengen",
+    "codeHint": "Identifiant unique (lettres, chiffres, underscores)",
+    "nameFr": "Nom (Français)",
+    "nameFrPlaceholder": "ex: Visa Schengen",
+    "nameAr": "Nom (Arabe)",
+    "nameArPlaceholder": "ex: تأشيرة شنغن",
+    "icon": "Icône",
+    "selectIcon": "Choisir une icône"
+  },
+  "actions": {
+    "newType": "Nouveau type",
+    "create": "Créer",
+    "edit": "Modifier"
+  },
+  "card": {
+    "code": "Code: {{code}}"
+  },
+  "empty": {
+    "title": "Aucun type de service",
+    "description": "Créez votre premier type de service"
+  },
+  "messages": {
+    "created": "Type de service créé avec succès",
+    "updated": "Type de service modifié avec succès",
+    "deleted": "Type de service désactivé"
+  },
+  "errors": {
+    "codeExists": "Ce code existe déjà",
+    "inUse": "Ce type est utilisé par des services et ne peut être supprimé",
+    "createFailed": "Erreur lors de la création",
+    "updateFailed": "Erreur lors de la modification",
+    "deleteFailed": "Erreur lors de la suppression"
+  }
+}
