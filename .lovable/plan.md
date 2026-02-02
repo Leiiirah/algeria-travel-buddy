@@ -1,59 +1,24 @@
 
 
-# Plan: Command Invoice PDF Export
+# Plan: Add Visa Processing Statuses to Commands
 
 ## Overview
 
-Add a "Print Invoice" feature to each command row in the CommandsPage, generating a professional PDF invoice styled like the Fonex Tour example provided.
+Add 7 new visa-specific statuses to the Commands page, replacing the current 4 generic statuses with a more detailed workflow that tracks the visa application process from submission to delivery.
 
 ---
 
-## Invoice Layout Analysis (from provided example)
+## New Statuses
 
-Based on the uploaded PDF, the invoice contains:
-
-```text
-+--------------------------------------------------+
-|  [LOGO]            COMPANY NAME                  |
-|--------------------------------------------------| 
-|  Référence: XXXXX           Client: CLIENT NAME  |
-|  Paiement le XX/XX/XXXX: XXXXX DZD               |
-|  Email: company@email.com                        |
-|  Prix Total: XXXXX DZD                           |
-|--------------------------------------------------|
-|  # PASSAGER                                      |
-|  | Passager | N° Ticket | Statut |               |
-|--------------------------------------------------|
-|  # ITINERAIRE                                    |
-|  | De | À | Départ | Arrivée | Vol | Classe |    |
-|--------------------------------------------------|
-|  # TYPE                                          |
-|  | Type | Baggage |                              |
-+--------------------------------------------------+
-```
-
----
-
-## Mapping Command Data to Invoice
-
-| Invoice Field | Source in Command |
-|--------------|-------------------|
-| Référence | Generate unique code (e.g., first 6 chars of command.id or custom format) |
-| Client | `command.data.clientFullName` |
-| Paiement | `command.amountPaid` + `command.createdAt` |
-| Prix Total | `command.sellingPrice` |
-| Passager | `command.data.clientFullName` |
-| N° Ticket | Optional field (can be added to ticket commands) |
-| Statut | `command.status` mapped to "Confirmé"/"En attente" |
-| Itinéraire | From `command.destination` + `command.data.departureDate/returnDate` |
-
----
-
-## Files to Create
-
-| File | Description |
-|------|-------------|
-| `src/utils/invoiceGenerator.ts` | Invoice PDF generation function |
+| Code | French Label | Arabic Label | Description |
+|------|-------------|--------------|-------------|
+| `dossier_incomplet` | Dossier incomplet | ملف غير مكتمل | Application documents are incomplete |
+| `depose` | Déposé | تم الإيداع | Application has been submitted |
+| `en_traitement` | En traitement | قيد المعالجة | Application is being processed |
+| `accepte` | Accepté | مقبول | Visa application approved |
+| `refuse` | Refusé | مرفوض | Visa application rejected |
+| `visa_delivre` | Visa délivré | تم إصدار التأشيرة | Visa has been issued |
+| `retire` | Retiré | تم السحب | Visa/passport has been collected |
 
 ---
 
@@ -61,239 +26,169 @@ Based on the uploaded PDF, the invoice contains:
 
 | File | Changes |
 |------|---------|
-| `src/pages/CommandsPage.tsx` | Add "Print Invoice" action to dropdown menu |
-| `src/i18n/locales/fr/commands.json` | Add invoice-related translations |
-| `src/i18n/locales/ar/commands.json` | Add Arabic translations |
-
----
-
-## Invoice Generator Design
-
-### Interface
-
-```typescript
-interface InvoiceData {
-  reference: string;           // Unique invoice reference
-  clientName: string;          // Client full name
-  clientPhone: string;         // Client phone
-  paymentDate: string;         // Date of command
-  amountPaid: number;          // Amount already paid
-  totalPrice: number;          // Selling price
-  remaining: number;           // Remaining balance
-  service: string;             // Service name
-  destination: string;         // Trip destination
-  status: string;              // Confirmé, En attente, etc.
-  passengers?: Array<{
-    name: string;
-    ticketNumber?: string;
-    status: string;
-  }>;
-  itinerary?: Array<{
-    from: string;
-    to: string;
-    departure: string;
-    arrival: string;
-    flight?: string;
-    class?: string;
-  }>;
-  supplier?: string;           // Supplier name
-}
-```
-
-### PDF Layout
-
-```text
-+------------------------------------------------------+
-|  [LOGO - centered]                                    |
-|                                                       |
-|              EL HIKMA TOURISME ET VOYAGE              |
-|                    FACTURE / فاتورة                   |
-|------------------------------------------------------|
-|                                                       |
-|  Référence: CMD-XXXXXX       Date: 02/02/2026        |
-|                                                       |
-|------------------------------------------------------|
-|  CLIENT                                              |
-|  Nom: NADJET MEZROUH                                 |
-|  Téléphone: +213 555 123 456                         |
-|------------------------------------------------------|
-|  DÉTAILS DE LA COMMANDE                              |
-|  Service: Billet d'avion                             |
-|  Destination: ALG-CZL-ALG                            |
-|  Fournisseur: Fonex Tour                             |
-|------------------------------------------------------|
-|  # PASSAGER(S)                                       |
-|  | Passager       | N° Ticket | Statut   |           |
-|  | NADJET MEZROUH | -         | Confirmé |           |
-|------------------------------------------------------|
-|  # ITINÉRAIRE (if ticket type)                       |
-|  | De  | À   | Départ   | Arrivée  | Vol   | Classe |
-|  | ALG | CZL | 24/12/25 | 24/12/25 | SF116 | Y      |
-|------------------------------------------------------|
-|  RÉSUMÉ FINANCIER                                    |
-|                                                       |
-|  Prix Total:      85,000 DZD                         |
-|  Montant Payé:    25,000 DZD                         |
-|  Reste à Payer:   60,000 DZD                         |
-|------------------------------------------------------|
-|                                                       |
-|  Merci de votre confiance !                          |
-|  Email: elhikma@contact.dz                           |
-|                                                       |
-|  Généré le 02/02/2026 à 14:30                        |
-+------------------------------------------------------+
-```
+| `server/src/commands/entities/command.entity.ts` | Update `CommandStatus` enum with new values |
+| `server/src/commands/commands.service.ts` | Update stats calculation for new statuses |
+| `src/lib/api.ts` | Update `UpdateCommandDto` type with new status values |
+| `src/pages/CommandsPage.tsx` | Add status dropdown selector in UI for admin, update badge colors |
+| `src/i18n/locales/fr/commands.json` | Add French translations for new statuses |
+| `src/i18n/locales/ar/commands.json` | Add Arabic translations for new statuses |
+| `src/types/index.ts` | Update Command type if needed |
 
 ---
 
 ## Implementation Details
 
-### 1. Invoice Generator (`src/utils/invoiceGenerator.ts`)
+### 1. Backend - Update CommandStatus Enum
 
-Key features:
-- Reuse `getLogoBase64()` from existing pdfGenerator
-- Professional invoice styling with blue accent color
-- Conditional sections (itinerary only for ticket type)
-- Financial summary with clear breakdown
-- Reference number generation: `CMD-{first6CharsOfId}`
-
-### 2. CommandsPage Integration
-
-Add to the dropdown menu (lines 823-843):
-
-```tsx
-<DropdownMenuItem onClick={() => handlePrintInvoice(command)}>
-  <FileDown className="ltr:mr-2 rtl:ml-2 h-4 w-4" />
-  {t('actions.printInvoice')}
-</DropdownMenuItem>
-```
-
-Handler function:
-
-```tsx
-const handlePrintInvoice = async (command: any) => {
-  const service = services?.find((s) => s.id === command.serviceId);
-  const supplier = suppliers?.find((s) => s.id === command.supplierId);
-  
-  await generateInvoicePdf({
-    reference: `CMD-${command.id.substring(0, 6).toUpperCase()}`,
-    clientName: command.data.clientFullName,
-    clientPhone: command.data.phone || '',
-    paymentDate: format(new Date(command.createdAt), 'dd/MM/yyyy'),
-    amountPaid: command.amountPaid,
-    totalPrice: command.sellingPrice,
-    remaining: command.sellingPrice - command.amountPaid,
-    service: service?.name || '',
-    serviceType: service?.type || '',
-    destination: command.destination,
-    status: getStatusLabel(command.status),
-    departureDate: command.data.departureDate,
-    returnDate: command.data.returnDate,
-    supplier: supplier?.name,
-    language: i18n.language as 'fr' | 'ar',
-  });
-};
-```
-
----
-
-## Translations
-
-### French (`commands.json`)
-
-```json
-{
-  "actions": {
-    "printInvoice": "Imprimer la facture"
-  },
-  "invoice": {
-    "title": "FACTURE",
-    "reference": "Référence",
-    "date": "Date",
-    "client": "CLIENT",
-    "name": "Nom",
-    "phone": "Téléphone",
-    "orderDetails": "DÉTAILS DE LA COMMANDE",
-    "service": "Service",
-    "destination": "Destination",
-    "supplier": "Fournisseur",
-    "passengers": "PASSAGER(S)",
-    "passenger": "Passager",
-    "ticketNumber": "N° Ticket",
-    "status": "Statut",
-    "itinerary": "ITINÉRAIRE",
-    "from": "De",
-    "to": "À",
-    "departure": "Départ",
-    "arrival": "Arrivée",
-    "flight": "Vol",
-    "class": "Classe",
-    "financialSummary": "RÉSUMÉ FINANCIER",
-    "totalPrice": "Prix Total",
-    "amountPaid": "Montant Payé",
-    "remaining": "Reste à Payer",
-    "thankYou": "Merci de votre confiance !",
-    "generatedOn": "Généré le"
-  }
+```typescript
+// server/src/commands/entities/command.entity.ts
+export enum CommandStatus {
+  DOSSIER_INCOMPLET = 'dossier_incomplet',
+  DEPOSE = 'depose',
+  EN_TRAITEMENT = 'en_traitement',
+  ACCEPTE = 'accepte',
+  REFUSE = 'refuse',
+  VISA_DELIVRE = 'visa_delivre',
+  RETIRE = 'retire',
 }
 ```
 
-### Arabic (`commands.json`)
+### 2. Frontend - Status Selector for Admin
 
+Add an inline status selector in the table that only admins can use:
+
+```tsx
+// Status cell with dropdown for admin
+<TableCell>
+  {user?.role === 'admin' ? (
+    <Select
+      value={command.status}
+      onValueChange={(value) => handleStatusChange(command.id, value)}
+    >
+      <SelectTrigger className="w-[160px]">
+        <SelectValue>{getStatusLabel(command.status)}</SelectValue>
+      </SelectTrigger>
+      <SelectContent>
+        {statusOptions.map((status) => (
+          <SelectItem key={status.value} value={status.value}>
+            {status.label}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  ) : (
+    <Badge variant={getStatusVariant(command.status)}>
+      {getStatusLabel(command.status)}
+    </Badge>
+  )}
+</TableCell>
+```
+
+### 3. Status Badge Colors
+
+| Status | Badge Variant | Color |
+|--------|--------------|-------|
+| `dossier_incomplet` | `outline` | Gray/Yellow |
+| `depose` | `secondary` | Blue |
+| `en_traitement` | `secondary` | Blue |
+| `accepte` | `default` | Green |
+| `refuse` | `destructive` | Red |
+| `visa_delivre` | `default` | Green |
+| `retire` | `default` | Green (completed) |
+
+### 4. Update Translations
+
+**French (`commands.json`):**
 ```json
-{
-  "actions": {
-    "printInvoice": "طباعة الفاتورة"
-  },
-  "invoice": {
-    "title": "فاتورة",
-    "reference": "المرجع",
-    "date": "التاريخ",
-    "client": "العميل",
-    "name": "الاسم",
-    "phone": "الهاتف",
-    "orderDetails": "تفاصيل الطلب",
-    "service": "الخدمة",
-    "destination": "الوجهة",
-    "supplier": "المورد",
-    "passengers": "الركاب",
-    "passenger": "الراكب",
-    "ticketNumber": "رقم التذكرة",
-    "status": "الحالة",
-    "itinerary": "خط السير",
-    "from": "من",
-    "to": "إلى",
-    "departure": "المغادرة",
-    "arrival": "الوصول",
-    "flight": "الرحلة",
-    "class": "الدرجة",
-    "financialSummary": "الملخص المالي",
-    "totalPrice": "السعر الإجمالي",
-    "amountPaid": "المبلغ المدفوع",
-    "remaining": "المتبقي",
-    "thankYou": "شكراً لثقتكم!",
-    "generatedOn": "تم الإنشاء في"
-  }
+"status": {
+  "dossier_incomplet": "Dossier incomplet",
+  "depose": "Déposé",
+  "en_traitement": "En traitement",
+  "accepte": "Accepté",
+  "refuse": "Refusé",
+  "visa_delivre": "Visa délivré",
+  "retire": "Retiré"
+}
+```
+
+**Arabic (`commands.json`):**
+```json
+"status": {
+  "dossier_incomplet": "ملف غير مكتمل",
+  "depose": "تم الإيداع",
+  "en_traitement": "قيد المعالجة",
+  "accepte": "مقبول",
+  "refuse": "مرفوض",
+  "visa_delivre": "تم إصدار التأشيرة",
+  "retire": "تم السحب"
 }
 ```
 
 ---
 
-## File Summary
+## Status Workflow Visualization
 
-| Category | Files |
+```text
+┌─────────────────────┐
+│  Dossier incomplet  │ ◄── Initial state if docs missing
+└─────────┬───────────┘
+          │ (complete docs)
+          ▼
+┌─────────────────────┐
+│      Déposé         │ ◄── Submitted to embassy/consulate
+└─────────┬───────────┘
+          │
+          ▼
+┌─────────────────────┐
+│   En traitement     │ ◄── Being processed
+└─────────┬───────────┘
+          │
+     ┌────┴────┐
+     ▼         ▼
+┌─────────┐ ┌─────────┐
+│ Accepté │ │ Refusé  │
+└────┬────┘ └─────────┘
+     │
+     ▼
+┌─────────────────────┐
+│   Visa délivré      │ ◄── Visa ready for pickup
+└─────────┬───────────┘
+          │
+          ▼
+┌─────────────────────┐
+│      Retiré         │ ◄── Client collected passport
+└─────────────────────┘
+```
+
+---
+
+## Admin Permission Check
+
+Only admins can modify the status. This will be enforced by:
+1. Checking `user.role === 'admin'` in the frontend before showing the selector
+2. The existing role-based system on the backend
+
+---
+
+## Migration Considerations
+
+The database currently has commands with the old status values (`en_attente`, `en_cours`, `termine`, `annule`). We need to:
+
+1. Add the new enum values to PostgreSQL
+2. Optionally migrate existing data:
+   - `en_attente` → `dossier_incomplet`
+   - `en_cours` → `en_traitement`
+   - `termine` → `retire`
+   - `annule` → `refuse`
+
+---
+
+## Summary
+
+| Category | Count |
 |----------|-------|
-| **New Files** | 1 (`invoiceGenerator.ts`) |
-| **Modified Files** | 3 (`CommandsPage.tsx`, `fr/commands.json`, `ar/commands.json`) |
-| **Total** | 4 files |
-
----
-
-## Technical Notes
-
-- Reuses existing jsPDF and jspdf-autotable dependencies (already installed)
-- Leverages the `getLogoBase64()` helper from `pdfGenerator.ts`
-- Invoice filename format: `facture_CMD-XXXXXX_2026-02-02.pdf`
-- Conditional itinerary table: only shown for "ticket" service types
-- Financial section shows remaining balance in red if > 0, green if fully paid
+| Backend files | 2 |
+| Frontend files | 3 |
+| Translation files | 2 |
+| **Total** | 7 files |
 
