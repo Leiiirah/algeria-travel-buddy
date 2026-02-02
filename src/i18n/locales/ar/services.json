@@ -1,0 +1,42 @@
+{
+  "title": "إعدادات الخدمات",
+  "subtitle": "إدارة أنواع الخدمات المقدمة من الوكالة",
+  "activeCount": "{{active}} خدمة نشطة من أصل {{total}}",
+  "dialog": {
+    "createTitle": "إنشاء خدمة",
+    "editTitle": "تعديل الخدمة",
+    "createDesc": "أضف نوع خدمة جديد إلى الكتالوج",
+    "editDesc": "عدّل معلومات الخدمة"
+  },
+  "form": {
+    "name": "اسم الخدمة",
+    "namePlaceholder": "مثال: تأشيرة شنغن فرنسا",
+    "type": "نوع الخدمة",
+    "selectType": "اختر نوعاً",
+    "description": "الوصف",
+    "descriptionPlaceholder": "صف هذه الخدمة...",
+    "defaultSupplier": "المورد الافتراضي",
+    "selectSupplier": "اختر...",
+    "defaultCost": "تكلفة الشراء الافتراضية",
+    "costPlaceholder": "مثال: 12000"
+  },
+  "types": {
+    "visa": "تأشيرة",
+    "residence": "إقامة / فندق",
+    "ticket": "حجز تذاكر",
+    "dossier": "معالجة ملف"
+  },
+  "actions": {
+    "newService": "خدمة جديدة",
+    "create": "إنشاء الخدمة",
+    "edit": "تعديل",
+    "saving": "جاري الحفظ..."
+  },
+  "card": {
+    "createdAt": "أُنشئ في {{date}}"
+  },
+  "empty": {
+    "title": "لا توجد خدمات",
+    "description": "أنشئ أول خدمة لك"
+  }
+}

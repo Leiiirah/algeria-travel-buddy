@@ -1,0 +1,86 @@
+{
+  "title": "المحاسبة",
+  "subtitle": "المتابعة المالية وتتبع المدفوعات",
+  "stats": {
+    "totalCollected": "إجمالي المحصّل",
+    "todayPayments": "تحصيلات اليوم",
+    "todayPaymentsDesc": "{{count}} دفعة",
+    "unpaid": "غير مدفوعة",
+    "unpaidDesc": "{{count}} طلب",
+    "totalProfit": "إجمالي الربح",
+    "totalProfitDesc": "على جميع الطلبات"
+  },
+  "tabs": {
+    "payments": "المدفوعات",
+    "unpaid": "غير مدفوعة",
+    "reports": "التقارير"
+  },
+  "payments": {
+    "title": "سجل المدفوعات",
+    "subtitle": "جميع المدفوعات المسجلة",
+    "table": {
+      "date": "التاريخ",
+      "command": "الطلب",
+      "amount": "المبلغ",
+      "method": "الطريقة",
+      "recordedBy": "سجّله",
+      "notes": "ملاحظات"
+    },
+    "empty": {
+      "title": "لا توجد مدفوعات",
+      "description": "ستظهر المدفوعات هنا"
+    }
+  },
+  "unpaidCommands": {
+    "title": "الطلبات غير المدفوعة",
+    "subtitle": "طلبات في انتظار الدفع أو مدفوعة جزئياً",
+    "table": {
+      "client": "العميل",
+      "service": "الخدمة",
+      "totalAmount": "المبلغ الإجمالي",
+      "paid": "المدفوع",
+      "remaining": "المتبقي",
+      "status": "الحالة",
+      "action": "إجراء"
+    },
+    "empty": {
+      "title": "لا توجد طلبات غير مدفوعة",
+      "description": "جميع الطلبات مسددة"
+    },
+    "addPayment": "إضافة دفعة"
+  },
+  "reports": {
+    "title": "التقارير المالية",
+    "chartTitle": "الإيرادات مقابل المصروفات",
+    "chartSubtitle": "التطور خلال الأشهر الستة الماضية",
+    "months": {
+      "jan": "يناير",
+      "feb": "فبراير",
+      "mar": "مارس",
+      "apr": "أبريل",
+      "may": "مايو",
+      "jun": "يونيو"
+    },
+    "revenues": "الإيرادات",
+    "expenses": "المصروفات"
+  },
+  "dialog": {
+    "title": "دفعة جديدة",
+    "subtitle": "سجّل دفعة لطلب",
+    "form": {
+      "command": "الطلب",
+      "selectCommand": "اختر طلباً",
+      "noUnpaidCommands": "لا توجد طلبات غير مدفوعة",
+      "addCommand": "إضافة طلب",
+      "amount": "المبلغ (د.ج)",
+      "method": "طريقة الدفع",
+      "notes": "ملاحظات (اختياري)",
+      "notesPlaceholder": "ملاحظات حول هذه الدفعة...",
+      "remaining": "المتبقي"
+    }
+  },
+  "actions": {
+    "newPayment": "تسجيل دفعة",
+    "saving": "جاري الحفظ..."
+  }
+}

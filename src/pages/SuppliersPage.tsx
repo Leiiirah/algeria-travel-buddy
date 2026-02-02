@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { AdvancedFilter } from '@/components/search/AdvancedFilter';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -34,6 +35,8 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { useAuth } from '@/contexts/AuthContext';
 
 const SuppliersPage = () => {
+  const { t, i18n } = useTranslation('suppliers');
+  const { t: tCommon } = useTranslation('common');
   const [searchQuery, setSearchQuery] = useState('');
   const [filters, setFilters] = useState<Record<string, any>>({});
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -55,6 +58,14 @@ const SuppliersPage = () => {
   const updateSupplier = useUpdateSupplier();
   const deleteSupplier = useDeleteSupplier();
 
+  const formatDate = (dateString: string | Date) => {
+    const date = typeof dateString === 'string' ? new Date(dateString) : dateString;
+    return date.toLocaleDateString(
+      i18n.language === 'ar' ? 'ar-DZ' : 'fr-FR',
+      { month: 'short', year: 'numeric' }
+    );
+  };
+
   const filteredSuppliers = (suppliers ?? []).filter((supplier) => {
     const matchesSearch =
       supplier.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -74,10 +85,10 @@ const SuppliersPage = () => {
   });
 
   const serviceTypeOptions: { value: ServiceType; label: string }[] = [
-    { value: 'visa', label: 'Visa' },
-    { value: 'residence', label: 'Résidence / Hôtel' },
-    { value: 'ticket', label: 'Billetterie' },
-    { value: 'dossier', label: 'Traitement de dossier' },
+    { value: 'visa', label: tCommon('serviceTypes.visa') },
+    { value: 'residence', label: tCommon('serviceTypes.residence') },
+    { value: 'ticket', label: tCommon('serviceTypes.ticket') },
+    { value: 'dossier', label: tCommon('serviceTypes.dossier') },
   ];
 
   const handleSaveSupplier = () => {
@@ -141,7 +152,7 @@ const SuppliersPage = () => {
 
   if (isLoading) {
     return (
-      <DashboardLayout title="Fournisseurs" subtitle="Gestion des partenaires et fournisseurs">
+      <DashboardLayout title={t('title')} subtitle={t('subtitle')}>
         <SuppliersSkeleton />
       </DashboardLayout>
     );
@@ -149,21 +160,21 @@ const SuppliersPage = () => {
 
   if (isError) {
     return (
-      <DashboardLayout title="Fournisseurs" subtitle="Gestion des partenaires et fournisseurs">
+      <DashboardLayout title={t('title')} subtitle={t('subtitle')}>
         <ErrorState message={error?.message} onRetry={refetch} />
       </DashboardLayout>
     );
   }
 
   return (
-    <DashboardLayout title="Fournisseurs" subtitle="Gestion des partenaires et fournisseurs">
+    <DashboardLayout title={t('title')} subtitle={t('subtitle')}>
       <Card className="border-none shadow-sm">
         <CardHeader>
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <CardTitle>Base de données fournisseurs</CardTitle>
+              <CardTitle>{t('database.title')}</CardTitle>
               <CardDescription>
-                {(suppliers ?? []).filter((s) => s.isActive).length} fournisseurs actifs
+                {t('database.activeCount', { count: (suppliers ?? []).filter((s) => s.isActive).length })}
               </CardDescription>
             </div>
             <div className="flex gap-3 items-center">
@@ -176,17 +187,17 @@ const SuppliersPage = () => {
                   filterConfig={[
                     {
                       key: 'serviceType',
-                      label: 'Service',
+                      label: tCommon('service'),
                       type: 'select',
                       options: serviceTypeOptions,
                     },
                     {
                       key: 'status',
-                      label: 'Statut',
+                      label: tCommon('status.label'),
                       type: 'select',
                       options: [
-                        { label: 'Actif', value: 'active' },
-                        { label: 'Inactif', value: 'inactive' },
+                        { label: tCommon('status.active'), value: 'active' },
+                        { label: tCommon('status.inactive'), value: 'inactive' },
                       ],
                     },
                   ]}
@@ -205,63 +216,63 @@ const SuppliersPage = () => {
                       setEditingId(null);
                       setNewSupplier({ name: '', contact: '', phone: '', email: '', serviceTypes: [] });
                     }}>
-                      <Plus className="mr-2 h-4 w-4" />
-                      Ajouter
+                      <Plus className="ltr:mr-2 rtl:ml-2 h-4 w-4" />
+                      {tCommon('actions.add')}
                     </Button>
                   </DialogTrigger>
                   <DialogContent className="bg-card">
                   <DialogHeader>
-                    <DialogTitle>{editingId ? 'Modifier le fournisseur' : 'Nouveau fournisseur'}</DialogTitle>
+                    <DialogTitle>{editingId ? t('dialog.editTitle') : t('dialog.createTitle')}</DialogTitle>
                     <DialogDescription>
-                      {editingId ? 'Modifiez les informations du fournisseur' : 'Ajoutez un nouveau partenaire à votre réseau'}
+                      {editingId ? t('dialog.editDesc') : t('dialog.createDesc')}
                     </DialogDescription>
                   </DialogHeader>
                   <div className="space-y-4 py-4">
                     <div className="space-y-2">
-                      <Label>Nom de l'entreprise *</Label>
+                      <Label>{t('form.companyName')} *</Label>
                       <Input
                         value={newSupplier.name}
                         onChange={(e) =>
                           setNewSupplier({ ...newSupplier, name: e.target.value })
                         }
-                        placeholder="Nom du fournisseur"
+                        placeholder={t('form.companyNamePlaceholder')}
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label>Personne de contact *</Label>
+                      <Label>{t('form.contactPerson')} *</Label>
                       <Input
                         value={newSupplier.contact}
                         onChange={(e) =>
                           setNewSupplier({ ...newSupplier, contact: e.target.value })
                         }
-                        placeholder="Nom du contact"
+                        placeholder={t('form.contactPlaceholder')}
                       />
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
-                        <Label>Téléphone *</Label>
+                        <Label>{t('form.phone')} *</Label>
                         <Input
                           value={newSupplier.phone}
                           onChange={(e) =>
                             setNewSupplier({ ...newSupplier, phone: e.target.value })
                           }
-                          placeholder="+213 555 123 456"
+                          placeholder={t('form.phonePlaceholder')}
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label>Email</Label>
+                        <Label>{t('form.email')}</Label>
                         <Input
                           type="email"
                           value={newSupplier.email}
                           onChange={(e) =>
                             setNewSupplier({ ...newSupplier, email: e.target.value })
                           }
-                          placeholder="contact@fournisseur.dz"
+                          placeholder={t('form.emailPlaceholder')}
                         />
                       </div>
                     </div>
                     <div className="space-y-2">
-                      <Label>Types de services</Label>
+                      <Label>{t('form.serviceTypes')}</Label>
                       <div className="grid grid-cols-2 gap-3">
                         {serviceTypeOptions.map((option) => (
                           <div
@@ -286,10 +297,10 @@ const SuppliersPage = () => {
                   </div>
                   <DialogFooter>
                     <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
-                      Annuler
+                      {tCommon('actions.cancel')}
                     </Button>
                     <Button onClick={handleSaveSupplier} disabled={createSupplier.isPending || updateSupplier.isPending}>
-                      {createSupplier.isPending || updateSupplier.isPending ? 'Enregistrement...' : (editingId ? 'Modifier' : 'Ajouter')}
+                      {createSupplier.isPending || updateSupplier.isPending ? tCommon('actions.saving') : (editingId ? tCommon('actions.edit') : tCommon('actions.add'))}
                     </Button>
                   </DialogFooter>
                 </DialogContent>
@@ -301,20 +312,20 @@ const SuppliersPage = () => {
         <CardContent>
           {filteredSuppliers.length === 0 ? (
             <EmptyState
-              title="Aucun fournisseur"
-              description="Ajoutez votre premier fournisseur"
+              title={t('empty.title')}
+              description={t('empty.description')}
               icon={Building2}
             />
           ) : (
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Fournisseur</TableHead>
-                  <TableHead>Contact</TableHead>
-                  <TableHead>Coordonnées</TableHead>
-                  <TableHead>Services</TableHead>
-                  <TableHead>Statut</TableHead>
-                  {isAdmin && <TableHead className="text-right">Actions</TableHead>}
+                  <TableHead>{t('table.supplier')}</TableHead>
+                  <TableHead>{t('table.contact')}</TableHead>
+                  <TableHead>{t('table.coordinates')}</TableHead>
+                  <TableHead>{t('table.services')}</TableHead>
+                  <TableHead>{t('table.status')}</TableHead>
+                  {isAdmin && <TableHead className="text-right">{t('table.actions')}</TableHead>}
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -328,11 +339,7 @@ const SuppliersPage = () => {
                         <div>
                           <p className="font-medium">{supplier.name}</p>
                           <p className="text-sm text-muted-foreground">
-                            Depuis{' '}
-                            {new Date(supplier.createdAt).toLocaleDateString('fr-FR', {
-                              month: 'short',
-                              year: 'numeric',
-                            })}
+                            {t('table.since', { date: formatDate(supplier.createdAt) })}
                           </p>
                         </div>
                       </div>
@@ -365,7 +372,7 @@ const SuppliersPage = () => {
                     </TableCell>
                     <TableCell>
                       <Badge variant={supplier.isActive ? 'default' : 'secondary'}>
-                        {supplier.isActive ? 'Actif' : 'Inactif'}
+                        {supplier.isActive ? tCommon('status.active') : tCommon('status.inactive')}
                       </Badge>
                     </TableCell>
                     {isAdmin && (

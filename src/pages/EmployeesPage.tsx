@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { AdvancedFilter } from '@/components/search/AdvancedFilter';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -30,7 +31,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Plus, Search, Mail, Shield, UserCheck, UserX, Users, Pencil } from 'lucide-react';
+import { Plus, Mail, Shield, UserCheck, UserX, Users, Pencil } from 'lucide-react';
 import { UserRole } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUsers, useCreateUser, useToggleUserStatus, useUpdateUser } from '@/hooks/useUsers';
@@ -40,6 +41,8 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { User } from '@/types';
 
 const EmployeesPage = () => {
+  const { t, i18n } = useTranslation('employees');
+  const { t: tCommon } = useTranslation('common');
   const { isAdmin } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
   const [filters, setFilters] = useState<Record<string, any>>({});
@@ -66,6 +69,14 @@ const EmployeesPage = () => {
   const createUser = useCreateUser();
   const updateUser = useUpdateUser();
   const toggleStatus = useToggleUserStatus();
+
+  const formatDate = (dateString: string | Date) => {
+    const date = typeof dateString === 'string' ? new Date(dateString) : dateString;
+    return date.toLocaleDateString(
+      i18n.language === 'ar' ? 'ar-DZ' : 'fr-FR',
+      { day: '2-digit', month: 'short', year: 'numeric' }
+    );
+  };
 
   const filteredUsers = (users ?? []).filter((user) => {
     const matchesSearch =
@@ -146,7 +157,7 @@ const EmployeesPage = () => {
 
   if (isLoading) {
     return (
-      <DashboardLayout title="Employés" subtitle="Gestion des comptes utilisateurs">
+      <DashboardLayout title={t('title')} subtitle={t('subtitle')}>
         <EmployeesSkeleton />
       </DashboardLayout>
     );
@@ -154,21 +165,21 @@ const EmployeesPage = () => {
 
   if (isError) {
     return (
-      <DashboardLayout title="Employés" subtitle="Gestion des comptes utilisateurs">
+      <DashboardLayout title={t('title')} subtitle={t('subtitle')}>
         <ErrorState message={error?.message} onRetry={refetch} />
       </DashboardLayout>
     );
   }
 
   return (
-    <DashboardLayout title="Employés" subtitle="Gestion des comptes utilisateurs">
+    <DashboardLayout title={t('title')} subtitle={t('subtitle')}>
       <Card className="border-none shadow-sm">
         <CardHeader>
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <CardTitle>Annuaire des employés</CardTitle>
+              <CardTitle>{t('directory.title')}</CardTitle>
               <CardDescription>
-                {(users ?? []).length} employés enregistrés
+                {t('directory.count', { count: (users ?? []).length })}
               </CardDescription>
             </div>
             <div className="flex gap-3 items-center">
@@ -181,20 +192,20 @@ const EmployeesPage = () => {
                   filterConfig={[
                     {
                       key: 'role',
-                      label: 'Rôle',
+                      label: t('filters.role'),
                       type: 'select',
                       options: [
-                        { label: 'Administrateur', value: 'admin' },
-                        { label: 'Employé', value: 'employee' },
+                        { label: t('roles.admin'), value: 'admin' },
+                        { label: t('roles.employee'), value: 'employee' },
                       ],
                     },
                     {
                       key: 'status',
-                      label: 'Statut',
+                      label: t('filters.status'),
                       type: 'select',
                       options: [
-                        { label: 'Actif', value: 'active' },
-                        { label: 'Inactif', value: 'inactive' },
+                        { label: tCommon('status.active'), value: 'active' },
+                        { label: tCommon('status.inactive'), value: 'inactive' },
                       ],
                     },
                   ]}
@@ -204,44 +215,44 @@ const EmployeesPage = () => {
                 <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                   <DialogTrigger asChild>
                     <Button>
-                      <Plus className="mr-2 h-4 w-4" />
-                      Ajouter
+                      <Plus className="ltr:mr-2 rtl:ml-2 h-4 w-4" />
+                      {tCommon('actions.add')}
                     </Button>
                   </DialogTrigger>
                   <DialogContent className="bg-card">
                     <DialogHeader>
-                      <DialogTitle>Nouvel employé</DialogTitle>
+                      <DialogTitle>{t('dialog.createTitle')}</DialogTitle>
                       <DialogDescription>
-                        Ajoutez un nouvel utilisateur au système
+                        {t('dialog.createDesc')}
                       </DialogDescription>
                     </DialogHeader>
                     <div className="space-y-4 py-4">
                       <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
-                          <Label htmlFor="firstName">Prénom</Label>
+                          <Label htmlFor="firstName">{t('form.firstName')}</Label>
                           <Input
                             id="firstName"
                             value={newUser.firstName}
                             onChange={(e) =>
                               setNewUser({ ...newUser, firstName: e.target.value })
                             }
-                            placeholder="Prénom"
+                            placeholder={t('form.firstName')}
                           />
                         </div>
                         <div className="space-y-2">
-                          <Label htmlFor="lastName">Nom</Label>
+                          <Label htmlFor="lastName">{t('form.lastName')}</Label>
                           <Input
                             id="lastName"
                             value={newUser.lastName}
                             onChange={(e) =>
                               setNewUser({ ...newUser, lastName: e.target.value })
                             }
-                            placeholder="Nom"
+                            placeholder={t('form.lastName')}
                           />
                         </div>
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="email">Email</Label>
+                        <Label htmlFor="email">{t('form.email')}</Label>
                         <Input
                           id="email"
                           type="email"
@@ -249,11 +260,11 @@ const EmployeesPage = () => {
                           onChange={(e) =>
                             setNewUser({ ...newUser, email: e.target.value })
                           }
-                          placeholder="email@agence.dz"
+                          placeholder={t('form.emailPlaceholder')}
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="password">Mot de passe</Label>
+                        <Label htmlFor="password">{t('form.password')}</Label>
                         <Input
                           id="password"
                           type="password"
@@ -261,11 +272,11 @@ const EmployeesPage = () => {
                           onChange={(e) =>
                             setNewUser({ ...newUser, password: e.target.value })
                           }
-                          placeholder="Mot de passe"
+                          placeholder={t('form.passwordPlaceholder')}
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="role">Rôle</Label>
+                        <Label htmlFor="role">{t('form.role')}</Label>
                         <Select
                           value={newUser.role}
                           onValueChange={(value: UserRole) =>
@@ -273,21 +284,21 @@ const EmployeesPage = () => {
                           }
                         >
                           <SelectTrigger>
-                            <SelectValue placeholder="Sélectionner un rôle" />
+                            <SelectValue placeholder={t('form.selectRole')} />
                           </SelectTrigger>
                           <SelectContent className="bg-popover">
-                            <SelectItem value="employee">Employé</SelectItem>
-                            <SelectItem value="admin">Administrateur</SelectItem>
+                            <SelectItem value="employee">{t('roles.employee')}</SelectItem>
+                            <SelectItem value="admin">{t('roles.admin')}</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
                     </div>
                     <DialogFooter>
                       <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
-                        Annuler
+                        {tCommon('actions.cancel')}
                       </Button>
                       <Button onClick={handleAddUser} disabled={createUser.isPending}>
-                        {createUser.isPending ? 'Ajout...' : 'Ajouter'}
+                        {createUser.isPending ? t('actions.adding') : tCommon('actions.add')}
                       </Button>
                     </DialogFooter>
                   </DialogContent>
@@ -297,38 +308,38 @@ const EmployeesPage = () => {
               <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
                 <DialogContent className="bg-card">
                   <DialogHeader>
-                    <DialogTitle>Modifier l'employé</DialogTitle>
+                    <DialogTitle>{t('dialog.editTitle')}</DialogTitle>
                     <DialogDescription>
-                      Modifiez les informations de l'utilisateur
+                      {t('dialog.editDesc')}
                     </DialogDescription>
                   </DialogHeader>
                   <div className="space-y-4 py-4">
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
-                        <Label htmlFor="edit-firstName">Prénom</Label>
+                        <Label htmlFor="edit-firstName">{t('form.firstName')}</Label>
                         <Input
                           id="edit-firstName"
                           value={editForm.firstName}
                           onChange={(e) =>
                             setEditForm({ ...editForm, firstName: e.target.value })
                           }
-                          placeholder="Prénom"
+                          placeholder={t('form.firstName')}
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="edit-lastName">Nom</Label>
+                        <Label htmlFor="edit-lastName">{t('form.lastName')}</Label>
                         <Input
                           id="edit-lastName"
                           value={editForm.lastName}
                           onChange={(e) =>
                             setEditForm({ ...editForm, lastName: e.target.value })
                           }
-                          placeholder="Nom"
+                          placeholder={t('form.lastName')}
                         />
                       </div>
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="edit-email">Email</Label>
+                      <Label htmlFor="edit-email">{t('form.email')}</Label>
                       <Input
                         id="edit-email"
                         type="email"
@@ -336,11 +347,11 @@ const EmployeesPage = () => {
                         onChange={(e) =>
                           setEditForm({ ...editForm, email: e.target.value })
                         }
-                        placeholder="email@agence.dz"
+                        placeholder={t('form.emailPlaceholder')}
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="edit-password">Mot de passe (laisser vide pour ne pas changer)</Label>
+                      <Label htmlFor="edit-password">{t('form.passwordEdit')}</Label>
                       <Input
                         id="edit-password"
                         type="password"
@@ -348,11 +359,11 @@ const EmployeesPage = () => {
                         onChange={(e) =>
                           setEditForm({ ...editForm, password: e.target.value })
                         }
-                        placeholder="Nouveau mot de passe"
+                        placeholder={t('form.newPasswordPlaceholder')}
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="edit-role">Rôle</Label>
+                      <Label htmlFor="edit-role">{t('form.role')}</Label>
                       <Select
                         value={editForm.role}
                         onValueChange={(value: UserRole) =>
@@ -360,21 +371,21 @@ const EmployeesPage = () => {
                         }
                       >
                         <SelectTrigger>
-                          <SelectValue placeholder="Sélectionner un rôle" />
+                          <SelectValue placeholder={t('form.selectRole')} />
                         </SelectTrigger>
                         <SelectContent className="bg-popover">
-                          <SelectItem value="employee">Employé</SelectItem>
-                          <SelectItem value="admin">Administrateur</SelectItem>
+                          <SelectItem value="employee">{t('roles.employee')}</SelectItem>
+                          <SelectItem value="admin">{t('roles.admin')}</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
                   </div>
                   <DialogFooter>
                     <Button variant="outline" onClick={() => setIsEditOpen(false)}>
-                      Annuler
+                      {tCommon('actions.cancel')}
                     </Button>
                     <Button onClick={handleUpdate} disabled={updateUser.isPending}>
-                      {updateUser.isPending ? 'Modification...' : 'Enregistrer'}
+                      {updateUser.isPending ? t('actions.modifying') : tCommon('actions.save')}
                     </Button>
                   </DialogFooter>
                 </DialogContent>
@@ -385,20 +396,20 @@ const EmployeesPage = () => {
         <CardContent>
           {filteredUsers.length === 0 ? (
             <EmptyState
-              title="Aucun employé"
-              description="Ajoutez votre premier employé"
+              title={t('empty.title')}
+              description={t('empty.description')}
               icon={Users}
             />
           ) : (
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Employé</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Rôle</TableHead>
-                  <TableHead>Statut</TableHead>
-                  <TableHead>Date d'ajout</TableHead>
-                  {isAdmin && <TableHead className="text-right">Actions</TableHead>}
+                  <TableHead>{t('table.employee')}</TableHead>
+                  <TableHead>{t('table.email')}</TableHead>
+                  <TableHead>{t('table.role')}</TableHead>
+                  <TableHead>{t('table.status')}</TableHead>
+                  <TableHead>{t('table.addedDate')}</TableHead>
+                  {isAdmin && <TableHead className="text-right">{t('table.actions')}</TableHead>}
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -427,21 +438,17 @@ const EmployeesPage = () => {
                       <div className="flex items-center gap-2">
                         <Shield className="h-4 w-4 text-muted-foreground" />
                         <span className="capitalize">
-                          {user.role === 'admin' ? 'Administrateur' : 'Employé'}
+                          {user.role === 'admin' ? t('roles.admin') : t('roles.employee')}
                         </span>
                       </div>
                     </TableCell>
                     <TableCell>
                       <Badge variant={user.isActive ? 'default' : 'secondary'}>
-                        {user.isActive ? 'Actif' : 'Inactif'}
+                        {user.isActive ? tCommon('status.active') : tCommon('status.inactive')}
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      {new Date(user.createdAt).toLocaleDateString('fr-FR', {
-                        day: '2-digit',
-                        month: 'short',
-                        year: 'numeric',
-                      })}
+                      {formatDate(user.createdAt)}
                     </TableCell>
                     {isAdmin && (
                       <TableCell className="text-right">
@@ -462,7 +469,7 @@ const EmployeesPage = () => {
                           size="sm"
                           onClick={() => handleEditUser(user)}
                         >
-                          <Pencil className="h-4 w-4 text-muted-foreground" />
+                          <Pencil className="h-4 w-4" />
                         </Button>
                       </TableCell>
                     )}
