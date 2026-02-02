@@ -1,24 +1,54 @@
 
 
-# Plan: Add Visa Processing Statuses to Commands
+# Plan: TypeORM Migrations Setup
 
 ## Overview
 
-Add 7 new visa-specific statuses to the Commands page, replacing the current 4 generic statuses with a more detailed workflow that tracks the visa application process from submission to delivery.
+Migrate from `synchronize: true` to a proper TypeORM migrations workflow. This ensures database changes are versioned, predictable, and safe for production environments.
 
 ---
 
-## New Statuses
+## Current State Analysis
 
-| Code | French Label | Arabic Label | Description |
-|------|-------------|--------------|-------------|
-| `dossier_incomplet` | Dossier incomplet | ملف غير مكتمل | Application documents are incomplete |
-| `depose` | Déposé | تم الإيداع | Application has been submitted |
-| `en_traitement` | En traitement | قيد المعالجة | Application is being processed |
-| `accepte` | Accepté | مقبول | Visa application approved |
-| `refuse` | Refusé | مرفوض | Visa application rejected |
-| `visa_delivre` | Visa délivré | تم إصدار التأشيرة | Visa has been issued |
-| `retire` | Retiré | تم السحب | Visa/passport has been collected |
+| Aspect | Current | Target |
+|--------|---------|--------|
+| `synchronize` | `true` in dev, varies | Always `false` |
+| `autoLoadEntities` | `true` (implicit) | `false` (explicit entity list) |
+| Migration config | `data-source.ts` exists but incomplete | Dedicated `typeorm.config.ts` |
+| Migrations folder | Empty | Contains initial migration |
+
+---
+
+## Entities to Migrate (16 total)
+
+| Entity | Table Name |
+|--------|------------|
+| User | `users` |
+| RefreshToken | `refresh_tokens` |
+| Service | `services` |
+| ServiceType | `service_types` |
+| Supplier | `suppliers` |
+| Command | `commands` |
+| Payment | `payments` |
+| SupplierTransaction | `supplier_transactions` |
+| Document | `documents` |
+| OmraHotel | `omra_hotels` |
+| OmraOrder | `omra_orders` |
+| OmraVisa | `omra_visas` |
+| EmployeeTransaction | `employee_transactions` |
+| Expense | `expenses` |
+| SupplierOrder | `supplier_orders` |
+| SupplierReceipt | `supplier_receipts` |
+| SupplierInvoice | `supplier_invoices` |
+
+---
+
+## Files to Create
+
+| File | Purpose |
+|------|---------|
+| `server/typeorm.config.ts` | CLI migration configuration (root of server folder) |
+| `server/src/database/migrations/1738505000000-Initial.ts` | Initial migration with complete schema |
 
 ---
 
@@ -26,169 +56,211 @@ Add 7 new visa-specific statuses to the Commands page, replacing the current 4 g
 
 | File | Changes |
 |------|---------|
-| `server/src/commands/entities/command.entity.ts` | Update `CommandStatus` enum with new values |
-| `server/src/commands/commands.service.ts` | Update stats calculation for new statuses |
-| `src/lib/api.ts` | Update `UpdateCommandDto` type with new status values |
-| `src/pages/CommandsPage.tsx` | Add status dropdown selector in UI for admin, update badge colors |
-| `src/i18n/locales/fr/commands.json` | Add French translations for new statuses |
-| `src/i18n/locales/ar/commands.json` | Add Arabic translations for new statuses |
-| `src/types/index.ts` | Update Command type if needed |
+| `server/package.json` | Update migration scripts to use new config |
+| `server/src/app.module.ts` | Set `synchronize: false`, explicit entity imports |
+| `server/src/database/data-source.ts` | Clean up (optional, can be removed or kept as backup) |
 
 ---
 
 ## Implementation Details
 
-### 1. Backend - Update CommandStatus Enum
+### 1. Create `server/typeorm.config.ts`
+
+This file will be used by the TypeORM CLI for migrations:
 
 ```typescript
-// server/src/commands/entities/command.entity.ts
-export enum CommandStatus {
-  DOSSIER_INCOMPLET = 'dossier_incomplet',
-  DEPOSE = 'depose',
-  EN_TRAITEMENT = 'en_traitement',
-  ACCEPTE = 'accepte',
-  REFUSE = 'refuse',
-  VISA_DELIVRE = 'visa_delivre',
-  RETIRE = 'retire',
-}
+import { DataSource } from 'typeorm';
+import { config } from 'dotenv';
+
+// Entity imports
+import { User } from './src/users/entities/user.entity';
+import { RefreshToken } from './src/auth/entities/refresh-token.entity';
+import { Service } from './src/services/entities/service.entity';
+import { ServiceType } from './src/service-types/entities/service-type.entity';
+import { Supplier } from './src/suppliers/entities/supplier.entity';
+import { Command } from './src/commands/entities/command.entity';
+import { Payment } from './src/payments/entities/payment.entity';
+import { SupplierTransaction } from './src/supplier-transactions/entities/supplier-transaction.entity';
+import { Document } from './src/documents/entities/document.entity';
+import { OmraHotel } from './src/omra/entities/omra-hotel.entity';
+import { OmraOrder } from './src/omra/entities/omra-order.entity';
+import { OmraVisa } from './src/omra/entities/omra-visa.entity';
+import { EmployeeTransaction } from './src/employee-transactions/entities/employee-transaction.entity';
+import { Expense } from './src/expenses/entities/expense.entity';
+import { SupplierOrder } from './src/supplier-orders/entities/supplier-order.entity';
+import { SupplierReceipt } from './src/supplier-receipts/entities/supplier-receipt.entity';
+import { SupplierInvoice } from './src/supplier-invoices/entities/supplier-invoice.entity';
+
+config();
+
+export default new DataSource({
+  type: 'postgres',
+  host: process.env.DB_HOST || 'localhost',
+  port: parseInt(process.env.DB_PORT || '5432'),
+  username: process.env.DB_USERNAME || 'postgres',
+  password: process.env.DB_PASSWORD || 'postgres',
+  database: process.env.DB_DATABASE || 'elhikma',
+  entities: [
+    User, RefreshToken, Service, ServiceType, Supplier,
+    Command, Payment, SupplierTransaction, Document,
+    OmraHotel, OmraOrder, OmraVisa, EmployeeTransaction,
+    Expense, SupplierOrder, SupplierReceipt, SupplierInvoice,
+  ],
+  migrations: ['src/database/migrations/*.ts'],
+  synchronize: false,
+  logging: process.env.NODE_ENV === 'development',
+});
 ```
 
-### 2. Frontend - Status Selector for Admin
+### 2. Update `server/package.json` Scripts
 
-Add an inline status selector in the table that only admins can use:
-
-```tsx
-// Status cell with dropdown for admin
-<TableCell>
-  {user?.role === 'admin' ? (
-    <Select
-      value={command.status}
-      onValueChange={(value) => handleStatusChange(command.id, value)}
-    >
-      <SelectTrigger className="w-[160px]">
-        <SelectValue>{getStatusLabel(command.status)}</SelectValue>
-      </SelectTrigger>
-      <SelectContent>
-        {statusOptions.map((status) => (
-          <SelectItem key={status.value} value={status.value}>
-            {status.label}
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
-  ) : (
-    <Badge variant={getStatusVariant(command.status)}>
-      {getStatusLabel(command.status)}
-    </Badge>
-  )}
-</TableCell>
-```
-
-### 3. Status Badge Colors
-
-| Status | Badge Variant | Color |
-|--------|--------------|-------|
-| `dossier_incomplet` | `outline` | Gray/Yellow |
-| `depose` | `secondary` | Blue |
-| `en_traitement` | `secondary` | Blue |
-| `accepte` | `default` | Green |
-| `refuse` | `destructive` | Red |
-| `visa_delivre` | `default` | Green |
-| `retire` | `default` | Green (completed) |
-
-### 4. Update Translations
-
-**French (`commands.json`):**
 ```json
-"status": {
-  "dossier_incomplet": "Dossier incomplet",
-  "depose": "Déposé",
-  "en_traitement": "En traitement",
-  "accepte": "Accepté",
-  "refuse": "Refusé",
-  "visa_delivre": "Visa délivré",
-  "retire": "Retiré"
+{
+  "scripts": {
+    "typeorm": "typeorm-ts-node-commonjs",
+    "migration:generate": "npm run typeorm -- migration:generate -d typeorm.config.ts",
+    "migration:create": "npm run typeorm -- migration:create",
+    "migration:run": "npm run typeorm -- migration:run -d typeorm.config.ts",
+    "migration:revert": "npm run typeorm -- migration:revert -d typeorm.config.ts",
+    "migration:show": "npm run typeorm -- migration:show -d typeorm.config.ts"
+  }
 }
 ```
 
-**Arabic (`commands.json`):**
-```json
-"status": {
-  "dossier_incomplet": "ملف غير مكتمل",
-  "depose": "تم الإيداع",
-  "en_traitement": "قيد المعالجة",
-  "accepte": "مقبول",
-  "refuse": "مرفوض",
-  "visa_delivre": "تم إصدار التأشيرة",
-  "retire": "تم السحب"
-}
+**Usage Examples:**
+- Generate migration: `npm run migration:generate src/database/migrations/AddNewColumn`
+- Run migrations: `npm run migration:run`
+- Revert last migration: `npm run migration:revert`
+- Show migration status: `npm run migration:show`
+
+### 3. Update `server/src/app.module.ts`
+
+```typescript
+TypeOrmModule.forRootAsync({
+  imports: [ConfigModule],
+  useFactory: (configService: ConfigService) => ({
+    type: 'postgres',
+    host: configService.get('DB_HOST', 'localhost'),
+    port: configService.get('DB_PORT', 5432),
+    username: configService.get('DB_USERNAME', 'postgres'),
+    password: configService.get('DB_PASSWORD'),
+    database: configService.get('DB_DATABASE', 'elhikma'),
+    entities: [__dirname + '/**/*.entity{.ts,.js}'],
+    synchronize: false,  // <-- ALWAYS FALSE
+    logging: configService.get('NODE_ENV') === 'development',
+    migrationsRun: true, // Auto-run migrations on startup (optional)
+  }),
+  inject: [ConfigService],
+}),
 ```
 
----
+### 4. Create Initial Migration
 
-## Status Workflow Visualization
+The initial migration will create all 17 tables with their enums, columns, indexes, and foreign keys. This is a comprehensive SQL migration that captures the entire current schema.
 
+**Key Schema Elements:**
+
+**Enums to create:**
+- `user_role_enum` (admin, employee)
+- `command_status_enum` (7 new visa statuses)
+- `payment_method_enum` (especes, virement, cheque, carte)
+- `transaction_type_enum` (sortie, entree)
+- `document_category_enum` (assurance, cnas, casnos, autre)
+- `omra_room_type_enum` (chambre_1 through chambre_5, suite)
+- `omra_status_enum` (en_attente, confirme, termine, annule)
+- `employee_transaction_type_enum` (avance, credit, salaire)
+- `expense_category_enum` (fournitures, equipement, etc.)
+- `expense_payment_method_enum` (especes, virement, cheque, carte)
+
+**Tables with relationships:**
 ```text
-┌─────────────────────┐
-│  Dossier incomplet  │ ◄── Initial state if docs missing
-└─────────┬───────────┘
-          │ (complete docs)
-          ▼
-┌─────────────────────┐
-│      Déposé         │ ◄── Submitted to embassy/consulate
-└─────────┬───────────┘
-          │
-          ▼
-┌─────────────────────┐
-│   En traitement     │ ◄── Being processed
-└─────────┬───────────┘
-          │
-     ┌────┴────┐
-     ▼         ▼
-┌─────────┐ ┌─────────┐
-│ Accepté │ │ Refusé  │
-└────┬────┘ └─────────┘
-     │
-     ▼
-┌─────────────────────┐
-│   Visa délivré      │ ◄── Visa ready for pickup
-└─────────┬───────────┘
-          │
-          ▼
-┌─────────────────────┐
-│      Retiré         │ ◄── Client collected passport
-└─────────────────────┘
+users ──┬──> refresh_tokens (CASCADE)
+        ├──> commands
+        ├──> payments
+        ├──> documents
+        ├──> supplier_transactions
+        ├──> employee_transactions
+        ├──> expenses
+        ├──> omra_orders
+        ├──> omra_visas
+        ├──> supplier_orders
+        ├──> supplier_receipts
+        └──> supplier_invoices
+
+suppliers ──┬──> services
+            ├──> commands
+            ├──> supplier_transactions
+            ├──> supplier_orders
+            ├──> supplier_receipts
+            └──> supplier_invoices
+
+services ──> commands
+
+omra_hotels ──┬──> omra_orders
+              └──> omra_visas
+
+supplier_orders ──> supplier_receipts
 ```
 
 ---
 
-## Admin Permission Check
+## Migration Workflow for Future Changes
 
-Only admins can modify the status. This will be enforced by:
-1. Checking `user.role === 'admin'` in the frontend before showing the selector
-2. The existing role-based system on the backend
+When you request a database change (e.g., "add a `ticketNumber` column to commands"), I will:
+
+1. **Modify the entity file** with the new column/relation
+2. **Generate a migration file** with the SQL changes:
+   ```bash
+   npm run migration:generate src/database/migrations/AddTicketNumberToCommands
+   ```
+3. **Review the generated migration** to ensure it's correct
+4. **Run the migration** in development:
+   ```bash
+   npm run migration:run
+   ```
+
+**Example generated migration:**
+```typescript
+export class AddTicketNumberToCommands1738506000000 
+  implements MigrationInterface {
+  
+  async up(queryRunner: QueryRunner): Promise<void> {
+    await queryRunner.query(`
+      ALTER TABLE "commands" 
+      ADD "ticketNumber" varchar(50)
+    `);
+  }
+
+  async down(queryRunner: QueryRunner): Promise<void> {
+    await queryRunner.query(`
+      ALTER TABLE "commands" 
+      DROP COLUMN "ticketNumber"
+    `);
+  }
+}
+```
 
 ---
 
-## Migration Considerations
+## Important Notes
 
-The database currently has commands with the old status values (`en_attente`, `en_cours`, `termine`, `annule`). We need to:
+1. **First Run**: After applying these changes, run `npm run migration:run` to apply the initial migration
 
-1. Add the new enum values to PostgreSQL
-2. Optionally migrate existing data:
-   - `en_attente` → `dossier_incomplet`
-   - `en_cours` → `en_traitement`
-   - `termine` → `retire`
-   - `annule` → `refuse`
+2. **Existing Database**: If your database already has tables, you may need to:
+   - Mark the initial migration as "already run" in the `migrations` table
+   - Or, drop and recreate the database (development only)
+
+3. **Production Deployment**: Always run `npm run migration:run` as part of your deployment process
+
+4. **Never use `synchronize: true`** in production - it can cause data loss
 
 ---
 
-## Summary
+## File Summary
 
 | Category | Count |
 |----------|-------|
-| Backend files | 2 |
-| Frontend files | 3 |
-| Translation files | 2 |
-| **Total** | 7 files |
+| New files | 2 |
+| Modified files | 2 |
+| **Total** | 4 files |
 
