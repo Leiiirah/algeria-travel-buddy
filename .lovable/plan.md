@@ -1,192 +1,268 @@
 
 
-# Plan: Dynamic Service Types Management
+# Plan: PDF Export for Expenses
 
 ## Overview
 
-Transform service types from a hardcoded enum to a dynamic database-managed system, allowing admins to create, edit, and delete service types.
+Add a "Print/Export to PDF" feature to the Expenses page that generates a professional PDF document with the company logo, expense list, and summary statistics.
 
 ---
 
-## Current State
+## Library Choice: jsPDF + jspdf-autotable
 
-| Component | Current Implementation |
-|-----------|----------------------|
-| Backend | `ServiceType` enum with 7 fixed values |
-| Frontend Types | `ServiceType` union type |
-| Services | Each service has a `type` field (enum value) |
-| Suppliers | Array of `serviceTypes` strings |
-| UI | Hardcoded Select options and icons |
+**jsPDF** is the most popular JavaScript library for PDF generation. Combined with **jspdf-autotable**, it provides easy table generation that matches the current expenses table layout.
 
----
-
-## Proposed Architecture
-
-### New Database Entity: `ServiceType`
-
-A new table to store dynamic service types that admins can manage:
-
-```text
-service_types
-├── id (uuid, primary key)
-├── code (string, unique) - e.g., "visa", "residence", "billet_bateau"
-├── nameFr (string) - French label
-├── nameAr (string) - Arabic label
-├── icon (string) - Icon identifier from lucide-react
-├── isActive (boolean, default: true)
-├── createdAt (timestamp)
-└── updatedAt (timestamp)
-```
+| Library | Purpose |
+|---------|---------|
+| `jspdf` | Core PDF generation |
+| `jspdf-autotable` | Table rendering in PDFs |
 
 ---
 
 ## Files to Create
 
-### Backend
-
 | File | Description |
 |------|-------------|
-| `server/src/service-types/entities/service-type.entity.ts` | New database entity |
-| `server/src/service-types/dto/create-service-type.dto.ts` | Create DTO |
-| `server/src/service-types/dto/update-service-type.dto.ts` | Update DTO |
-| `server/src/service-types/service-types.service.ts` | CRUD service |
-| `server/src/service-types/service-types.controller.ts` | REST endpoints |
-| `server/src/service-types/service-types.module.ts` | Module definition |
-
-### Frontend
-
-| File | Description |
-|------|-------------|
-| `src/hooks/useServiceTypes.ts` | React Query hooks for service types |
-| `src/pages/ServiceTypesPage.tsx` | Admin page to manage service types |
+| `src/utils/pdfGenerator.ts` | Reusable PDF generation utility with company branding |
 
 ---
 
 ## Files to Modify
 
-### Backend
-
 | File | Changes |
 |------|---------|
-| `server/src/app.module.ts` | Import ServiceTypesModule |
-| `server/src/services/entities/service.entity.ts` | Change `type` from enum to string (references service_type code) |
-| `server/src/services/dto/create-service.dto.ts` | Update type validation |
-| `server/src/services/dto/update-service.dto.ts` | Update type validation |
-
-### Frontend
-
-| File | Changes |
-|------|---------|
-| `src/types/index.ts` | Remove hardcoded `ServiceType` union, add `ServiceTypeEntity` interface |
-| `src/lib/api.ts` | Add API methods for service types CRUD, update DTOs |
-| `src/pages/ServicesPage.tsx` | Fetch service types dynamically, show dynamic icons |
-| `src/pages/SuppliersPage.tsx` | Fetch service types for the dropdown |
-| `src/lib/utils.ts` | Remove `getServiceTypeLabel` or make it dynamic |
-| `src/i18n/locales/fr/common.json` | Remove hardcoded `serviceTypes` (now in DB) |
-| `src/i18n/locales/ar/common.json` | Remove hardcoded `serviceTypes` (now in DB) |
-| `src/App.tsx` | Add route for ServiceTypesPage |
+| `package.json` | Add jspdf and jspdf-autotable dependencies |
+| `src/pages/ExpensesPage.tsx` | Add print button and PDF generation handler |
+| `src/i18n/locales/fr/expenses.json` | Add translation for "Exporter en PDF" |
+| `src/i18n/locales/ar/expenses.json` | Add translation for PDF export |
 
 ---
 
-## New API Endpoints
-
-| Method | Endpoint | Description | Auth |
-|--------|----------|-------------|------|
-| GET | `/service-types` | List all service types | Any authenticated |
-| GET | `/service-types/active` | List active service types | Any authenticated |
-| POST | `/service-types` | Create new service type | Admin only |
-| PATCH | `/service-types/:id` | Update service type | Admin only |
-| DELETE | `/service-types/:id` | Soft delete (set isActive=false) | Admin only |
-
----
-
-## UI: Service Types Management Page
-
-A new admin-only page at `/settings/service-types` with:
-
-1. **List view** - Cards or table showing all service types
-2. **Create dialog** - Form with:
-   - Code (unique identifier, e.g., "visa")
-   - French name
-   - Arabic name
-   - Icon selector (dropdown with available Lucide icons)
-3. **Edit functionality** - Modify existing types
-4. **Toggle active/inactive** - Soft delete capability
-5. **Protection** - Cannot delete types that are in use by services
-
----
-
-## Icon Management
-
-Available icons that admins can choose from:
+## PDF Document Layout
 
 ```text
-FileText, Plane, Hotel, Folder, Ship, Bus, Ticket,
-Globe, CreditCard, Briefcase, MapPin, Users, Package
++------------------------------------------+
+|  [LOGO]     EL HIKMA TOURISME ET VOYAGE  |
+|                                          |
+|        RAPPORT DES DÉPENSES              |
+|        Date: 02/02/2026                  |
+|------------------------------------------|
+|  Résumé:                                 |
+|  - Ce mois: 150,000 DZD                  |
+|  - Cette année: 1,200,000 DZD            |
+|  - Total: 3,500,000 DZD                  |
+|------------------------------------------|
+|  Date  | Catégorie | Description | ...  |
+|  ------+----------+-------------+---    |
+|  01/02 | Factures | Électricité | ...   |
+|  ...   | ...      | ...         | ...   |
+|------------------------------------------|
+|  Total des dépenses filtrées: X DZD     |
+|                                          |
+|  Généré le 02/02/2026 à 14:30           |
++------------------------------------------+
 ```
 
-The icon code is stored as a string (e.g., "Plane") and mapped to the actual component at runtime.
-
 ---
 
-## Migration Strategy
+## Implementation Details
 
-1. Create `service_types` table
-2. Seed with existing 7 types (visa, residence, ticket, dossier, billet_bateau, billet_tilex, billets)
-3. Modify `services` table to use string instead of enum for `type`
-4. Update all frontend components to use dynamic types
+### 1. Install Dependencies
 
----
+```bash
+npm install jspdf jspdf-autotable
+npm install -D @types/jspdf
+```
 
-## Translation Files
+### 2. PDF Generator Utility (`src/utils/pdfGenerator.ts`)
 
-### French (`src/i18n/locales/fr/serviceTypes.json`)
+```typescript
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
+import logoBase64 from '@/assets/logo-elhikma.png';
 
+interface ExpensesPdfData {
+  expenses: Array<{
+    date: string;
+    category: string;
+    description: string;
+    vendor: string;
+    paymentMethod: string;
+    amount: number;
+  }>;
+  stats: {
+    totalThisMonth: number;
+    totalThisYear: number;
+    totalAll: number;
+  };
+  language: 'fr' | 'ar';
+  filterTotal: number;
+}
+
+export function generateExpensesPdf(data: ExpensesPdfData): void {
+  const doc = new jsPDF();
+  const isArabic = data.language === 'ar';
+  
+  // Add logo (centered at top)
+  doc.addImage(logoBase64, 'PNG', 85, 10, 40, 30);
+  
+  // Company name
+  doc.setFontSize(18);
+  doc.text('EL HIKMA TOURISME ET VOYAGE', 105, 50, { align: 'center' });
+  
+  // Report title
+  doc.setFontSize(14);
+  doc.text(isArabic ? 'تقرير المصروفات' : 'Rapport des Dépenses', 105, 60, { align: 'center' });
+  
+  // Date
+  doc.setFontSize(10);
+  doc.text(`Date: ${new Date().toLocaleDateString(isArabic ? 'ar-DZ' : 'fr-FR')}`, 105, 68, { align: 'center' });
+  
+  // Summary section
+  doc.setFontSize(12);
+  const summaryY = 80;
+  doc.text(isArabic ? 'ملخص:' : 'Résumé:', 14, summaryY);
+  doc.setFontSize(10);
+  doc.text(`${isArabic ? 'هذا الشهر' : 'Ce mois'}: ${data.stats.totalThisMonth.toLocaleString()} DZD`, 20, summaryY + 8);
+  doc.text(`${isArabic ? 'هذا العام' : 'Cette année'}: ${data.stats.totalThisYear.toLocaleString()} DZD`, 20, summaryY + 16);
+  doc.text(`${isArabic ? 'الإجمالي' : 'Total global'}: ${data.stats.totalAll.toLocaleString()} DZD`, 20, summaryY + 24);
+  
+  // Expenses table
+  autoTable(doc, {
+    startY: summaryY + 35,
+    head: [[
+      isArabic ? 'التاريخ' : 'Date',
+      isArabic ? 'الفئة' : 'Catégorie',
+      isArabic ? 'الوصف' : 'Description',
+      isArabic ? 'المورد' : 'Fournisseur',
+      isArabic ? 'طريقة الدفع' : 'Mode',
+      isArabic ? 'المبلغ' : 'Montant (DZD)',
+    ]],
+    body: data.expenses.map(exp => [
+      exp.date,
+      exp.category,
+      exp.description,
+      exp.vendor || '-',
+      exp.paymentMethod,
+      exp.amount.toLocaleString(),
+    ]),
+    styles: { fontSize: 9 },
+    headStyles: { fillColor: [59, 130, 246] }, // Blue header
+  });
+  
+  // Filter total at bottom
+  const finalY = (doc as any).lastAutoTable.finalY + 10;
+  doc.setFontSize(11);
+  doc.text(
+    `${isArabic ? 'إجمالي المصروفات المعروضة' : 'Total des dépenses affichées'}: ${data.filterTotal.toLocaleString()} DZD`,
+    14,
+    finalY
+  );
+  
+  // Footer with generation timestamp
+  doc.setFontSize(8);
+  doc.text(
+    `${isArabic ? 'تم الإنشاء في' : 'Généré le'} ${new Date().toLocaleString(isArabic ? 'ar-DZ' : 'fr-FR')}`,
+    14,
+    doc.internal.pageSize.height - 10
+  );
+  
+  // Save the PDF
+  doc.save(`depenses_${new Date().toISOString().split('T')[0]}.pdf`);
+}
+```
+
+### 3. Update ExpensesPage.tsx
+
+Add a print button next to the "New Expense" button:
+
+```tsx
+import { Plus, Receipt, Calendar, TrendingDown, Trash2, Pencil, FileDown } from 'lucide-react';
+import { generateExpensesPdf } from '@/utils/pdfGenerator';
+
+// Inside the component:
+const handleExportPdf = () => {
+  if (!filteredExpenses || !stats) return;
+  
+  const total = filteredExpenses.reduce((sum, e) => sum + Number(e.amount), 0);
+  
+  generateExpensesPdf({
+    expenses: filteredExpenses.map(exp => ({
+      date: format(new Date(exp.date), 'dd/MM/yyyy'),
+      category: expenseCategoryLabels[exp.category],
+      description: exp.description,
+      vendor: exp.vendor || '',
+      paymentMethod: paymentMethodLabels[exp.paymentMethod],
+      amount: Number(exp.amount),
+    })),
+    stats: {
+      totalThisMonth: stats.totalThisMonth,
+      totalThisYear: stats.totalThisYear,
+      totalAll: stats.totalAll,
+    },
+    language: i18n.language as 'fr' | 'ar',
+    filterTotal: total,
+  });
+};
+
+// In the header section, add button:
+<Button variant="outline" onClick={handleExportPdf} disabled={!filteredExpenses?.length}>
+  <FileDown className="ltr:mr-2 rtl:ml-2 h-4 w-4" />
+  {t('actions.exportPdf')}
+</Button>
+```
+
+### 4. Update Translations
+
+**French (`expenses.json`):**
 ```json
-{
-  "title": "Types de services",
-  "subtitle": "Gérez les catégories de services proposés",
-  "dialog": {
-    "createTitle": "Nouveau type de service",
-    "editTitle": "Modifier le type",
-    "createDesc": "Ajoutez une nouvelle catégorie de service",
-    "editDesc": "Modifiez les informations du type"
-  },
-  "form": {
-    "code": "Code",
-    "codePlaceholder": "ex: visa_schengen",
-    "nameFr": "Nom (Français)",
-    "nameAr": "Nom (Arabe)",
-    "icon": "Icône",
-    "selectIcon": "Choisir une icône"
-  },
-  "actions": {
-    "newType": "Nouveau type",
-    "create": "Créer",
-    "edit": "Modifier"
-  },
-  "empty": {
-    "title": "Aucun type de service",
-    "description": "Créez votre premier type de service"
-  },
-  "errors": {
-    "codeExists": "Ce code existe déjà",
-    "inUse": "Ce type est utilisé par des services et ne peut être supprimé"
-  }
+"actions": {
+  "newExpense": "Nouvelle Dépense",
+  "exportPdf": "Exporter en PDF"
+}
+```
+
+**Arabic (`expenses.json`):**
+```json
+"actions": {
+  "newExpense": "مصروف جديد",
+  "exportPdf": "تصدير PDF"
 }
 ```
 
 ---
 
+## Logo Handling
+
+The logo needs to be converted to Base64 for embedding in the PDF. Two approaches:
+
+**Option A: Import as asset (requires Vite config)**
+```typescript
+// vite.config.ts - add to assetsInclude if needed
+import logo from '@/assets/logo-elhikma.png?base64';
+```
+
+**Option B: Convert at build time**
+Create a utility that converts the logo to base64 string at initialization.
+
+---
+
 ## Summary
 
-| Category | Files |
-|----------|-------|
-| **New Backend Files** | 6 files (entity, DTOs, service, controller, module) |
-| **New Frontend Files** | 3 files (hook, page, translations) |
-| **Modified Backend** | 4 files |
-| **Modified Frontend** | 7 files |
-| **Total** | ~20 files |
+| Step | Action |
+|------|--------|
+| 1 | Install `jspdf` and `jspdf-autotable` |
+| 2 | Create `src/utils/pdfGenerator.ts` with company branding |
+| 3 | Add export button to ExpensesPage header |
+| 4 | Add translations for the new button |
+| 5 | Handle logo embedding as Base64 |
 
-This change allows admins to fully manage service types without code changes, with proper bilingual support and icon customization.
+---
+
+## Technical Notes
+
+- The PDF exports the **currently filtered** expenses, not all expenses
+- Summary stats show global totals (month/year/all) while the table shows filtered data
+- Generated filename includes current date: `depenses_2026-02-02.pdf`
+- Supports both French and Arabic languages
 
