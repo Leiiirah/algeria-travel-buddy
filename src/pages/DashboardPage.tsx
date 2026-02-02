@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { StatsCard } from '@/components/dashboard/StatsCard';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -29,6 +30,7 @@ import { DashboardSkeleton } from '@/components/skeletons/DashboardSkeleton';
 import { ErrorState } from '@/components/ui/error-state';
 
 const DashboardPage = () => {
+  const { t, i18n } = useTranslation('dashboard');
   const { data: stats, isLoading: statsLoading, isError: statsError, error, refetch: refetchStats } = useDashboardStats();
   const { data: commandsData, isLoading: commandsLoading } = useCommands({ limit: 5 });
   const { data: services } = useServices();
@@ -37,7 +39,7 @@ const DashboardPage = () => {
 
   if (isLoading) {
     return (
-      <DashboardLayout title="Tableau de bord" subtitle="Vue d'ensemble de votre agence">
+      <DashboardLayout title={t('title')} subtitle={t('subtitle')}>
         <DashboardSkeleton />
       </DashboardLayout>
     );
@@ -45,7 +47,7 @@ const DashboardPage = () => {
 
   if (statsError) {
     return (
-      <DashboardLayout title="Tableau de bord" subtitle="Vue d'ensemble de votre agence">
+      <DashboardLayout title={t('title')} subtitle={t('subtitle')}>
         <ErrorState message={error?.message} onRetry={refetchStats} />
       </DashboardLayout>
     );
@@ -66,13 +68,13 @@ const DashboardPage = () => {
   ];
 
   const weeklyData = stats?.weeklyData ?? [
-    { name: 'Lun', revenue: 45000 },
-    { name: 'Mar', revenue: 62000 },
-    { name: 'Mer', revenue: 38000 },
-    { name: 'Jeu', revenue: 71000 },
-    { name: 'Ven', revenue: 55000 },
-    { name: 'Sam', revenue: 89000 },
-    { name: 'Dim', revenue: 23000 },
+    { name: t('weekDays.mon'), revenue: 45000 },
+    { name: t('weekDays.tue'), revenue: 62000 },
+    { name: t('weekDays.wed'), revenue: 38000 },
+    { name: t('weekDays.thu'), revenue: 71000 },
+    { name: t('weekDays.fri'), revenue: 55000 },
+    { name: t('weekDays.sat'), revenue: 89000 },
+    { name: t('weekDays.sun'), revenue: 23000 },
   ];
 
   const recentCommands = commandsData?.data ?? [];
@@ -106,34 +108,34 @@ const DashboardPage = () => {
   };
 
   return (
-    <DashboardLayout title="Tableau de bord" subtitle="Vue d'ensemble de votre agence">
+    <DashboardLayout title={t('title')} subtitle={t('subtitle')}>
       {/* Stats Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <StatsCard
-          title="Chiffre d'affaires"
+          title={t('stats.revenue')}
           value={formatDZD(totalRevenue)}
           icon={DollarSign}
           variant="success"
           trend={{ value: 12, isPositive: true }}
         />
         <StatsCard
-          title="Commandes du jour"
+          title={t('stats.todayCommands')}
           value={todayCommands}
-          description="Nouvelles commandes aujourd'hui"
+          description={t('stats.todayCommandsDesc')}
           icon={Package}
           variant="primary"
         />
         <StatsCard
-          title="En cours"
+          title={t('stats.inProgress')}
           value={inProgressCommands}
-          description="Commandes en traitement"
+          description={t('stats.inProgressDesc')}
           icon={Clock}
           variant="warning"
         />
         <StatsCard
-          title="Impayés"
+          title={t('stats.unpaid')}
           value={formatDZD(pendingAmount)}
-          description="Montant restant à percevoir"
+          description={t('stats.unpaidDesc')}
           icon={AlertCircle}
           variant="info"
         />
@@ -144,8 +146,8 @@ const DashboardPage = () => {
         {/* Revenue Chart */}
         <Card className="border-none shadow-sm">
           <CardHeader>
-            <CardTitle className="text-lg font-semibold">Revenus de la semaine</CardTitle>
-            <CardDescription>Évolution des revenus sur 7 jours</CardDescription>
+            <CardTitle className="text-lg font-semibold">{t('charts.weeklyRevenue')}</CardTitle>
+            <CardDescription>{t('charts.weeklyRevenueDesc')}</CardDescription>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
@@ -162,7 +164,7 @@ const DashboardPage = () => {
                   }}
                 />
                 <Tooltip
-                  formatter={(value: number) => [formatDZD(value), 'Revenus']}
+                  formatter={(value: number) => [formatDZD(value), t('charts.revenues')]}
                   contentStyle={{
                     backgroundColor: 'hsl(var(--popover))',
                     border: '1px solid hsl(var(--border))',
@@ -184,8 +186,8 @@ const DashboardPage = () => {
         {/* Service Distribution */}
         <Card className="border-none shadow-sm">
           <CardHeader>
-            <CardTitle className="text-lg font-semibold">Répartition par service</CardTitle>
-            <CardDescription>Distribution des commandes par type</CardDescription>
+            <CardTitle className="text-lg font-semibold">{t('charts.serviceDistribution')}</CardTitle>
+            <CardDescription>{t('charts.serviceDistributionDesc')}</CardDescription>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
@@ -204,7 +206,7 @@ const DashboardPage = () => {
                   ))}
                 </Pie>
                 <Tooltip
-                  formatter={(value: number) => [`${value}%`, 'Part']}
+                  formatter={(value: number) => [`${value}%`, t('charts.share')]}
                   contentStyle={{
                     backgroundColor: 'hsl(var(--popover))',
                     border: '1px solid hsl(var(--border))',
@@ -234,13 +236,13 @@ const DashboardPage = () => {
       <div className="mt-6">
         <Card className="border-none shadow-sm">
           <CardHeader>
-            <CardTitle className="text-lg font-semibold">Commandes récentes</CardTitle>
-            <CardDescription>Les 5 dernières commandes enregistrées</CardDescription>
+            <CardTitle className="text-lg font-semibold">{t('recentCommands.title')}</CardTitle>
+            <CardDescription>{t('recentCommands.subtitle')}</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
               {recentCommands.length === 0 ? (
-                <p className="text-center text-muted-foreground py-8">Aucune commande récente</p>
+                <p className="text-center text-muted-foreground py-8">{t('recentCommands.empty')}</p>
               ) : (
                 recentCommands.map((command) => {
                   const service = services?.find((s) => s.id === command.serviceId);
@@ -257,7 +259,7 @@ const DashboardPage = () => {
                         <div>
                           <p className="font-medium">{command.data.clientFullName}</p>
                           <p className="text-sm text-muted-foreground">
-                            {service?.name} • {new Date(command.createdAt).toLocaleDateString('fr-FR')}
+                            {service?.name} • {new Date(command.createdAt).toLocaleDateString(i18n.language === 'ar' ? 'ar-DZ' : 'fr-FR')}
                           </p>
                         </div>
                       </div>
