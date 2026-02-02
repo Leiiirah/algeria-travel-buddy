@@ -1,21 +1,51 @@
 
 
-# Plan: PDF Export for Expenses
+# Plan: Command Invoice PDF Export
 
 ## Overview
 
-Add a "Print/Export to PDF" feature to the Expenses page that generates a professional PDF document with the company logo, expense list, and summary statistics.
+Add a "Print Invoice" feature to each command row in the CommandsPage, generating a professional PDF invoice styled like the Fonex Tour example provided.
 
 ---
 
-## Library Choice: jsPDF + jspdf-autotable
+## Invoice Layout Analysis (from provided example)
 
-**jsPDF** is the most popular JavaScript library for PDF generation. Combined with **jspdf-autotable**, it provides easy table generation that matches the current expenses table layout.
+Based on the uploaded PDF, the invoice contains:
 
-| Library | Purpose |
-|---------|---------|
-| `jspdf` | Core PDF generation |
-| `jspdf-autotable` | Table rendering in PDFs |
+```text
++--------------------------------------------------+
+|  [LOGO]            COMPANY NAME                  |
+|--------------------------------------------------| 
+|  Référence: XXXXX           Client: CLIENT NAME  |
+|  Paiement le XX/XX/XXXX: XXXXX DZD               |
+|  Email: company@email.com                        |
+|  Prix Total: XXXXX DZD                           |
+|--------------------------------------------------|
+|  # PASSAGER                                      |
+|  | Passager | N° Ticket | Statut |               |
+|--------------------------------------------------|
+|  # ITINERAIRE                                    |
+|  | De | À | Départ | Arrivée | Vol | Classe |    |
+|--------------------------------------------------|
+|  # TYPE                                          |
+|  | Type | Baggage |                              |
++--------------------------------------------------+
+```
+
+---
+
+## Mapping Command Data to Invoice
+
+| Invoice Field | Source in Command |
+|--------------|-------------------|
+| Référence | Generate unique code (e.g., first 6 chars of command.id or custom format) |
+| Client | `command.data.clientFullName` |
+| Paiement | `command.amountPaid` + `command.createdAt` |
+| Prix Total | `command.sellingPrice` |
+| Passager | `command.data.clientFullName` |
+| N° Ticket | Optional field (can be added to ticket commands) |
+| Statut | `command.status` mapped to "Confirmé"/"En attente" |
+| Itinéraire | From `command.destination` + `command.data.departureDate/returnDate` |
 
 ---
 
@@ -23,7 +53,7 @@ Add a "Print/Export to PDF" feature to the Expenses page that generates a profes
 
 | File | Description |
 |------|-------------|
-| `src/utils/pdfGenerator.ts` | Reusable PDF generation utility with company branding |
+| `src/utils/invoiceGenerator.ts` | Invoice PDF generation function |
 
 ---
 
@@ -31,238 +61,239 @@ Add a "Print/Export to PDF" feature to the Expenses page that generates a profes
 
 | File | Changes |
 |------|---------|
-| `package.json` | Add jspdf and jspdf-autotable dependencies |
-| `src/pages/ExpensesPage.tsx` | Add print button and PDF generation handler |
-| `src/i18n/locales/fr/expenses.json` | Add translation for "Exporter en PDF" |
-| `src/i18n/locales/ar/expenses.json` | Add translation for PDF export |
+| `src/pages/CommandsPage.tsx` | Add "Print Invoice" action to dropdown menu |
+| `src/i18n/locales/fr/commands.json` | Add invoice-related translations |
+| `src/i18n/locales/ar/commands.json` | Add Arabic translations |
 
 ---
 
-## PDF Document Layout
+## Invoice Generator Design
+
+### Interface
+
+```typescript
+interface InvoiceData {
+  reference: string;           // Unique invoice reference
+  clientName: string;          // Client full name
+  clientPhone: string;         // Client phone
+  paymentDate: string;         // Date of command
+  amountPaid: number;          // Amount already paid
+  totalPrice: number;          // Selling price
+  remaining: number;           // Remaining balance
+  service: string;             // Service name
+  destination: string;         // Trip destination
+  status: string;              // Confirmé, En attente, etc.
+  passengers?: Array<{
+    name: string;
+    ticketNumber?: string;
+    status: string;
+  }>;
+  itinerary?: Array<{
+    from: string;
+    to: string;
+    departure: string;
+    arrival: string;
+    flight?: string;
+    class?: string;
+  }>;
+  supplier?: string;           // Supplier name
+}
+```
+
+### PDF Layout
 
 ```text
-+------------------------------------------+
-|  [LOGO]     EL HIKMA TOURISME ET VOYAGE  |
-|                                          |
-|        RAPPORT DES DÉPENSES              |
-|        Date: 02/02/2026                  |
-|------------------------------------------|
-|  Résumé:                                 |
-|  - Ce mois: 150,000 DZD                  |
-|  - Cette année: 1,200,000 DZD            |
-|  - Total: 3,500,000 DZD                  |
-|------------------------------------------|
-|  Date  | Catégorie | Description | ...  |
-|  ------+----------+-------------+---    |
-|  01/02 | Factures | Électricité | ...   |
-|  ...   | ...      | ...         | ...   |
-|------------------------------------------|
-|  Total des dépenses filtrées: X DZD     |
-|                                          |
-|  Généré le 02/02/2026 à 14:30           |
-+------------------------------------------+
++------------------------------------------------------+
+|  [LOGO - centered]                                    |
+|                                                       |
+|              EL HIKMA TOURISME ET VOYAGE              |
+|                    FACTURE / فاتورة                   |
+|------------------------------------------------------|
+|                                                       |
+|  Référence: CMD-XXXXXX       Date: 02/02/2026        |
+|                                                       |
+|------------------------------------------------------|
+|  CLIENT                                              |
+|  Nom: NADJET MEZROUH                                 |
+|  Téléphone: +213 555 123 456                         |
+|------------------------------------------------------|
+|  DÉTAILS DE LA COMMANDE                              |
+|  Service: Billet d'avion                             |
+|  Destination: ALG-CZL-ALG                            |
+|  Fournisseur: Fonex Tour                             |
+|------------------------------------------------------|
+|  # PASSAGER(S)                                       |
+|  | Passager       | N° Ticket | Statut   |           |
+|  | NADJET MEZROUH | -         | Confirmé |           |
+|------------------------------------------------------|
+|  # ITINÉRAIRE (if ticket type)                       |
+|  | De  | À   | Départ   | Arrivée  | Vol   | Classe |
+|  | ALG | CZL | 24/12/25 | 24/12/25 | SF116 | Y      |
+|------------------------------------------------------|
+|  RÉSUMÉ FINANCIER                                    |
+|                                                       |
+|  Prix Total:      85,000 DZD                         |
+|  Montant Payé:    25,000 DZD                         |
+|  Reste à Payer:   60,000 DZD                         |
+|------------------------------------------------------|
+|                                                       |
+|  Merci de votre confiance !                          |
+|  Email: elhikma@contact.dz                           |
+|                                                       |
+|  Généré le 02/02/2026 à 14:30                        |
++------------------------------------------------------+
 ```
 
 ---
 
 ## Implementation Details
 
-### 1. Install Dependencies
+### 1. Invoice Generator (`src/utils/invoiceGenerator.ts`)
 
-```bash
-npm install jspdf jspdf-autotable
-npm install -D @types/jspdf
-```
+Key features:
+- Reuse `getLogoBase64()` from existing pdfGenerator
+- Professional invoice styling with blue accent color
+- Conditional sections (itinerary only for ticket type)
+- Financial summary with clear breakdown
+- Reference number generation: `CMD-{first6CharsOfId}`
 
-### 2. PDF Generator Utility (`src/utils/pdfGenerator.ts`)
+### 2. CommandsPage Integration
 
-```typescript
-import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
-import logoBase64 from '@/assets/logo-elhikma.png';
-
-interface ExpensesPdfData {
-  expenses: Array<{
-    date: string;
-    category: string;
-    description: string;
-    vendor: string;
-    paymentMethod: string;
-    amount: number;
-  }>;
-  stats: {
-    totalThisMonth: number;
-    totalThisYear: number;
-    totalAll: number;
-  };
-  language: 'fr' | 'ar';
-  filterTotal: number;
-}
-
-export function generateExpensesPdf(data: ExpensesPdfData): void {
-  const doc = new jsPDF();
-  const isArabic = data.language === 'ar';
-  
-  // Add logo (centered at top)
-  doc.addImage(logoBase64, 'PNG', 85, 10, 40, 30);
-  
-  // Company name
-  doc.setFontSize(18);
-  doc.text('EL HIKMA TOURISME ET VOYAGE', 105, 50, { align: 'center' });
-  
-  // Report title
-  doc.setFontSize(14);
-  doc.text(isArabic ? 'تقرير المصروفات' : 'Rapport des Dépenses', 105, 60, { align: 'center' });
-  
-  // Date
-  doc.setFontSize(10);
-  doc.text(`Date: ${new Date().toLocaleDateString(isArabic ? 'ar-DZ' : 'fr-FR')}`, 105, 68, { align: 'center' });
-  
-  // Summary section
-  doc.setFontSize(12);
-  const summaryY = 80;
-  doc.text(isArabic ? 'ملخص:' : 'Résumé:', 14, summaryY);
-  doc.setFontSize(10);
-  doc.text(`${isArabic ? 'هذا الشهر' : 'Ce mois'}: ${data.stats.totalThisMonth.toLocaleString()} DZD`, 20, summaryY + 8);
-  doc.text(`${isArabic ? 'هذا العام' : 'Cette année'}: ${data.stats.totalThisYear.toLocaleString()} DZD`, 20, summaryY + 16);
-  doc.text(`${isArabic ? 'الإجمالي' : 'Total global'}: ${data.stats.totalAll.toLocaleString()} DZD`, 20, summaryY + 24);
-  
-  // Expenses table
-  autoTable(doc, {
-    startY: summaryY + 35,
-    head: [[
-      isArabic ? 'التاريخ' : 'Date',
-      isArabic ? 'الفئة' : 'Catégorie',
-      isArabic ? 'الوصف' : 'Description',
-      isArabic ? 'المورد' : 'Fournisseur',
-      isArabic ? 'طريقة الدفع' : 'Mode',
-      isArabic ? 'المبلغ' : 'Montant (DZD)',
-    ]],
-    body: data.expenses.map(exp => [
-      exp.date,
-      exp.category,
-      exp.description,
-      exp.vendor || '-',
-      exp.paymentMethod,
-      exp.amount.toLocaleString(),
-    ]),
-    styles: { fontSize: 9 },
-    headStyles: { fillColor: [59, 130, 246] }, // Blue header
-  });
-  
-  // Filter total at bottom
-  const finalY = (doc as any).lastAutoTable.finalY + 10;
-  doc.setFontSize(11);
-  doc.text(
-    `${isArabic ? 'إجمالي المصروفات المعروضة' : 'Total des dépenses affichées'}: ${data.filterTotal.toLocaleString()} DZD`,
-    14,
-    finalY
-  );
-  
-  // Footer with generation timestamp
-  doc.setFontSize(8);
-  doc.text(
-    `${isArabic ? 'تم الإنشاء في' : 'Généré le'} ${new Date().toLocaleString(isArabic ? 'ar-DZ' : 'fr-FR')}`,
-    14,
-    doc.internal.pageSize.height - 10
-  );
-  
-  // Save the PDF
-  doc.save(`depenses_${new Date().toISOString().split('T')[0]}.pdf`);
-}
-```
-
-### 3. Update ExpensesPage.tsx
-
-Add a print button next to the "New Expense" button:
+Add to the dropdown menu (lines 823-843):
 
 ```tsx
-import { Plus, Receipt, Calendar, TrendingDown, Trash2, Pencil, FileDown } from 'lucide-react';
-import { generateExpensesPdf } from '@/utils/pdfGenerator';
+<DropdownMenuItem onClick={() => handlePrintInvoice(command)}>
+  <FileDown className="ltr:mr-2 rtl:ml-2 h-4 w-4" />
+  {t('actions.printInvoice')}
+</DropdownMenuItem>
+```
 
-// Inside the component:
-const handleExportPdf = () => {
-  if (!filteredExpenses || !stats) return;
+Handler function:
+
+```tsx
+const handlePrintInvoice = async (command: any) => {
+  const service = services?.find((s) => s.id === command.serviceId);
+  const supplier = suppliers?.find((s) => s.id === command.supplierId);
   
-  const total = filteredExpenses.reduce((sum, e) => sum + Number(e.amount), 0);
-  
-  generateExpensesPdf({
-    expenses: filteredExpenses.map(exp => ({
-      date: format(new Date(exp.date), 'dd/MM/yyyy'),
-      category: expenseCategoryLabels[exp.category],
-      description: exp.description,
-      vendor: exp.vendor || '',
-      paymentMethod: paymentMethodLabels[exp.paymentMethod],
-      amount: Number(exp.amount),
-    })),
-    stats: {
-      totalThisMonth: stats.totalThisMonth,
-      totalThisYear: stats.totalThisYear,
-      totalAll: stats.totalAll,
-    },
+  await generateInvoicePdf({
+    reference: `CMD-${command.id.substring(0, 6).toUpperCase()}`,
+    clientName: command.data.clientFullName,
+    clientPhone: command.data.phone || '',
+    paymentDate: format(new Date(command.createdAt), 'dd/MM/yyyy'),
+    amountPaid: command.amountPaid,
+    totalPrice: command.sellingPrice,
+    remaining: command.sellingPrice - command.amountPaid,
+    service: service?.name || '',
+    serviceType: service?.type || '',
+    destination: command.destination,
+    status: getStatusLabel(command.status),
+    departureDate: command.data.departureDate,
+    returnDate: command.data.returnDate,
+    supplier: supplier?.name,
     language: i18n.language as 'fr' | 'ar',
-    filterTotal: total,
   });
 };
-
-// In the header section, add button:
-<Button variant="outline" onClick={handleExportPdf} disabled={!filteredExpenses?.length}>
-  <FileDown className="ltr:mr-2 rtl:ml-2 h-4 w-4" />
-  {t('actions.exportPdf')}
-</Button>
 ```
 
-### 4. Update Translations
+---
 
-**French (`expenses.json`):**
+## Translations
+
+### French (`commands.json`)
+
 ```json
-"actions": {
-  "newExpense": "Nouvelle Dépense",
-  "exportPdf": "Exporter en PDF"
+{
+  "actions": {
+    "printInvoice": "Imprimer la facture"
+  },
+  "invoice": {
+    "title": "FACTURE",
+    "reference": "Référence",
+    "date": "Date",
+    "client": "CLIENT",
+    "name": "Nom",
+    "phone": "Téléphone",
+    "orderDetails": "DÉTAILS DE LA COMMANDE",
+    "service": "Service",
+    "destination": "Destination",
+    "supplier": "Fournisseur",
+    "passengers": "PASSAGER(S)",
+    "passenger": "Passager",
+    "ticketNumber": "N° Ticket",
+    "status": "Statut",
+    "itinerary": "ITINÉRAIRE",
+    "from": "De",
+    "to": "À",
+    "departure": "Départ",
+    "arrival": "Arrivée",
+    "flight": "Vol",
+    "class": "Classe",
+    "financialSummary": "RÉSUMÉ FINANCIER",
+    "totalPrice": "Prix Total",
+    "amountPaid": "Montant Payé",
+    "remaining": "Reste à Payer",
+    "thankYou": "Merci de votre confiance !",
+    "generatedOn": "Généré le"
+  }
 }
 ```
 
-**Arabic (`expenses.json`):**
+### Arabic (`commands.json`)
+
 ```json
-"actions": {
-  "newExpense": "مصروف جديد",
-  "exportPdf": "تصدير PDF"
+{
+  "actions": {
+    "printInvoice": "طباعة الفاتورة"
+  },
+  "invoice": {
+    "title": "فاتورة",
+    "reference": "المرجع",
+    "date": "التاريخ",
+    "client": "العميل",
+    "name": "الاسم",
+    "phone": "الهاتف",
+    "orderDetails": "تفاصيل الطلب",
+    "service": "الخدمة",
+    "destination": "الوجهة",
+    "supplier": "المورد",
+    "passengers": "الركاب",
+    "passenger": "الراكب",
+    "ticketNumber": "رقم التذكرة",
+    "status": "الحالة",
+    "itinerary": "خط السير",
+    "from": "من",
+    "to": "إلى",
+    "departure": "المغادرة",
+    "arrival": "الوصول",
+    "flight": "الرحلة",
+    "class": "الدرجة",
+    "financialSummary": "الملخص المالي",
+    "totalPrice": "السعر الإجمالي",
+    "amountPaid": "المبلغ المدفوع",
+    "remaining": "المتبقي",
+    "thankYou": "شكراً لثقتكم!",
+    "generatedOn": "تم الإنشاء في"
+  }
 }
 ```
 
 ---
 
-## Logo Handling
+## File Summary
 
-The logo needs to be converted to Base64 for embedding in the PDF. Two approaches:
-
-**Option A: Import as asset (requires Vite config)**
-```typescript
-// vite.config.ts - add to assetsInclude if needed
-import logo from '@/assets/logo-elhikma.png?base64';
-```
-
-**Option B: Convert at build time**
-Create a utility that converts the logo to base64 string at initialization.
-
----
-
-## Summary
-
-| Step | Action |
-|------|--------|
-| 1 | Install `jspdf` and `jspdf-autotable` |
-| 2 | Create `src/utils/pdfGenerator.ts` with company branding |
-| 3 | Add export button to ExpensesPage header |
-| 4 | Add translations for the new button |
-| 5 | Handle logo embedding as Base64 |
+| Category | Files |
+|----------|-------|
+| **New Files** | 1 (`invoiceGenerator.ts`) |
+| **Modified Files** | 3 (`CommandsPage.tsx`, `fr/commands.json`, `ar/commands.json`) |
+| **Total** | 4 files |
 
 ---
 
 ## Technical Notes
 
-- The PDF exports the **currently filtered** expenses, not all expenses
-- Summary stats show global totals (month/year/all) while the table shows filtered data
-- Generated filename includes current date: `depenses_2026-02-02.pdf`
-- Supports both French and Arabic languages
+- Reuses existing jsPDF and jspdf-autotable dependencies (already installed)
+- Leverages the `getLogoBase64()` helper from `pdfGenerator.ts`
+- Invoice filename format: `facture_CMD-XXXXXX_2026-02-02.pdf`
+- Conditional itinerary table: only shown for "ticket" service types
+- Financial section shows remaining balance in red if > 0, green if fully paid
 
