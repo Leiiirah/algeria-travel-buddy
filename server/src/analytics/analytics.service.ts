@@ -39,19 +39,16 @@ export class AnalyticsService {
       return d.getTime() === today.getTime();
     }).length;
 
-    const inProgressCommands = commands.filter(c => c.status === 'en_cours').length;
+    const inProgressCommands = commands.filter(c => c.status === 'en_traitement').length;
 
-    // Weekly Revenue Data (Last 7 days)
+    // Weekly Revenue Data
     const weeklyData = [];
     for (let i = 6; i >= 0; i--) {
       const d = new Date();
       d.setDate(d.getDate() - i);
       d.setHours(0, 0, 0, 0);
-
       const dayName = d.toLocaleDateString('fr-FR', { weekday: 'short' });
-      // Capitalize first letter
       const formattedName = dayName.charAt(0).toUpperCase() + dayName.slice(1);
-
       const dayRevenue = commands
         .filter(c => {
           const cd = new Date(c.createdAt);
@@ -59,17 +56,12 @@ export class AnalyticsService {
           return cd.getTime() === d.getTime();
         })
         .reduce((sum, c) => sum + Number(c.sellingPrice || 0), 0);
-
-      weeklyData.push({
-        name: formattedName,
-        revenue: dayRevenue
-      });
+      weeklyData.push({ name: formattedName, revenue: dayRevenue });
     }
 
     // Service Distribution Data
     const serviceCounts: Record<string, number> = {};
     let totalServiceCommands = 0;
-
     commands.forEach(c => {
       if (c.service?.type) {
         serviceCounts[c.service.type] = (serviceCounts[c.service.type] || 0) + 1;
@@ -84,7 +76,6 @@ export class AnalyticsService {
       dossier: 'hsl(var(--chart-4))',
       unknown: 'hsl(var(--chart-5))'
     };
-
     const serviceNames: Record<string, string> = {
       visa: 'Visa',
       residence: 'Résidence',
@@ -92,14 +83,11 @@ export class AnalyticsService {
       dossier: 'Dossiers',
       unknown: 'Autre'
     };
-
     const serviceData = Object.entries(serviceCounts).map(([type, count]) => ({
       name: serviceNames[type] || type,
       value: totalServiceCommands > 0 ? Math.round((count / totalServiceCommands) * 100) : 0,
       color: serviceColors[type] || serviceColors.unknown
     }));
-
-    // Sort by value descending
     serviceData.sort((a, b) => b.value - a.value);
 
     return {
@@ -110,10 +98,10 @@ export class AnalyticsService {
       todayCommands,
       inProgressCommands,
       commandsByStatus: {
-        en_attente: commands.filter(c => c.status === 'en_attente').length,
+        en_attente: commands.filter(c => c.status === 'dossier_incomplet').length,
         en_cours: inProgressCommands,
-        termine: commands.filter(c => c.status === 'termine').length,
-        annule: commands.filter(c => c.status === 'annule').length
+        termine: commands.filter(c => c.status === 'retire').length,
+        annule: commands.filter(c => c.status === 'refuse').length
       },
       weeklyData,
       serviceData

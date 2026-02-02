@@ -94,7 +94,7 @@ export class SuppliersService {
   async create(createSupplierDto: CreateSupplierDto): Promise<Supplier> {
     const supplier = this.suppliersRepository.create({
       ...createSupplierDto,
-      serviceTypes: createSupplierDto.serviceTypes || [],
+      
     });
     return this.suppliersRepository.save(supplier);
   }
