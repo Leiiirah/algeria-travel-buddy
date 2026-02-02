@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -41,7 +42,6 @@ import { Plus, Search, MoreHorizontal, Edit, Trash2, Eye, Lock, Unlock, Banknote
 import {
   formatDZD,
   isCommandEditable,
-  getCommandStatusLabel,
   getPaymentStatusFromAmounts,
 } from '@/lib/utils';
 import { CommandData, calculateRemainingBalance, calculateNetProfit } from '@/types';
@@ -59,6 +59,8 @@ import { EmptyState } from '@/components/ui/empty-state';
 const CommandsPage = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { t } = useTranslation('commands');
+  const { t: tCommon } = useTranslation('common');
   const [searchQuery, setSearchQuery] = useState('');
   const [filters, setFilters] = useState<CommandFilters>({});
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -286,10 +288,15 @@ const CommandsPage = () => {
   const getTimeRemaining = (createdAt: Date | string): string => {
     const createdDate = typeof createdAt === 'string' ? new Date(createdAt) : createdAt;
     const hoursSinceCreation = (Date.now() - createdDate.getTime()) / (1000 * 60 * 60);
-    if (hoursSinceCreation >= 24) return 'Verrouillé';
+    if (hoursSinceCreation >= 24) return t('time.locked');
     const remaining = 24 - hoursSinceCreation;
-    if (remaining < 1) return `${Math.round(remaining * 60)} min restantes`;
-    return `${Math.round(remaining)}h restantes`;
+    if (remaining < 1) return t('time.minutesRemaining', { minutes: Math.round(remaining * 60) });
+    return t('time.hoursRemaining', { hours: Math.round(remaining) });
+  };
+
+  const getStatusLabel = (status: string): string => {
+    const statusKey = status as 'en_attente' | 'en_cours' | 'termine' | 'annule';
+    return t(`status.${statusKey}`);
   };
 
   const renderServiceSpecificFields = () => {
@@ -300,19 +307,19 @@ const CommandsPage = () => {
         return (
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>Prénom</Label>
+              <Label>{t('form.firstName')}</Label>
               <Input
                 value={formData.firstName}
                 onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
-                placeholder="Prénom du client"
+                placeholder={t('form.firstName')}
               />
             </div>
             <div className="space-y-2">
-              <Label>Nom</Label>
+              <Label>{t('form.lastName')}</Label>
               <Input
                 value={formData.lastName}
                 onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
-                placeholder="Nom du client"
+                placeholder={t('form.lastName')}
               />
             </div>
           </div>
@@ -322,19 +329,19 @@ const CommandsPage = () => {
         return (
           <>
             <div className="space-y-2">
-              <Label>Nom complet du client</Label>
+              <Label>{t('form.clientFullName')}</Label>
               <Input
                 value={formData.clientFullName}
                 onChange={(e) => setFormData({ ...formData, clientFullName: e.target.value })}
-                placeholder="Nom complet"
+                placeholder={t('form.clientFullName')}
               />
             </div>
             <div className="space-y-2">
-              <Label>Nom de l'hôtel</Label>
+              <Label>{t('form.hotelName')}</Label>
               <Input
                 value={formData.hotelName}
                 onChange={(e) => setFormData({ ...formData, hotelName: e.target.value })}
-                placeholder="Nom de l'hôtel"
+                placeholder={t('form.hotelName')}
               />
             </div>
           </>
@@ -344,16 +351,16 @@ const CommandsPage = () => {
         return (
           <>
             <div className="space-y-2">
-              <Label>Nom complet du client</Label>
+              <Label>{t('form.clientFullName')}</Label>
               <Input
                 value={formData.clientFullName}
                 onChange={(e) => setFormData({ ...formData, clientFullName: e.target.value })}
-                placeholder="Nom complet"
+                placeholder={t('form.clientFullName')}
               />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>Date de départ</Label>
+                <Label>{t('form.departureDate')}</Label>
                 <Input
                   type="date"
                   value={formData.departureDate}
@@ -361,7 +368,7 @@ const CommandsPage = () => {
                 />
               </div>
               <div className="space-y-2">
-                <Label>Date de retour</Label>
+                <Label>{t('form.returnDate')}</Label>
                 <Input
                   type="date"
                   value={formData.returnDate}
@@ -376,19 +383,19 @@ const CommandsPage = () => {
         return (
           <>
             <div className="space-y-2">
-              <Label>Nom complet du client</Label>
+              <Label>{t('form.clientFullName')}</Label>
               <Input
                 value={formData.clientFullName}
                 onChange={(e) => setFormData({ ...formData, clientFullName: e.target.value })}
-                placeholder="Nom complet"
+                placeholder={t('form.clientFullName')}
               />
             </div>
             <div className="space-y-2">
-              <Label>Description du dossier</Label>
+              <Label>{t('form.description')}</Label>
               <Textarea
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                placeholder="Décrivez le dossier à traiter..."
+                placeholder={t('form.description')}
                 rows={2}
               />
             </div>
@@ -402,7 +409,7 @@ const CommandsPage = () => {
 
   if (isLoading) {
     return (
-      <DashboardLayout title="Commandes" subtitle="Gestion des commandes clients">
+      <DashboardLayout title={t('title')} subtitle={t('subtitle')}>
         <CommandsSkeleton />
       </DashboardLayout>
     );
@@ -410,21 +417,21 @@ const CommandsPage = () => {
 
   if (isError) {
     return (
-      <DashboardLayout title="Commandes" subtitle="Gestion des commandes clients">
+      <DashboardLayout title={t('title')} subtitle={t('subtitle')}>
         <ErrorState message={error?.message} onRetry={refetch} />
       </DashboardLayout>
     );
   }
 
   return (
-    <DashboardLayout title="Commandes" subtitle="Gestion des commandes clients">
+    <DashboardLayout title={t('title')} subtitle={t('subtitle')}>
       {/* Summary Cards */}
       <div className="grid gap-4 md:grid-cols-3 mb-6">
         <Card className="border-none shadow-sm bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950/50 dark:to-blue-900/30">
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Total Versements</p>
+                <p className="text-sm font-medium text-muted-foreground">{t('stats.totalPayments')}</p>
                 <p className="text-2xl font-bold text-blue-700 dark:text-blue-400">{formatDZD(totals.totalPaid)}</p>
               </div>
               <div className="h-12 w-12 rounded-full bg-blue-200/50 dark:bg-blue-800/50 flex items-center justify-center">
@@ -438,7 +445,7 @@ const CommandsPage = () => {
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Total Crédit (Reste)</p>
+                <p className="text-sm font-medium text-muted-foreground">{t('stats.totalCredit')}</p>
                 <p className="text-2xl font-bold text-orange-700 dark:text-orange-400">{formatDZD(totals.totalRemaining)}</p>
               </div>
               <div className="h-12 w-12 rounded-full bg-orange-200/50 dark:bg-orange-800/50 flex items-center justify-center">
@@ -452,7 +459,7 @@ const CommandsPage = () => {
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Total Bénéfice Net</p>
+                <p className="text-sm font-medium text-muted-foreground">{t('stats.totalProfit')}</p>
                 <p className="text-2xl font-bold text-green-700 dark:text-green-400">{formatDZD(totals.totalProfit)}</p>
               </div>
               <div className="h-12 w-12 rounded-full bg-green-200/50 dark:bg-green-800/50 flex items-center justify-center">
@@ -467,8 +474,8 @@ const CommandsPage = () => {
         <CardHeader>
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <CardTitle>Liste des commandes</CardTitle>
-              <CardDescription>{commandsData?.total ?? 0} commandes au total</CardDescription>
+              <CardTitle>{t('list.title')}</CardTitle>
+              <CardDescription>{t('list.count', { count: commandsData?.total ?? 0 })}</CardDescription>
             </div>
             <div className="flex flex-wrap gap-3">
               <div className="flex-1">
@@ -480,35 +487,35 @@ const CommandsPage = () => {
                   filterConfig={[
                     {
                       key: 'status',
-                      label: 'Statut',
+                      label: t('filters.status'),
                       type: 'select',
                       options: [
-                        { label: 'En attente', value: 'en_attente' },
-                        { label: 'En cours', value: 'en_cours' },
-                        { label: 'Terminé', value: 'termine' },
-                        { label: 'Annulé', value: 'annule' },
+                        { label: t('status.en_attente'), value: 'en_attente' },
+                        { label: t('status.en_cours'), value: 'en_cours' },
+                        { label: t('status.termine'), value: 'termine' },
+                        { label: t('status.annule'), value: 'annule' },
                       ],
                     },
                     {
                       key: 'serviceId',
-                      label: 'Service',
+                      label: t('filters.service'),
                       type: 'select',
                       options: services?.map(s => ({ label: s.name, value: s.id })) || [],
                     },
                     {
                       key: 'supplierId',
-                      label: 'Fournisseur',
+                      label: t('filters.supplier'),
                       type: 'select',
                       options: suppliers?.filter(s => s.isActive).map(s => ({ label: s.name, value: s.id })) || [],
                     },
                     {
                       key: 'fromDate',
-                      label: 'Date début',
+                      label: t('filters.fromDate'),
                       type: 'date-range',
                     },
                     {
                       key: 'toDate',
-                      label: 'Date fin',
+                      label: t('filters.toDate'),
                       type: 'date-range',
                     },
                   ]}
@@ -523,21 +530,21 @@ const CommandsPage = () => {
               }}>
                 <DialogTrigger asChild>
                   <Button>
-                    <Plus className="mr-2 h-4 w-4" />
-                    Nouvelle commande
+                    <Plus className="ltr:mr-2 rtl:ml-2 h-4 w-4" />
+                    {t('dialog.createTitle')}
                   </Button>
                 </DialogTrigger>
                 <DialogContent className="bg-card max-w-lg max-h-[90vh] overflow-y-auto">
                   <DialogHeader>
-                    <DialogTitle>{editingCommandId ? 'Modifier la commande' : 'Créer une commande'}</DialogTitle>
+                    <DialogTitle>{editingCommandId ? t('dialog.editTitle') : t('dialog.createTitle')}</DialogTitle>
                     <DialogDescription>
-                      Sélectionnez un service et remplissez les informations
+                      {t('dialog.selectServiceDesc')}
                     </DialogDescription>
                   </DialogHeader>
                   <div className="space-y-4 py-4">
                     {/* Service Selection */}
                     <div className="space-y-2">
-                      <Label>Service</Label>
+                      <Label>{t('form.service')}</Label>
                       <Select value={selectedService} onValueChange={(value) => {
                         setSelectedService(value);
                         // Reset form but keep/apply defaults if available
@@ -560,13 +567,13 @@ const CommandsPage = () => {
                         setEditingCommandId(null);
                       }}>
                         <SelectTrigger>
-                          <SelectValue placeholder="Choisir un service" />
+                          <SelectValue placeholder={t('form.selectServicePlaceholder')} />
                         </SelectTrigger>
                         <SelectContent className="bg-popover">
                           {services?.length === 0 ? (
                             <div className="flex flex-col items-center justify-center p-4 space-y-2">
                               <p className="text-sm text-muted-foreground text-center">
-                                Aucun service disponible
+                                {t('form.noServiceAvailable')}
                               </p>
                               <Button
                                 variant="secondary"
@@ -577,7 +584,7 @@ const CommandsPage = () => {
                                   navigate('/services');
                                 }}
                               >
-                                Ajouter un service
+                                {t('form.addService')}
                               </Button>
                             </div>
                           ) : (
@@ -598,7 +605,7 @@ const CommandsPage = () => {
 
                         {/* Common fields */}
                         <div className="space-y-2">
-                          <Label>Téléphone</Label>
+                          <Label>{t('form.phone')}</Label>
                           <Input
                             value={formData.phone}
                             onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
@@ -607,7 +614,7 @@ const CommandsPage = () => {
                         </div>
 
                         <div className="space-y-2">
-                          <Label>Destination</Label>
+                          <Label>{t('form.destination')}</Label>
                           <Input
                             value={formData.destination}
                             onChange={(e) => setFormData({ ...formData, destination: e.target.value })}
@@ -617,11 +624,11 @@ const CommandsPage = () => {
 
                         {/* Accounting fields */}
                         <div className="border-t pt-4 mt-4">
-                          <h4 className="font-medium mb-3">Informations comptables</h4>
+                          <h4 className="font-medium mb-3">{t('form.accountingInfo')}</h4>
 
                           <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-2">
-                              <Label>Prix de Vente (DZD)</Label>
+                              <Label>{t('form.sellingPrice')}</Label>
                               <Input
                                 type="number"
                                 value={formData.sellingPrice || ''}
@@ -630,7 +637,7 @@ const CommandsPage = () => {
                               />
                             </div>
                             <div className="space-y-2">
-                              <Label>Versement (DZD)</Label>
+                              <Label>{t('form.amountPaid')}</Label>
                               <Input
                                 type="number"
                                 value={formData.amountPaid || ''}
@@ -642,7 +649,7 @@ const CommandsPage = () => {
 
                           <div className="grid grid-cols-2 gap-4 mt-4">
                             <div className="space-y-2">
-                              <Label>Prix d'Achat (DZD)</Label>
+                              <Label>{t('form.buyingPrice')}</Label>
                               <Input
                                 type="number"
                                 value={formData.buyingPrice || ''}
@@ -651,19 +658,19 @@ const CommandsPage = () => {
                               />
                             </div>
                             <div className="space-y-2">
-                              <Label>Fournisseur</Label>
+                              <Label>{t('form.supplier')}</Label>
                               <Select
                                 value={formData.supplierId}
                                 onValueChange={(value) => setFormData({ ...formData, supplierId: value })}
                               >
                                 <SelectTrigger>
-                                  <SelectValue placeholder="Sélectionner" />
+                                  <SelectValue placeholder={t('form.selectSupplier')} />
                                 </SelectTrigger>
                                 <SelectContent className="bg-popover">
                                   {suppliers?.length === 0 ? (
                                     <div className="flex flex-col items-center justify-center p-4 space-y-2">
                                       <p className="text-sm text-muted-foreground text-center">
-                                        Aucun fournisseur disponible
+                                        {t('form.noSupplierAvailable')}
                                       </p>
                                       <Button
                                         variant="secondary"
@@ -674,7 +681,7 @@ const CommandsPage = () => {
                                           navigate('/fournisseurs');
                                         }}
                                       >
-                                        Ajouter un fournisseur
+                                        {t('form.addSupplier')}
                                       </Button>
                                     </div>
                                   ) : (
@@ -693,13 +700,13 @@ const CommandsPage = () => {
                           {(formData.sellingPrice > 0 || formData.buyingPrice > 0) && (
                             <div className="mt-4 p-3 bg-muted/50 rounded-lg space-y-2">
                               <div className="flex justify-between text-sm">
-                                <span className="text-muted-foreground">Reste à payer:</span>
+                                <span className="text-muted-foreground">{t('calculations.remaining')}:</span>
                                 <span className={formCalculations.remaining > 0 ? 'text-red-600 font-bold' : 'text-green-600 font-semibold'}>
                                   {formatDZD(formCalculations.remaining)}
                                 </span>
                               </div>
                               <div className="flex justify-between text-sm">
-                                <span className="text-muted-foreground">Bénéfice net:</span>
+                                <span className="text-muted-foreground">{t('calculations.profit')}:</span>
                                 <span className="text-green-600 font-semibold">
                                   {formatDZD(formCalculations.profit)}
                                 </span>
@@ -712,10 +719,10 @@ const CommandsPage = () => {
                   </div>
                   <DialogFooter>
                     <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
-                      Annuler
+                      {tCommon('actions.cancel')}
                     </Button>
                     <Button onClick={handleCreateCommand} disabled={!selectedService || createCommand.isPending || updateCommand.isPending}>
-                      {createCommand.isPending || updateCommand.isPending ? 'Enregistrement...' : (editingCommandId ? 'Modifier' : 'Créer')}
+                      {createCommand.isPending || updateCommand.isPending ? t('actions.saving') : (editingCommandId ? t('actions.edit') : t('actions.create'))}
                     </Button>
                   </DialogFooter>
                 </DialogContent>
@@ -726,8 +733,8 @@ const CommandsPage = () => {
         <CardContent>
           {commands.length === 0 ? (
             <EmptyState
-              title="Aucune commande"
-              description="Commencez par créer votre première commande"
+              title={t('empty.title')}
+              description={t('empty.description')}
               icon={CreditCard}
             />
           ) : (
@@ -735,17 +742,17 @@ const CommandsPage = () => {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Service</TableHead>
-                    <TableHead>Client</TableHead>
-                    <TableHead>Destination</TableHead>
-                    <TableHead className="text-right">Prix</TableHead>
-                    <TableHead className="text-right">Versement</TableHead>
-                    <TableHead className="text-right">Reste</TableHead>
-                    <TableHead className="text-right">P. Achat</TableHead>
-                    <TableHead className="text-right">Bénéfice</TableHead>
-                    <TableHead>Fournisseur</TableHead>
-                    <TableHead>Statut</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
+                    <TableHead>{t('table.service')}</TableHead>
+                    <TableHead>{t('table.client')}</TableHead>
+                    <TableHead>{t('table.destination')}</TableHead>
+                    <TableHead className="text-right">{t('table.price')}</TableHead>
+                    <TableHead className="text-right">{t('table.payment')}</TableHead>
+                    <TableHead className="text-right">{t('table.remaining')}</TableHead>
+                    <TableHead className="text-right">{t('table.buyingPrice')}</TableHead>
+                    <TableHead className="text-right">{t('table.profit')}</TableHead>
+                    <TableHead>{t('table.supplier')}</TableHead>
+                    <TableHead>{t('table.status')}</TableHead>
+                    <TableHead className="text-right">{t('table.actions')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -792,7 +799,7 @@ const CommandsPage = () => {
                                       : 'outline'
                               }
                             >
-                              {getCommandStatusLabel(command.status)}
+                              {getStatusLabel(command.status)}
                             </Badge>
                             <div className="flex items-center gap-1 text-xs">
                               {canEdit ? (
@@ -815,21 +822,21 @@ const CommandsPage = () => {
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end" className="bg-popover">
                               <DropdownMenuItem onClick={() => handleEditCommand(command)}>
-                                <Eye className="mr-2 h-4 w-4" />
-                                Voir détails
+                                <Eye className="ltr:mr-2 rtl:ml-2 h-4 w-4" />
+                                {tCommon('actions.view')}
                               </DropdownMenuItem>
                               {canEdit && (
                                 <>
                                   <DropdownMenuItem onClick={() => handleEditCommand(command)}>
-                                    <Edit className="mr-2 h-4 w-4" />
-                                    Modifier
+                                    <Edit className="ltr:mr-2 rtl:ml-2 h-4 w-4" />
+                                    {tCommon('actions.edit')}
                                   </DropdownMenuItem>
                                   <DropdownMenuItem
                                     className="text-destructive"
                                     onClick={() => handleDeleteCommand(command.id)}
                                   >
-                                    <Trash2 className="mr-2 h-4 w-4" />
-                                    Supprimer
+                                    <Trash2 className="ltr:mr-2 rtl:ml-2 h-4 w-4" />
+                                    {tCommon('actions.delete')}
                                   </DropdownMenuItem>
                                 </>
                               )}

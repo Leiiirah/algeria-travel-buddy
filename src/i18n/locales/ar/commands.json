@@ -15,20 +15,21 @@
     "service": "الخدمة",
     "destination": "الوجهة",
     "amounts": "المبالغ",
+    "price": "السعر",
     "sellingPrice": "سعر البيع",
     "buyingPrice": "سعر الشراء",
+    "payment": "الدفعة",
     "remaining": "المتبقي",
     "profit": "الربح",
     "supplier": "المورد",
     "status": "الحالة",
-    "payment": "الدفع",
     "actions": "الإجراءات"
   },
   "dialog": {
     "createTitle": "طلب جديد",
     "editTitle": "تعديل الطلب",
     "selectService": "اختر خدمة",
-    "selectServiceDesc": "اختر نوع الخدمة لهذا الطلب"
+    "selectServiceDesc": "اختر خدمة واملأ المعلومات"
   },
   "form": {
     "service": "الخدمة",
@@ -43,14 +44,19 @@
     "returnDate": "تاريخ العودة",
     "description": "وصف الملف",
     "sellingPrice": "سعر البيع (د.ج)",
-    "amountPaid": "المبلغ المدفوع (د.ج)",
+    "amountPaid": "الدفعة (د.ج)",
     "buyingPrice": "سعر الشراء (د.ج)",
     "supplier": "المورد",
-    "selectSupplier": "اختر مورداً"
+    "selectSupplier": "اختر",
+    "accountingInfo": "معلومات المحاسبة",
+    "noServiceAvailable": "لا توجد خدمات متاحة",
+    "addService": "إضافة خدمة",
+    "noSupplierAvailable": "لا يوجد موردون متاحون",
+    "addSupplier": "إضافة مورد"
   },
   "calculations": {
     "remaining": "المتبقي للدفع",
-    "profit": "الربح"
+    "profit": "صافي الربح"
   },
   "status": {
     "en_attente": "قيد الانتظار",
@@ -66,7 +72,17 @@
   "filters": {
     "status": "الحالة",
     "service": "الخدمة",
-    "supplier": "المورد"
+    "supplier": "المورد",
+    "fromDate": "تاريخ البداية",
+    "toDate": "تاريخ النهاية"
   },
-  "empty": "لم يتم العثور على طلبات"
+  "actions": {
+    "saving": "جاري الحفظ...",
+    "create": "إنشاء",
+    "edit": "تعديل"
+  },
+  "empty": {
+    "title": "لا توجد طلبات",
+    "description": "ابدأ بإنشاء أول طلب لك"
+  }
 }
