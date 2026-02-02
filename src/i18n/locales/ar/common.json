@@ -35,7 +35,11 @@
     "back": "رجوع",
     "next": "التالي",
     "view": "عرض",
-    "details": "التفاصيل"
+    "details": "التفاصيل",
+    "saving": "جاري الحفظ...",
+    "label": "الإجراءات",
+    "newTransaction": "معاملة جديدة",
+    "addSupplier": "إضافة مورد"
   },
   "status": {
     "pending": "قيد الانتظار",
@@ -96,5 +100,29 @@
     "short": "yyyy/MM/dd",
     "long": "yyyy MMMM dd",
     "time": "HH:mm"
-  }
+  },
+  "select": {
+    "supplier": "اختر مورداً"
+  },
+  "transactionType": "نوع المعاملة",
+  "amount": "المبلغ",
+  "date": "التاريخ",
+  "note": "ملاحظة",
+  "notePlaceholder": "أضف ملاحظة...",
+  "type": "النوع",
+  "credit": "رصيد دائن",
+  "loading": "جاري التحميل...",
+  "purchaseHistory": "سجل المشتريات",
+  "noPurchases": "لا توجد مشتريات",
+  "noOrdersForSupplier": "لا توجد طلبات لهذا المورد",
+  "client": "العميل",
+  "destination": "الوجهة",
+  "buyingPrice": "سعر الشراء",
+  "totalOwedToSuppliers": "إجمالي المستحق للموردين",
+  "paymentsMadeToSuppliers": "المدفوعات للموردين",
+  "globalSupplierBalance": "الرصيد الإجمالي للموردين",
+  "balanceBySupplier": "الرصيد حسب المورد",
+  "noTransactions": "لا توجد معاملات",
+  "supplierBalancesAppearHere": "ستظهر أرصدة الموردين هنا",
+  "transactionsAppearHere": "ستظهر المعاملات هنا"
 }

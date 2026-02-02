@@ -35,7 +35,11 @@
     "back": "Retour",
     "next": "Suivant",
     "view": "Voir",
-    "details": "Détails"
+    "details": "Détails",
+    "saving": "Enregistrement...",
+    "label": "Actions",
+    "newTransaction": "Nouvelle transaction",
+    "addSupplier": "Ajouter un fournisseur"
   },
   "status": {
     "pending": "En attente",
@@ -96,5 +100,29 @@
     "short": "dd/MM/yyyy",
     "long": "dd MMMM yyyy",
     "time": "HH:mm"
-  }
+  },
+  "select": {
+    "supplier": "Sélectionner un fournisseur"
+  },
+  "transactionType": "Type de transaction",
+  "amount": "Montant",
+  "date": "Date",
+  "note": "Note",
+  "notePlaceholder": "Ajouter une note...",
+  "type": "Type",
+  "credit": "Crédit",
+  "loading": "Chargement...",
+  "purchaseHistory": "Historique des achats",
+  "noPurchases": "Aucun achat",
+  "noOrdersForSupplier": "Aucune commande pour ce fournisseur",
+  "client": "Client",
+  "destination": "Destination",
+  "buyingPrice": "Prix d'achat",
+  "totalOwedToSuppliers": "Total dû aux fournisseurs",
+  "paymentsMadeToSuppliers": "Paiements effectués aux fournisseurs",
+  "globalSupplierBalance": "Solde global fournisseurs",
+  "balanceBySupplier": "Solde par fournisseur",
+  "noTransactions": "Aucune transaction",
+  "supplierBalancesAppearHere": "Les soldes fournisseurs apparaîtront ici",
+  "transactionsAppearHere": "Les transactions apparaîtront ici"
 }
