@@ -126,10 +126,13 @@ export class CommandsService {
     );
 
     const byStatus = {
-      en_attente: 0,
-      en_cours: 0,
-      termine: 0,
-      annule: 0,
+      dossier_incomplet: 0,
+      depose: 0,
+      en_traitement: 0,
+      accepte: 0,
+      refuse: 0,
+      visa_delivre: 0,
+      retire: 0,
     };
 
     commands.forEach((cmd) => {

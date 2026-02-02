@@ -59,10 +59,13 @@
     "profit": "صافي الربح"
   },
   "status": {
-    "en_attente": "قيد الانتظار",
-    "en_cours": "قيد التنفيذ",
-    "termine": "مكتمل",
-    "annule": "ملغى"
+    "dossier_incomplet": "ملف غير مكتمل",
+    "depose": "تم الإيداع",
+    "en_traitement": "قيد المعالجة",
+    "accepte": "مقبول",
+    "refuse": "مرفوض",
+    "visa_delivre": "تم إصدار التأشيرة",
+    "retire": "تم السحب"
   },
   "time": {
     "locked": "مقفل",

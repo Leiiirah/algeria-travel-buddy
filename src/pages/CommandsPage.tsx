@@ -297,8 +297,41 @@ const CommandsPage = () => {
   };
 
   const getStatusLabel = (status: string): string => {
-    const statusKey = status as 'en_attente' | 'en_cours' | 'termine' | 'annule';
-    return t(`status.${statusKey}`);
+    return t(`status.${status}`);
+  };
+
+  const getStatusVariant = (status: string): 'default' | 'secondary' | 'destructive' | 'outline' => {
+    switch (status) {
+      case 'accepte':
+      case 'visa_delivre':
+      case 'retire':
+        return 'default';
+      case 'depose':
+      case 'en_traitement':
+        return 'secondary';
+      case 'refuse':
+        return 'destructive';
+      case 'dossier_incomplet':
+      default:
+        return 'outline';
+    }
+  };
+
+  const statusOptions = [
+    { value: 'dossier_incomplet', label: t('status.dossier_incomplet') },
+    { value: 'depose', label: t('status.depose') },
+    { value: 'en_traitement', label: t('status.en_traitement') },
+    { value: 'accepte', label: t('status.accepte') },
+    { value: 'refuse', label: t('status.refuse') },
+    { value: 'visa_delivre', label: t('status.visa_delivre') },
+    { value: 'retire', label: t('status.retire') },
+  ];
+
+  const handleStatusChange = (commandId: string, newStatus: string) => {
+    updateCommand.mutate({
+      id: commandId,
+      data: { status: newStatus as any },
+    });
   };
 
   const handlePrintInvoice = async (command: any) => {
@@ -813,19 +846,31 @@ const CommandsPage = () => {
                         <TableCell className="text-muted-foreground">{getSupplierName(command.supplierId)}</TableCell>
                         <TableCell>
                           <div className="flex flex-col gap-1">
-                            <Badge
-                              variant={
-                                command.status === 'termine'
-                                  ? 'default'
-                                  : command.status === 'en_cours'
-                                    ? 'secondary'
-                                    : command.status === 'annule'
-                                      ? 'destructive'
-                                      : 'outline'
-                              }
-                            >
-                              {getStatusLabel(command.status)}
-                            </Badge>
+                            {user?.role === 'admin' ? (
+                              <Select
+                                value={command.status}
+                                onValueChange={(value) => handleStatusChange(command.id, value)}
+                              >
+                                <SelectTrigger className="w-[160px] h-8">
+                                  <SelectValue>
+                                    <Badge variant={getStatusVariant(command.status)} className="text-xs">
+                                      {getStatusLabel(command.status)}
+                                    </Badge>
+                                  </SelectValue>
+                                </SelectTrigger>
+                                <SelectContent className="bg-popover">
+                                  {statusOptions.map((status) => (
+                                    <SelectItem key={status.value} value={status.value}>
+                                      {status.label}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            ) : (
+                              <Badge variant={getStatusVariant(command.status)}>
+                                {getStatusLabel(command.status)}
+                              </Badge>
+                            )}
                             <div className="flex items-center gap-1 text-xs">
                               {canEdit ? (
                                 <>

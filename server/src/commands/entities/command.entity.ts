@@ -12,10 +12,13 @@ import { Supplier } from '../../suppliers/entities/supplier.entity';
 import { User } from '../../users/entities/user.entity';
 
 export enum CommandStatus {
-  EN_ATTENTE = 'en_attente',
-  EN_COURS = 'en_cours',
-  TERMINE = 'termine',
-  ANNULE = 'annule',
+  DOSSIER_INCOMPLET = 'dossier_incomplet',
+  DEPOSE = 'depose',
+  EN_TRAITEMENT = 'en_traitement',
+  ACCEPTE = 'accepte',
+  REFUSE = 'refuse',
+  VISA_DELIVRE = 'visa_delivre',
+  RETIRE = 'retire',
 }
 
 @Entity('commands')
