@@ -20,6 +20,7 @@ import { ExpensesModule } from './expenses/expenses.module';
 import { SupplierOrdersModule } from './supplier-orders/supplier-orders.module';
 import { SupplierReceiptsModule } from './supplier-receipts/supplier-receipts.module';
 import { SupplierInvoicesModule } from './supplier-invoices/supplier-invoices.module';
+import { ServiceTypesModule } from './service-types/service-types.module';
 
 
 @Module({
@@ -64,6 +65,7 @@ import { SupplierInvoicesModule } from './supplier-invoices/supplier-invoices.mo
     SupplierOrdersModule,
     SupplierReceiptsModule,
     SupplierInvoicesModule,
+    ServiceTypesModule,
   ],
   providers: [
     {

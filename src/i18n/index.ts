@@ -14,6 +14,7 @@ import frDocuments from './locales/fr/documents.json';
 import frExpenses from './locales/fr/expenses.json';
 import frValidation from './locales/fr/validation.json';
 import frServices from './locales/fr/services.json';
+import frServiceTypes from './locales/fr/serviceTypes.json';
 import frAccounting from './locales/fr/accounting.json';
 
 // Arabic translations
@@ -28,6 +29,7 @@ import arDocuments from './locales/ar/documents.json';
 import arExpenses from './locales/ar/expenses.json';
 import arValidation from './locales/ar/validation.json';
 import arServices from './locales/ar/services.json';
+import arServiceTypes from './locales/ar/serviceTypes.json';
 import arAccounting from './locales/ar/accounting.json';
 
 i18n
@@ -47,6 +49,7 @@ i18n
         expenses: frExpenses,
         validation: frValidation,
         services: frServices,
+        serviceTypes: frServiceTypes,
         accounting: frAccounting,
       },
       ar: {
@@ -61,12 +64,13 @@ i18n
         expenses: arExpenses,
         validation: arValidation,
         services: arServices,
+        serviceTypes: arServiceTypes,
         accounting: arAccounting,
       },
     },
     fallbackLng: 'fr',
     defaultNS: 'common',
-    ns: ['common', 'auth', 'dashboard', 'commands', 'suppliers', 'employees', 'omra', 'documents', 'expenses', 'validation', 'services', 'accounting'],
+    ns: ['common', 'auth', 'dashboard', 'commands', 'suppliers', 'employees', 'omra', 'documents', 'expenses', 'validation', 'services', 'serviceTypes', 'accounting'],
     interpolation: {
       escapeValue: false,
     },

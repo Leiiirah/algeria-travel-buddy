@@ -1,17 +1,14 @@
-import { IsString, IsEnum, IsOptional, IsBoolean, IsNumber } from 'class-validator';
-import { ServiceType } from '../entities/service.entity';
+import { IsString, IsOptional, IsBoolean, IsNumber } from 'class-validator';
 
 export class UpdateServiceDto {
   @IsString()
   @IsOptional()
   name?: string;
 
-  @IsEnum(ServiceType)
-  @IsOptional()
-  type?: ServiceType;
-
   @IsString()
   @IsOptional()
+  type?: string; // Dynamic reference to ServiceType.code
+
   @IsString()
   @IsOptional()
   description?: string;

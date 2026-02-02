@@ -8,16 +8,6 @@ import {
 } from 'typeorm';
 import { Supplier } from '../../suppliers/entities/supplier.entity';
 
-export enum ServiceType {
-  VISA = 'visa',
-  RESIDENCE = 'residence',
-  TICKET = 'ticket',
-  DOSSIER = 'dossier',
-  BILLET_BATEAU = 'billet_bateau',
-  BILLET_TILEX = 'billet_tilex',
-  BILLETS = 'billets',
-}
-
 @Entity('services')
 export class Service {
   @PrimaryGeneratedColumn('uuid')
@@ -26,11 +16,8 @@ export class Service {
   @Column()
   name: string;
 
-  @Column({
-    type: 'enum',
-    enum: ServiceType,
-  })
-  type: ServiceType;
+  @Column()
+  type: string; // Dynamic reference to ServiceType.code
 
   @Column({ type: 'text', nullable: true })
   description: string;
