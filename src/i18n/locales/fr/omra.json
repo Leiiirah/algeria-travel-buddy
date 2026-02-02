@@ -1,6 +1,7 @@
 {
   "title": "Omra",
   "subtitle": "Gestion des services Omra",
+  "loading": "Chargement...",
   "stats": {
     "totalPayments": "Total Versements",
     "totalCredit": "Total Crédit (Reste)",
@@ -11,88 +12,161 @@
     "visas": "Visas",
     "hotels": "Hôtels"
   },
+  "calculations": {
+    "remaining": "Reste à payer",
+    "profit": "Bénéfice net"
+  },
+  "filters": {
+    "status": "Statut",
+    "hotel": "Hôtel"
+  },
+  "status": {
+    "en_attente": "En attente",
+    "confirme": "Confirmé",
+    "termine": "Terminé",
+    "annule": "Annulé",
+    "active": "Actif",
+    "inactive": "Inactif"
+  },
+  "roomTypes": {
+    "chambre_1": "Chambre 1 personne",
+    "chambre_2": "Chambre 2 personnes",
+    "chambre_3": "Chambre 3 personnes",
+    "chambre_4": "Chambre 4 personnes",
+    "chambre_5": "Chambre 5 personnes",
+    "suite": "Suite"
+  },
   "orders": {
     "title": "Commandes Omra",
-    "count": "{{count}} commandes",
+    "count": "{{count}} commandes au total",
+    "newOrder": "Nouvelle Commande",
+    "empty": {
+      "title": "Aucune commande",
+      "description": "Commencez par créer une commande Omra",
+      "action": "Nouvelle commande"
+    },
     "table": {
       "client": "Client",
-      "package": "Forfait",
-      "travelers": "Voyageurs",
-      "dates": "Dates",
-      "amounts": "Montants",
-      "status": "Statut"
+      "period": "Période",
+      "hotel": "Hôtel",
+      "room": "Chambre",
+      "price": "Prix",
+      "status": "Statut",
+      "actions": "Actions",
+      "remaining": "Reste"
     },
     "dialog": {
       "createTitle": "Nouvelle commande Omra",
-      "editTitle": "Modifier la commande"
+      "editTitle": "Modifier la commande",
+      "createDescription": "Créez une nouvelle commande pour le pèlerinage Omra",
+      "editDescription": "Modifiez les informations de la commande"
     },
     "form": {
       "clientName": "Nom du client",
+      "clientNamePlaceholder": "Nom complet",
       "phone": "Téléphone",
-      "package": "Type de forfait",
-      "travelers": "Nombre de voyageurs",
-      "departureDate": "Date de départ",
-      "returnDate": "Date de retour",
-      "sellingPrice": "Prix de vente",
-      "buyingPrice": "Prix d'achat",
-      "amountPaid": "Montant payé",
-      "notes": "Notes"
+      "phonePlaceholder": "Ex: 0550123456",
+      "orderDate": "Date commande",
+      "periodFrom": "Période du",
+      "periodTo": "Au",
+      "hotel": "Hôtel",
+      "roomType": "Type de chambre",
+      "sellingPrice": "Prix de vente (DA)",
+      "amountPaid": "Versement (DA)",
+      "buyingPrice": "Prix d'achat (DA)",
+      "notes": "Notes",
+      "notesPlaceholder": "Notes supplémentaires...",
+      "noHotelAvailable": "Aucun hôtel disponible",
+      "addHotel": "Ajouter un hôtel",
+      "selectHotel": "Sélectionner un hôtel",
+      "hotelPlaceholder": "Nom de l'hôtel"
+    },
+    "confirm": {
+      "delete": "Êtes-vous sûr de vouloir supprimer cette commande ?"
     }
   },
   "visas": {
     "title": "Visas Omra",
-    "count": "{{count}} visas",
+    "count": "{{count}} visas au total",
+    "newVisa": "Nouveau Visa",
+    "empty": {
+      "title": "Aucun visa",
+      "description": "Commencez par créer un visa Omra",
+      "action": "Nouveau visa"
+    },
     "table": {
       "client": "Client",
-      "passportNumber": "N° Passeport",
-      "supplier": "Fournisseur",
-      "dates": "Dates",
-      "amounts": "Montants",
-      "status": "Statut"
+      "visaDate": "Date Visa",
+      "entryDate": "Date Entrée",
+      "hotel": "Hôtel",
+      "price": "Prix",
+      "status": "Statut",
+      "actions": "Actions",
+      "remaining": "Reste"
     },
     "dialog": {
       "createTitle": "Nouveau visa Omra",
-      "editTitle": "Modifier le visa"
+      "editTitle": "Modifier le visa",
+      "createDescription": "Créez un nouveau visa pour le pèlerinage Omra",
+      "editDescription": "Modifiez les informations du visa"
     },
     "form": {
       "clientName": "Nom du client",
-      "passportNumber": "Numéro de passeport",
-      "supplier": "Fournisseur",
-      "applicationDate": "Date de demande",
-      "expiryDate": "Date d'expiration",
-      "sellingPrice": "Prix de vente",
-      "buyingPrice": "Prix d'achat",
-      "amountPaid": "Montant payé"
+      "clientNamePlaceholder": "Nom complet",
+      "phone": "Téléphone",
+      "phonePlaceholder": "Ex: 0550123456",
+      "visaDate": "Date du visa",
+      "entryDate": "Date d'entrée",
+      "hotel": "Hôtel",
+      "selectHotel": "Sélectionner un hôtel",
+      "sellingPrice": "Prix de vente (DA)",
+      "amountPaid": "Versement (DA)",
+      "buyingPrice": "Prix d'achat (DA)",
+      "notes": "Notes",
+      "notesPlaceholder": "Notes supplémentaires..."
+    },
+    "confirm": {
+      "delete": "Êtes-vous sûr de vouloir supprimer ce visa ?"
     }
   },
   "hotels": {
-    "title": "Réservations Hôtels",
-    "count": "{{count}} réservations",
+    "title": "Gestion des Hôtels",
+    "count": "{{count}} hôtels enregistrés",
+    "newHotel": "Nouvel Hôtel",
+    "empty": {
+      "title": "Aucun hôtel",
+      "description": "Commencez par ajouter un hôtel pour vos services Omra",
+      "action": "Ajouter un hôtel"
+    },
     "table": {
-      "client": "Client",
-      "hotel": "Hôtel",
-      "city": "Ville",
-      "dates": "Dates",
-      "nights": "Nuits",
-      "amounts": "Montants",
-      "status": "Statut"
+      "name": "Nom",
+      "location": "Localisation",
+      "status": "Statut",
+      "actions": "Actions"
     },
     "dialog": {
-      "createTitle": "Nouvelle réservation",
-      "editTitle": "Modifier la réservation"
+      "createTitle": "Nouvel hôtel",
+      "editTitle": "Modifier l'hôtel",
+      "createDescription": "Ajoutez un nouvel hôtel pour vos services Omra",
+      "editDescription": "Modifiez les informations de l'hôtel"
     },
     "form": {
-      "clientName": "Nom du client",
       "hotelName": "Nom de l'hôtel",
-      "city": "Ville",
-      "checkIn": "Date d'arrivée",
-      "checkOut": "Date de départ",
-      "nights": "Nombre de nuits",
-      "roomType": "Type de chambre",
-      "sellingPrice": "Prix de vente",
-      "buyingPrice": "Prix d'achat",
-      "amountPaid": "Montant payé"
+      "location": "Localisation",
+      "hotelPlaceholder": "Ex: Hotel Makkah Towers",
+      "locationPlaceholder": "Ex: La Mecque, Arabie Saoudite"
+    },
+    "confirm": {
+      "delete": "Êtes-vous sûr de vouloir supprimer cet hôtel ?"
     }
+  },
+  "actions": {
+    "add": "Ajouter",
+    "cancel": "Annuler",
+    "save": "Enregistrer",
+    "create": "Créer",
+    "edit": "Modifier",
+    "delete": "Supprimer"
   },
   "packages": {
     "economic": "Économique",

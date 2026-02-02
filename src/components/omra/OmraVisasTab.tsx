@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -35,7 +36,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Plus, MoreHorizontal, Edit, Trash2, FileText } from 'lucide-react';
-import { OmraVisa, omraStatusLabels } from '@/types';
+import { OmraVisa } from '@/types';
 import { OmraFilters } from '@/lib/api';
 import { formatDZD } from '@/lib/utils';
 import {
@@ -58,6 +59,8 @@ const statusColors: Record<string, string> = {
 };
 
 export const OmraVisasTab = () => {
+  const { t } = useTranslation('omra');
+  const { t: tCommon } = useTranslation('common');
   const [searchQuery, setSearchQuery] = useState('');
   const [filters, setFilters] = useState<OmraFilters>({});
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -152,7 +155,7 @@ export const OmraVisasTab = () => {
   };
 
   const handleDelete = (id: string) => {
-    if (confirm('Êtes-vous sûr de vouloir supprimer ce visa ?')) {
+    if (confirm(t('visas.confirm.delete'))) {
       deleteVisa.mutate(id);
     }
   };
@@ -170,7 +173,7 @@ export const OmraVisasTab = () => {
   };
 
   if (isLoading) {
-    return <div className="p-8 text-center text-muted-foreground">Chargement...</div>;
+    return <div className="p-8 text-center text-muted-foreground">{t('loading')}</div>;
   }
 
   return (
@@ -179,8 +182,8 @@ export const OmraVisasTab = () => {
         <CardHeader>
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <CardTitle>Visas Omra</CardTitle>
-              <CardDescription>{visasData?.total ?? 0} visas au total</CardDescription>
+              <CardTitle>{t('visas.title')}</CardTitle>
+              <CardDescription>{t('visas.count', { count: visasData?.total ?? 0 })}</CardDescription>
             </div>
             <div className="flex flex-wrap gap-3">
               <AdvancedFilter
@@ -191,18 +194,18 @@ export const OmraVisasTab = () => {
                 filterConfig={[
                   {
                     key: 'status',
-                    label: 'Statut',
+                    label: t('filters.status'),
                     type: 'select',
                     options: [
-                      { label: 'En attente', value: 'en_attente' },
-                      { label: 'Confirmé', value: 'confirme' },
-                      { label: 'Terminé', value: 'termine' },
-                      { label: 'Annulé', value: 'annule' },
+                      { label: t('status.en_attente'), value: 'en_attente' },
+                      { label: t('status.confirme'), value: 'confirme' },
+                      { label: t('status.termine'), value: 'termine' },
+                      { label: t('status.annule'), value: 'annule' },
                     ],
                   },
                   {
                     key: 'hotelId',
-                    label: 'Hôtel',
+                    label: t('filters.hotel'),
                     type: 'select',
                     options: hotels.map((h) => ({ label: h.name, value: h.id })),
                   },
@@ -210,7 +213,7 @@ export const OmraVisasTab = () => {
               />
               <Button onClick={() => handleOpenDialog()} className="gap-2">
                 <Plus className="h-4 w-4" />
-                Nouveau Visa
+                {t('visas.newVisa')}
               </Button>
             </div>
           </div>
@@ -219,10 +222,10 @@ export const OmraVisasTab = () => {
           {visas.length === 0 ? (
             <EmptyState
               icon={FileText}
-              title="Aucun visa"
-              description="Commencez par créer un visa Omra"
+              title={t('visas.empty.title')}
+              description={t('visas.empty.description')}
               action={{
-                label: 'Nouveau visa',
+                label: t('visas.empty.action'),
                 onClick: () => handleOpenDialog(),
               }}
             />
@@ -230,13 +233,13 @@ export const OmraVisasTab = () => {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Client</TableHead>
-                  <TableHead>Date Visa</TableHead>
-                  <TableHead>Date Entrée</TableHead>
-                  <TableHead>Hôtel</TableHead>
-                  <TableHead>Prix</TableHead>
-                  <TableHead>Statut</TableHead>
-                  <TableHead className="w-[70px]">Actions</TableHead>
+                  <TableHead>{t('visas.table.client')}</TableHead>
+                  <TableHead>{t('visas.table.visaDate')}</TableHead>
+                  <TableHead>{t('visas.table.entryDate')}</TableHead>
+                  <TableHead>{t('visas.table.hotel')}</TableHead>
+                  <TableHead>{t('visas.table.price')}</TableHead>
+                  <TableHead>{t('visas.table.status')}</TableHead>
+                  <TableHead className="w-[70px]">{t('visas.table.actions')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -255,7 +258,7 @@ export const OmraVisasTab = () => {
                       <div className="text-sm">
                         <p className="font-medium">{formatDZD(Number(visa.sellingPrice))}</p>
                         <p className="text-muted-foreground">
-                          Reste: {formatDZD(Number(visa.sellingPrice) - Number(visa.amountPaid))}
+                          {t('visas.table.remaining')}: {formatDZD(Number(visa.sellingPrice) - Number(visa.amountPaid))}
                         </p>
                       </div>
                     </TableCell>
@@ -266,14 +269,14 @@ export const OmraVisasTab = () => {
                       >
                         <SelectTrigger className="w-[130px] h-8">
                           <Badge className={`${statusColors[visa.status]} border-0`}>
-                            {omraStatusLabels[visa.status]}
+                            {t(`status.${visa.status}`)}
                           </Badge>
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="en_attente">En attente</SelectItem>
-                          <SelectItem value="confirme">Confirmé</SelectItem>
-                          <SelectItem value="termine">Terminé</SelectItem>
-                          <SelectItem value="annule">Annulé</SelectItem>
+                          <SelectItem value="en_attente">{t('status.en_attente')}</SelectItem>
+                          <SelectItem value="confirme">{t('status.confirme')}</SelectItem>
+                          <SelectItem value="termine">{t('status.termine')}</SelectItem>
+                          <SelectItem value="annule">{t('status.annule')}</SelectItem>
                         </SelectContent>
                       </Select>
                     </TableCell>
@@ -286,15 +289,15 @@ export const OmraVisasTab = () => {
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                           <DropdownMenuItem onClick={() => handleOpenDialog(visa)}>
-                            <Edit className="mr-2 h-4 w-4" />
-                            Modifier
+                            <Edit className="ltr:mr-2 rtl:ml-2 h-4 w-4" />
+                            {tCommon('actions.edit')}
                           </DropdownMenuItem>
                           <DropdownMenuItem
                             className="text-destructive"
                             onClick={() => handleDelete(visa.id)}
                           >
-                            <Trash2 className="mr-2 h-4 w-4" />
-                            Supprimer
+                            <Trash2 className="ltr:mr-2 rtl:ml-2 h-4 w-4" />
+                            {tCommon('actions.delete')}
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
@@ -311,32 +314,32 @@ export const OmraVisasTab = () => {
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>{editingVisa ? 'Modifier le visa' : 'Nouveau visa Omra'}</DialogTitle>
+            <DialogTitle>{editingVisa ? t('visas.dialog.editTitle') : t('visas.dialog.createTitle')}</DialogTitle>
             <DialogDescription>
               {editingVisa
-                ? 'Modifiez les informations du visa'
-                : 'Créez un nouveau visa pour le pèlerinage Omra'}
+                ? t('visas.dialog.editDescription')
+                : t('visas.dialog.createDescription')}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             {/* Client Info */}
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="clientName">Nom du client *</Label>
+                <Label htmlFor="clientName">{t('visas.form.clientName')} *</Label>
                 <Input
                   id="clientName"
                   value={formData.clientName}
                   onChange={(e) => setFormData({ ...formData, clientName: e.target.value })}
-                  placeholder="Nom complet"
+                  placeholder={t('visas.form.clientNamePlaceholder')}
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="phone">Téléphone</Label>
+                <Label htmlFor="phone">{t('visas.form.phone')}</Label>
                 <Input
                   id="phone"
                   value={formData.phone}
                   onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                  placeholder="Ex: 0550123456"
+                  placeholder={t('visas.form.phonePlaceholder')}
                 />
               </div>
             </div>
@@ -344,7 +347,7 @@ export const OmraVisasTab = () => {
             {/* Dates */}
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="visaDate">Date du visa *</Label>
+                <Label htmlFor="visaDate">{t('visas.form.visaDate')} *</Label>
                 <Input
                   id="visaDate"
                   type="date"
@@ -353,7 +356,7 @@ export const OmraVisasTab = () => {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="entryDate">Date d'entrée *</Label>
+                <Label htmlFor="entryDate">{t('visas.form.entryDate')} *</Label>
                 <Input
                   id="entryDate"
                   type="date"
@@ -365,13 +368,13 @@ export const OmraVisasTab = () => {
 
             {/* Hotel */}
             <div className="space-y-2">
-              <Label>Hôtel</Label>
+              <Label>{t('visas.form.hotel')}</Label>
               <Select
                 value={formData.hotelId}
                 onValueChange={(value) => setFormData({ ...formData, hotelId: value })}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Sélectionner un hôtel" />
+                  <SelectValue placeholder={t('visas.form.selectHotel')} />
                 </SelectTrigger>
                 <SelectContent>
                   {hotels.map((hotel) => (
@@ -386,7 +389,7 @@ export const OmraVisasTab = () => {
             {/* Prices */}
             <div className="grid grid-cols-3 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="sellingPrice">Prix de vente (DA)</Label>
+                <Label htmlFor="sellingPrice">{t('visas.form.sellingPrice')}</Label>
                 <Input
                   id="sellingPrice"
                   type="number"
@@ -397,7 +400,7 @@ export const OmraVisasTab = () => {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="amountPaid">Versement (DA)</Label>
+                <Label htmlFor="amountPaid">{t('visas.form.amountPaid')}</Label>
                 <Input
                   id="amountPaid"
                   type="number"
@@ -408,7 +411,7 @@ export const OmraVisasTab = () => {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="buyingPrice">Prix d'achat (DA)</Label>
+                <Label htmlFor="buyingPrice">{t('visas.form.buyingPrice')}</Label>
                 <Input
                   id="buyingPrice"
                   type="number"
@@ -423,13 +426,13 @@ export const OmraVisasTab = () => {
             {/* Summary */}
             <div className="grid grid-cols-2 gap-4 p-4 bg-muted rounded-lg">
               <div>
-                <p className="text-sm text-muted-foreground">Reste à payer</p>
+                <p className="text-sm text-muted-foreground">{t('calculations.remaining')}</p>
                 <p className="text-lg font-bold">
                   {formatDZD(formData.sellingPrice - formData.amountPaid)}
                 </p>
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">Bénéfice net</p>
+                <p className="text-sm text-muted-foreground">{t('calculations.profit')}</p>
                 <p className="text-lg font-bold text-green-600">
                   {formatDZD(formData.sellingPrice - formData.buyingPrice)}
                 </p>
@@ -438,19 +441,19 @@ export const OmraVisasTab = () => {
 
             {/* Notes */}
             <div className="space-y-2">
-              <Label htmlFor="notes">Notes</Label>
+              <Label htmlFor="notes">{t('visas.form.notes')}</Label>
               <Textarea
                 id="notes"
                 value={formData.notes}
                 onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                placeholder="Notes supplémentaires..."
+                placeholder={t('visas.form.notesPlaceholder')}
                 rows={2}
               />
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
-              Annuler
+              {tCommon('actions.cancel')}
             </Button>
             <Button
               onClick={handleSubmit}
@@ -462,7 +465,7 @@ export const OmraVisasTab = () => {
                 updateVisa.isPending
               }
             >
-              {editingVisa ? 'Enregistrer' : 'Créer'}
+              {editingVisa ? tCommon('actions.save') : t('actions.create')}
             </Button>
           </DialogFooter>
         </DialogContent>
