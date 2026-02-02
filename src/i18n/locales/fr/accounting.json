@@ -1,0 +1,86 @@
+{
+  "title": "Comptabilité",
+  "subtitle": "Suivi financier et traçabilité des paiements",
+  "stats": {
+    "totalCollected": "Total encaissé",
+    "todayPayments": "Encaissements du jour",
+    "todayPaymentsDesc": "{{count}} paiement(s)",
+    "unpaid": "Impayés",
+    "unpaidDesc": "{{count}} commande(s)",
+    "totalProfit": "Bénéfice total",
+    "totalProfitDesc": "Sur toutes les commandes"
+  },
+  "tabs": {
+    "payments": "Paiements",
+    "unpaid": "Impayés",
+    "reports": "Rapports"
+  },
+  "payments": {
+    "title": "Historique des paiements",
+    "subtitle": "Tous les paiements enregistrés",
+    "table": {
+      "date": "Date",
+      "command": "Commande",
+      "amount": "Montant",
+      "method": "Mode",
+      "recordedBy": "Enregistré par",
+      "notes": "Notes"
+    },
+    "empty": {
+      "title": "Aucun paiement",
+      "description": "Les paiements apparaîtront ici"
+    }
+  },
+  "unpaidCommands": {
+    "title": "Commandes impayées",
+    "subtitle": "Commandes en attente de paiement ou partiellement payées",
+    "table": {
+      "client": "Client",
+      "service": "Service",
+      "totalAmount": "Montant total",
+      "paid": "Payé",
+      "remaining": "Reste à payer",
+      "status": "Statut",
+      "action": "Action"
+    },
+    "empty": {
+      "title": "Aucune commande impayée",
+      "description": "Toutes les commandes sont réglées"
+    },
+    "addPayment": "Ajouter paiement"
+  },
+  "reports": {
+    "title": "Rapports financiers",
+    "chartTitle": "Revenus vs Dépenses",
+    "chartSubtitle": "Évolution sur les 6 derniers mois",
+    "months": {
+      "jan": "Jan",
+      "feb": "Fév",
+      "mar": "Mar",
+      "apr": "Avr",
+      "may": "Mai",
+      "jun": "Juin"
+    },
+    "revenues": "Revenus",
+    "expenses": "Dépenses"
+  },
+  "dialog": {
+    "title": "Nouveau paiement",
+    "subtitle": "Enregistrez un paiement pour une commande",
+    "form": {
+      "command": "Commande",
+      "selectCommand": "Sélectionner une commande",
+      "noUnpaidCommands": "Aucune commande impayée",
+      "addCommand": "Ajouter une commande",
+      "amount": "Montant (DZD)",
+      "method": "Mode de paiement",
+      "notes": "Notes (optionnel)",
+      "notesPlaceholder": "Notes sur ce paiement...",
+      "remaining": "Reste"
+    }
+  },
+  "actions": {
+    "newPayment": "Enregistrer un paiement",
+    "saving": "Enregistrement..."
+  }
+}

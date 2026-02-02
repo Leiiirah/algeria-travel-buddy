@@ -1,0 +1,42 @@
+{
+  "title": "Configuration des services",
+  "subtitle": "Gérez les types de services proposés par l'agence",
+  "activeCount": "{{active}} services actifs sur {{total}}",
+  "dialog": {
+    "createTitle": "Créer un service",
+    "editTitle": "Modifier le service",
+    "createDesc": "Ajoutez un nouveau type de service à votre catalogue",
+    "editDesc": "Modifiez les informations du service"
+  },
+  "form": {
+    "name": "Nom du service",
+    "namePlaceholder": "Ex: Visa Schengen France",
+    "type": "Type de service",
+    "selectType": "Sélectionner un type",
+    "description": "Description",
+    "descriptionPlaceholder": "Décrivez ce service...",
+    "defaultSupplier": "Fournisseur par défaut",
+    "selectSupplier": "Choisir...",
+    "defaultCost": "Coût d'achat par défaut",
+    "costPlaceholder": "Ex: 12000"
+  },
+  "types": {
+    "visa": "Visa",
+    "residence": "Résidence / Hôtel",
+    "ticket": "Billetterie",
+    "dossier": "Traitement de dossier"
+  },
+  "actions": {
+    "newService": "Nouveau service",
+    "create": "Créer le service",
+    "edit": "Modifier",
+    "saving": "Enregistrement..."
+  },
+  "card": {
+    "createdAt": "Créé le {{date}}"
+  },
+  "empty": {
+    "title": "Aucun service",
+    "description": "Créez votre premier service"
+  }
+}

@@ -1,7 +1,8 @@
 import { useState, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
-import { fr } from 'date-fns/locale';
+import { fr, ar } from 'date-fns/locale';
 import { Plus, ArrowDownCircle, ArrowUpCircle, Wallet, TrendingDown, CreditCard } from 'lucide-react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -46,6 +47,8 @@ import { SupplierReceiptsTab } from '@/components/suppliers/SupplierReceiptsTab'
 import { SupplierInvoicesTab } from '@/components/suppliers/SupplierInvoicesTab';
 
 const SupplierAccountingPage = () => {
+  const { t, i18n } = useTranslation('suppliers');
+  const { t: tCommon } = useTranslation('common');
   const navigate = useNavigate();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
@@ -57,6 +60,8 @@ const SupplierAccountingPage = () => {
     note: '',
     date: format(new Date(), 'yyyy-MM-dd'),
   });
+
+  const dateLocale = i18n.language === 'ar' ? ar : fr;
 
   // React Query hooks
   const { data: suppliers } = useSuppliers();
@@ -166,14 +171,14 @@ const SupplierAccountingPage = () => {
 
   const getBalanceDisplay = (remaining: number) => {
     if (remaining < 0) {
-      return `Crédit: ${formatDZD(Math.abs(remaining))}`;
+      return `${tCommon('credit')}: ${formatDZD(Math.abs(remaining))}`;
     }
     return formatDZD(remaining);
   };
 
   if (isLoading) {
     return (
-      <DashboardLayout title="Situation Fournisseurs" subtitle="Suivi des paiements et soldes fournisseurs">
+      <DashboardLayout title={t('accounting.title')} subtitle={t('accounting.subtitle')}>
         <SupplierAccountingSkeleton />
       </DashboardLayout>
     );
@@ -181,37 +186,37 @@ const SupplierAccountingPage = () => {
 
   if (suppliersError) {
     return (
-      <DashboardLayout title="Situation Fournisseurs" subtitle="Suivi des paiements et soldes fournisseurs">
+      <DashboardLayout title={t('accounting.title')} subtitle={t('accounting.subtitle')}>
         <ErrorState message={error?.message} onRetry={refetch} />
       </DashboardLayout>
     );
   }
 
   return (
-    <DashboardLayout title="Situation Fournisseurs" subtitle="Suivi des paiements et soldes fournisseurs">
+    <DashboardLayout title={t('accounting.title')} subtitle={t('accounting.subtitle')}>
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-foreground">Situation Fournisseurs</h1>
+            <h1 className="text-3xl font-bold text-foreground">{t('accounting.title')}</h1>
             <p className="text-muted-foreground">
-              Suivi des paiements et soldes fournisseurs
+              {t('accounting.subtitle')}
             </p>
           </div>
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
               <Button onClick={() => handleOpenDialog()}>
-                <Plus className="mr-2 h-4 w-4" />
-                Nouvelle Transaction
+                <Plus className="ltr:mr-2 rtl:ml-2 h-4 w-4" />
+                {tCommon('actions.newTransaction')}
               </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-[425px]">
               <DialogHeader>
-                <DialogTitle>Nouvelle Transaction Fournisseur</DialogTitle>
+                <DialogTitle>{tCommon('actions.newTransaction')}</DialogTitle>
               </DialogHeader>
               <div className="grid gap-4 py-4">
                 <div className="grid gap-2">
-                  <Label htmlFor="supplier">Fournisseur *</Label>
+                  <Label htmlFor="supplier">{t('table.supplier')} *</Label>
                   <Select
                     value={newTransaction.supplierId}
                     onValueChange={(value) =>
@@ -219,13 +224,13 @@ const SupplierAccountingPage = () => {
                     }
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Sélectionner un fournisseur" />
+                      <SelectValue placeholder={tCommon('select.supplier')} />
                     </SelectTrigger>
                     <SelectContent>
                       {suppliers?.length === 0 ? (
                         <div className="flex flex-col items-center justify-center p-4 space-y-2">
                           <p className="text-sm text-muted-foreground text-center">
-                            Aucun fournisseur disponible
+                            {t('empty.title')}
                           </p>
                           <Button
                             variant="secondary"
@@ -236,7 +241,7 @@ const SupplierAccountingPage = () => {
                               navigate('/fournisseurs');
                             }}
                           >
-                            Ajouter un fournisseur
+                            {tCommon('actions.addSupplier')}
                           </Button>
                         </div>
                       ) : (
@@ -250,7 +255,7 @@ const SupplierAccountingPage = () => {
                   </Select>
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="type">Type de Transaction *</Label>
+                  <Label htmlFor="type">{tCommon('transactionType')} *</Label>
                   <Select
                     value={newTransaction.type}
                     onValueChange={(value) =>
@@ -267,20 +272,20 @@ const SupplierAccountingPage = () => {
                       <SelectItem value="sortie">
                         <div className="flex items-center gap-2">
                           <ArrowUpCircle className="h-4 w-4 text-destructive" />
-                          Paiement envoyé (Sortie)
+                          {t('accounting.transaction.payment')}
                         </div>
                       </SelectItem>
                       <SelectItem value="entree">
                         <div className="flex items-center gap-2">
                           <ArrowDownCircle className="h-4 w-4 text-success" />
-                          Remboursement reçu (Entrée)
+                          {t('accounting.transaction.refund')}
                         </div>
                       </SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="amount">Montant (DZD) *</Label>
+                  <Label htmlFor="amount">{tCommon('amount')} (DZD) *</Label>
                   <Input
                     id="amount"
                     type="number"
@@ -293,7 +298,7 @@ const SupplierAccountingPage = () => {
                   />
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="date">Date</Label>
+                  <Label htmlFor="date">{tCommon('date')}</Label>
                   <Input
                     id="date"
                     type="date"
@@ -304,23 +309,23 @@ const SupplierAccountingPage = () => {
                   />
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="note">Note</Label>
+                  <Label htmlFor="note">{tCommon('note')}</Label>
                   <Textarea
                     id="note"
                     value={newTransaction.note}
                     onChange={(e) =>
                       setNewTransaction({ ...newTransaction, note: e.target.value })
                     }
-                    placeholder="Ex: Versé en espèces, Virement bancaire..."
+                    placeholder={tCommon('notePlaceholder')}
                   />
                 </div>
               </div>
               <DialogFooter>
                 <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
-                  Annuler
+                  {tCommon('actions.cancel')}
                 </Button>
                 <Button onClick={handleAddTransaction} disabled={createTransaction.isPending}>
-                  {createTransaction.isPending ? 'Enregistrement...' : 'Enregistrer'}
+                  {createTransaction.isPending ? tCommon('actions.saving') : tCommon('actions.save')}
                 </Button>
               </DialogFooter>
             </DialogContent>
@@ -331,32 +336,32 @@ const SupplierAccountingPage = () => {
           <Dialog open={isDetailsOpen} onOpenChange={setIsDetailsOpen}>
             <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
               <DialogHeader>
-                <DialogTitle>Historique des Achats - {getSupplierName(selectedSupplierId || '')}</DialogTitle>
+                <DialogTitle>{tCommon('purchaseHistory')} - {getSupplierName(selectedSupplierId || '')}</DialogTitle>
               </DialogHeader>
               <div className="mt-4">
                 {!supplierCommands ? (
-                  <div className="text-center py-4">Chargement...</div>
+                  <div className="text-center py-4">{tCommon('loading')}</div>
                 ) : supplierCommands.data.length === 0 ? (
                   <EmptyState
-                    title="Aucun achat"
-                    description="Aucune commande liée à ce fournisseur"
+                    title={tCommon('noPurchases')}
+                    description={tCommon('noOrdersForSupplier')}
                     icon={CreditCard}
                   />
                 ) : (
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Date</TableHead>
-                        <TableHead>Client</TableHead>
-                        <TableHead>Destination</TableHead>
-                        <TableHead className="text-right">Coût Achat</TableHead>
+                        <TableHead>{tCommon('date')}</TableHead>
+                        <TableHead>{tCommon('client')}</TableHead>
+                        <TableHead>{tCommon('destination')}</TableHead>
+                        <TableHead className="text-right">{tCommon('buyingPrice')}</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {supplierCommands.data.map((cmd) => (
                         <TableRow key={cmd.id}>
                           <TableCell>
-                            {format(new Date(cmd.createdAt), 'dd MMM yyyy', { locale: fr })}
+                            {format(new Date(cmd.createdAt), 'dd MMM yyyy', { locale: dateLocale })}
                           </TableCell>
                           <TableCell>
                             <div className="font-medium">{cmd.data.clientFullName}</div>
@@ -379,19 +384,19 @@ const SupplierAccountingPage = () => {
         <div className="grid gap-4 md:grid-cols-3">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Achats</CardTitle>
+              <CardTitle className="text-sm font-medium">{t('accounting.balance.totalDue')}</CardTitle>
               <Wallet className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{formatDZD(globalTotals.totalPurchased)}</div>
               <p className="text-xs text-muted-foreground">
-                Montant total dû aux fournisseurs
+                {tCommon('totalOwedToSuppliers')}
               </p>
             </CardContent>
           </Card>
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Versé</CardTitle>
+              <CardTitle className="text-sm font-medium">{t('accounting.balance.totalPaid')}</CardTitle>
               <CreditCard className="h-4 w-4 text-success" />
             </CardHeader>
             <CardContent>
@@ -399,23 +404,23 @@ const SupplierAccountingPage = () => {
                 {formatDZD(globalTotals.totalPaid)}
               </div>
               <p className="text-xs text-muted-foreground">
-                Paiements effectués aux fournisseurs
+                {tCommon('paymentsMadeToSuppliers')}
               </p>
             </CardContent>
           </Card>
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Reste à Payer</CardTitle>
+              <CardTitle className="text-sm font-medium">{t('accounting.balance.currentBalance')}</CardTitle>
               <TrendingDown className="h-4 w-4 text-destructive" />
             </CardHeader>
             <CardContent>
               <div className={`text-2xl font-bold ${globalTotals.totalRemaining > 0 ? 'text-destructive' : 'text-success'}`}>
                 {globalTotals.totalRemaining < 0
-                  ? `Crédit: ${formatDZD(Math.abs(globalTotals.totalRemaining))}`
+                  ? `${tCommon('credit')}: ${formatDZD(Math.abs(globalTotals.totalRemaining))}`
                   : formatDZD(globalTotals.totalRemaining)}
               </div>
               <p className="text-xs text-muted-foreground">
-                Solde global fournisseurs
+                {tCommon('globalSupplierBalance')}
               </p>
             </CardContent>
           </Card>
@@ -424,66 +429,63 @@ const SupplierAccountingPage = () => {
         {/* Tabs */}
         <Tabs defaultValue="situation" className="space-y-4">
           <TabsList className="grid w-full grid-cols-5">
-            <TabsTrigger value="situation">Situation</TabsTrigger>
-            <TabsTrigger value="historique">Historique</TabsTrigger>
-            <TabsTrigger value="commandes">Commandes</TabsTrigger>
-            <TabsTrigger value="recus">Reçus</TabsTrigger>
-            <TabsTrigger value="factures">Factures</TabsTrigger>
+            <TabsTrigger value="situation">{t('accounting.tabs.situation')}</TabsTrigger>
+            <TabsTrigger value="historique">{t('accounting.tabs.history')}</TabsTrigger>
+            <TabsTrigger value="commandes">{t('accounting.tabs.orders')}</TabsTrigger>
+            <TabsTrigger value="recus">{t('accounting.tabs.receipts')}</TabsTrigger>
+            <TabsTrigger value="factures">{t('accounting.tabs.invoices')}</TabsTrigger>
           </TabsList>
 
           {/* Supplier Situation Tab */}
           <TabsContent value="situation">
             <Card>
               <CardHeader>
-                <CardTitle>Solde par Fournisseur</CardTitle>
+                <CardTitle>{tCommon('balanceBySupplier')}</CardTitle>
               </CardHeader>
               <CardContent>
                 {supplierBalances.length === 0 ? (
                   <EmptyState
-                    title="Aucune transaction"
-                    description="Les soldes fournisseurs apparaîtront ici"
+                    title={tCommon('noTransactions')}
+                    description={tCommon('supplierBalancesAppearHere')}
                     icon={Wallet}
                   />
                 ) : (
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Fournisseur</TableHead>
-                        <TableHead className="text-right">Total Achats</TableHead>
-                        <TableHead className="text-right">Total Versé</TableHead>
-                        <TableHead className="text-right">Reste à Payer</TableHead>
-                        <TableHead className="text-right">Actions</TableHead>
+                        <TableHead>{t('table.supplier')}</TableHead>
+                        <TableHead className="text-right">{t('accounting.balance.totalDue')}</TableHead>
+                        <TableHead className="text-right">{t('accounting.balance.totalPaid')}</TableHead>
+                        <TableHead className="text-right">{t('accounting.balance.currentBalance')}</TableHead>
+                        <TableHead className="text-right">{tCommon('actions.label')}</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {supplierBalances.map((item) => (
                         <TableRow key={item.supplier.id}>
                           <TableCell className="font-medium">{item.supplier.name}</TableCell>
-                          <TableCell className="text-right">
-                            {formatDZD(item.totalPurchased)}
-                          </TableCell>
-                          <TableCell className="text-right text-success">
-                            {formatDZD(item.totalPaid)}
-                          </TableCell>
+                          <TableCell className="text-right">{formatDZD(item.totalPurchased)}</TableCell>
+                          <TableCell className="text-right text-success">{formatDZD(item.totalPaid)}</TableCell>
                           <TableCell className={`text-right ${getBalanceStyle(item.remainingBalance)}`}>
                             {getBalanceDisplay(item.remainingBalance)}
                           </TableCell>
-                          <TableCell className="text-right space-x-2">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleOpenDetails(item.supplier.id)}
-                            >
-                              <Wallet className="h-4 w-4 mr-1" />
-                              Détails
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleOpenDialog(item.supplier.id)}
-                            >
-                              Verser
-                            </Button>
+                          <TableCell className="text-right">
+                            <div className="flex justify-end gap-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleOpenDetails(item.supplier.id)}
+                              >
+                                {tCommon('details')}
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleOpenDialog(item.supplier.id)}
+                              >
+                                <Plus className="h-4 w-4" />
+                              </Button>
+                            </div>
                           </TableCell>
                         </TableRow>
                       ))}
@@ -498,31 +500,31 @@ const SupplierAccountingPage = () => {
           <TabsContent value="historique">
             <Card>
               <CardHeader>
-                <CardTitle>Historique des Transactions</CardTitle>
+                <CardTitle>{t('accounting.tabs.history')}</CardTitle>
               </CardHeader>
               <CardContent>
                 {sortedTransactions.length === 0 ? (
                   <EmptyState
-                    title="Aucune transaction"
-                    description="Les transactions apparaîtront ici"
-                    icon={CreditCard}
+                    title={tCommon('noTransactions')}
+                    description={tCommon('transactionsAppearHere')}
+                    icon={Wallet}
                   />
                 ) : (
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Date</TableHead>
-                        <TableHead>Fournisseur</TableHead>
-                        <TableHead>Type</TableHead>
-                        <TableHead className="text-right">Montant</TableHead>
-                        <TableHead>Note</TableHead>
+                        <TableHead>{tCommon('date')}</TableHead>
+                        <TableHead>{t('table.supplier')}</TableHead>
+                        <TableHead>{tCommon('type')}</TableHead>
+                        <TableHead className="text-right">{tCommon('amount')}</TableHead>
+                        <TableHead>{tCommon('note')}</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {sortedTransactions.map((transaction) => (
                         <TableRow key={transaction.id}>
                           <TableCell>
-                            {format(new Date(transaction.date), 'dd MMM yyyy', { locale: fr })}
+                            {format(new Date(transaction.date), 'dd MMM yyyy', { locale: dateLocale })}
                           </TableCell>
                           <TableCell className="font-medium">
                             {getSupplierName(transaction.supplierId)}
@@ -534,27 +536,13 @@ const SupplierAccountingPage = () => {
                               ) : (
                                 <ArrowDownCircle className="h-4 w-4 text-success" />
                               )}
-                              <span
-                                className={
-                                  transaction.type === 'sortie'
-                                    ? 'text-destructive'
-                                    : 'text-success'
-                                }
-                              >
-                                {getTransactionTypeLabel(transaction.type)}
-                              </span>
+                              {transaction.type === 'sortie' ? t('accounting.transaction.payment') : t('accounting.transaction.refund')}
                             </div>
                           </TableCell>
-                          <TableCell
-                            className={`text-right font-medium ${transaction.type === 'sortie'
-                              ? 'text-destructive'
-                              : 'text-success'
-                              }`}
-                          >
-                            {transaction.type === 'sortie' ? '-' : '+'}
-                            {formatDZD(transaction.amount)}
+                          <TableCell className={`text-right font-medium ${transaction.type === 'sortie' ? 'text-destructive' : 'text-success'}`}>
+                            {transaction.type === 'sortie' ? '-' : '+'}{formatDZD(transaction.amount)}
                           </TableCell>
-                          <TableCell className="text-muted-foreground">
+                          <TableCell className="text-muted-foreground max-w-[200px] truncate">
                             {transaction.note || '-'}
                           </TableCell>
                         </TableRow>
@@ -582,7 +570,7 @@ const SupplierAccountingPage = () => {
           </TabsContent>
         </Tabs>
       </div>
-    </DashboardLayout >
+    </DashboardLayout>
   );
 };
 

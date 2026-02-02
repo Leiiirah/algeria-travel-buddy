@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { format } from 'date-fns';
-import { fr } from 'date-fns/locale';
+import { fr, ar } from 'date-fns/locale';
 import { Plus, Receipt, Calendar, TrendingDown, Trash2, Pencil } from 'lucide-react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/button';
@@ -50,18 +51,11 @@ import {
   useUpdateExpense,
   useDeleteExpense,
 } from '@/hooks/useExpenses';
-import { ExpenseCategory, PaymentMethod, Expense, expenseCategoryLabels } from '@/types';
+import { ExpenseCategory, PaymentMethod, Expense } from '@/types';
 import { AdvancedFilter, FilterConfig } from '@/components/search/AdvancedFilter';
 import { useDebounce } from '@/hooks/useDebounce';
 import { ExpensesSkeleton } from '@/components/skeletons';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
-
-const paymentMethodLabels: Record<PaymentMethod, string> = {
-  especes: 'Espèces',
-  virement: 'Virement',
-  cheque: 'Chèque',
-  carte: 'Carte',
-};
 
 const categoryColors: Record<ExpenseCategory, string> = {
   fournitures: '#3b82f6',
@@ -74,6 +68,8 @@ const categoryColors: Record<ExpenseCategory, string> = {
 };
 
 export default function ExpensesPage() {
+  const { t, i18n } = useTranslation('expenses');
+  const { t: tCommon } = useTranslation('common');
   const { data: expenses, isLoading: loadingExpenses } = useExpenses();
   const { data: stats, isLoading: loadingStats } = useExpenseStats();
   const createExpense = useCreateExpense();
@@ -99,31 +95,50 @@ export default function ExpensesPage() {
 
   const isLoading = loadingExpenses || loadingStats;
 
+  const dateLocale = i18n.language === 'ar' ? ar : fr;
+
+  const paymentMethodLabels: Record<PaymentMethod, string> = {
+    especes: tCommon('paymentMethods.especes'),
+    virement: tCommon('paymentMethods.virement'),
+    cheque: tCommon('paymentMethods.cheque'),
+    carte: tCommon('paymentMethods.carte'),
+  };
+
+  const expenseCategoryLabels: Record<ExpenseCategory, string> = {
+    fournitures: t('categories.fournitures'),
+    equipement: t('categories.equipement'),
+    factures: t('categories.factures'),
+    transport: t('categories.transport'),
+    maintenance: t('categories.maintenance'),
+    marketing: t('categories.marketing'),
+    autre: t('categories.autre'),
+  };
+
   // Filter configuration
   const filterConfig: FilterConfig[] = useMemo(() => [
     {
       key: 'category',
-      label: 'Catégorie',
+      label: t('form.category'),
       type: 'select',
       options: Object.entries(expenseCategoryLabels).map(([value, label]) => ({ value, label })),
     },
     {
       key: 'paymentMethod',
-      label: 'Mode de paiement',
+      label: t('form.paymentMethod'),
       type: 'select',
       options: Object.entries(paymentMethodLabels).map(([value, label]) => ({ value, label })),
     },
     {
       key: 'fromDate',
-      label: 'Date début',
+      label: tCommon('filters.fromDate'),
       type: 'date-range',
     },
     {
       key: 'toDate',
-      label: 'Date fin',
+      label: tCommon('filters.toDate'),
       type: 'date-range',
     },
-  ], []);
+  ], [t, tCommon, expenseCategoryLabels, paymentMethodLabels]);
 
   // Filtered expenses
   const filteredExpenses = useMemo(() => {
@@ -231,39 +246,39 @@ export default function ExpensesPage() {
       value: item.total,
       color: categoryColors[item.category as ExpenseCategory] || '#6b7280',
     }));
-  }, [stats]);
+  }, [stats, expenseCategoryLabels]);
 
   if (isLoading) {
     return (
-      <DashboardLayout title="Dépenses">
+      <DashboardLayout title={t('title')}>
         <ExpensesSkeleton />
       </DashboardLayout>
     );
   }
 
   return (
-    <DashboardLayout title="Dépenses" subtitle="Gestion des dépenses de l'entreprise">
+    <DashboardLayout title={t('title')} subtitle={t('subtitle')}>
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold text-foreground">Dépenses</h1>
+          <h1 className="text-2xl font-bold text-foreground">{t('title')}</h1>
           <Dialog open={isDialogOpen} onOpenChange={(open) => open ? handleOpenDialog() : handleCloseDialog()}>
             <DialogTrigger asChild>
               <Button>
-                <Plus className="mr-2 h-4 w-4" />
-                Nouvelle Dépense
+                <Plus className="ltr:mr-2 rtl:ml-2 h-4 w-4" />
+                {t('actions.newExpense')}
               </Button>
             </DialogTrigger>
             <DialogContent>
               <DialogHeader>
                 <DialogTitle>
-                  {editingExpense ? 'Modifier la dépense' : 'Ajouter une dépense'}
+                  {editingExpense ? t('dialog.editTitle') : t('dialog.createTitle')}
                 </DialogTitle>
               </DialogHeader>
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label>Catégorie</Label>
+                    <Label>{t('form.category')}</Label>
                     <Select
                       value={formData.category}
                       onValueChange={(value) => setFormData({ ...formData, category: value as ExpenseCategory })}
@@ -282,7 +297,7 @@ export default function ExpensesPage() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label>Mode de paiement</Label>
+                    <Label>{t('form.paymentMethod')}</Label>
                     <Select
                       value={formData.paymentMethod}
                       onValueChange={(value) => setFormData({ ...formData, paymentMethod: value as PaymentMethod })}
@@ -302,11 +317,11 @@ export default function ExpensesPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Description</Label>
+                  <Label>{t('form.description')}</Label>
                   <Input
                     value={formData.description}
                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                    placeholder="Description de la dépense"
+                    placeholder={t('form.descriptionPlaceholder')}
                     required
                     maxLength={255}
                   />
@@ -314,7 +329,7 @@ export default function ExpensesPage() {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label>Montant (DZD)</Label>
+                    <Label>{t('form.amount')}</Label>
                     <Input
                       type="number"
                       min="0"
@@ -326,7 +341,7 @@ export default function ExpensesPage() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label>Date</Label>
+                    <Label>{t('form.date')}</Label>
                     <Input
                       type="date"
                       value={formData.date}
@@ -337,30 +352,30 @@ export default function ExpensesPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Fournisseur (optionnel)</Label>
+                  <Label>{t('form.vendor')}</Label>
                   <Input
                     value={formData.vendor}
                     onChange={(e) => setFormData({ ...formData, vendor: e.target.value })}
-                    placeholder="Nom du fournisseur"
+                    placeholder={t('form.vendorPlaceholder')}
                     maxLength={255}
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Note (optionnel)</Label>
+                  <Label>{t('form.note')}</Label>
                   <Textarea
                     value={formData.note}
                     onChange={(e) => setFormData({ ...formData, note: e.target.value })}
-                    placeholder="Ajouter une note..."
+                    placeholder={t('form.notePlaceholder')}
                   />
                 </div>
 
                 <div className="flex justify-end gap-2">
                   <Button type="button" variant="outline" onClick={handleCloseDialog}>
-                    Annuler
+                    {tCommon('actions.cancel')}
                   </Button>
                   <Button type="submit" disabled={createExpense.isPending || updateExpense.isPending}>
-                    {createExpense.isPending || updateExpense.isPending ? 'Enregistrement...' : 'Enregistrer'}
+                    {createExpense.isPending || updateExpense.isPending ? tCommon('actions.saving') : tCommon('actions.save')}
                   </Button>
                 </div>
               </form>
@@ -372,34 +387,34 @@ export default function ExpensesPage() {
         <div className="grid gap-4 md:grid-cols-3">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Ce Mois</CardTitle>
+              <CardTitle className="text-sm font-medium text-muted-foreground">{t('stats.thisMonth')}</CardTitle>
               <Calendar className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-destructive">
-                {(stats?.totalThisMonth || 0).toLocaleString('fr-DZ')} DZD
+                {(stats?.totalThisMonth || 0).toLocaleString(i18n.language === 'ar' ? 'ar-DZ' : 'fr-DZ')} DZD
               </div>
             </CardContent>
           </Card>
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Cette Année</CardTitle>
+              <CardTitle className="text-sm font-medium text-muted-foreground">{t('stats.thisYear')}</CardTitle>
               <TrendingDown className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-destructive">
-                {(stats?.totalThisYear || 0).toLocaleString('fr-DZ')} DZD
+                {(stats?.totalThisYear || 0).toLocaleString(i18n.language === 'ar' ? 'ar-DZ' : 'fr-DZ')} DZD
               </div>
             </CardContent>
           </Card>
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Total Global</CardTitle>
+              <CardTitle className="text-sm font-medium text-muted-foreground">{t('stats.totalAll')}</CardTitle>
               <Receipt className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                {(stats?.totalAll || 0).toLocaleString('fr-DZ')} DZD
+                {(stats?.totalAll || 0).toLocaleString(i18n.language === 'ar' ? 'ar-DZ' : 'fr-DZ')} DZD
               </div>
             </CardContent>
           </Card>
@@ -408,8 +423,8 @@ export default function ExpensesPage() {
         {/* Tabs */}
         <Tabs defaultValue="list">
           <TabsList>
-            <TabsTrigger value="list">Liste</TabsTrigger>
-            <TabsTrigger value="stats">Statistiques</TabsTrigger>
+            <TabsTrigger value="list">{t('tabs.list')}</TabsTrigger>
+            <TabsTrigger value="stats">{t('tabs.stats')}</TabsTrigger>
           </TabsList>
 
           <TabsContent value="list" className="mt-4">
@@ -421,93 +436,92 @@ export default function ExpensesPage() {
                   filters={filters}
                   onFilterChange={setFilters}
                   filterConfig={filterConfig}
-                  placeholder="Rechercher par description, fournisseur..."
+                  placeholder={tCommon('search.placeholder')}
                 />
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Date</TableHead>
-                      <TableHead>Catégorie</TableHead>
-                      <TableHead>Description</TableHead>
-                      <TableHead>Fournisseur</TableHead>
-                      <TableHead>Mode</TableHead>
-                      <TableHead className="text-right">Montant</TableHead>
+                      <TableHead>{t('table.date')}</TableHead>
+                      <TableHead>{t('table.category')}</TableHead>
+                      <TableHead>{t('table.description')}</TableHead>
+                      <TableHead>{t('table.vendor')}</TableHead>
+                      <TableHead>{t('table.method')}</TableHead>
+                      <TableHead className="text-right">{t('table.amount')}</TableHead>
                       <TableHead className="w-[100px]"></TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredExpenses.map((expense) => (
-                      <TableRow key={expense.id}>
-                        <TableCell>
-                          {format(new Date(expense.date), 'dd/MM/yyyy', { locale: fr })}
-                        </TableCell>
-                        <TableCell>
-                          <Badge
-                            variant="outline"
-                            style={{ borderColor: categoryColors[expense.category], color: categoryColors[expense.category] }}
-                          >
-                            {expenseCategoryLabels[expense.category]}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="font-medium max-w-[200px] truncate">
-                          {expense.description}
-                        </TableCell>
-                        <TableCell className="text-muted-foreground">
-                          {expense.vendor || '-'}
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="secondary">
-                            {paymentMethodLabels[expense.paymentMethod]}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-right font-medium text-destructive">
-                          {Number(expense.amount).toLocaleString('fr-DZ')} DZD
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex gap-1">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => handleOpenDialog(expense)}
-                            >
-                              <Pencil className="h-4 w-4" />
-                            </Button>
-                            <AlertDialog>
-                              <AlertDialogTrigger asChild>
-                                <Button variant="ghost" size="icon">
-                                  <Trash2 className="h-4 w-4 text-destructive" />
-                                </Button>
-                              </AlertDialogTrigger>
-                              <AlertDialogContent>
-                                <AlertDialogHeader>
-                                  <AlertDialogTitle>Supprimer la dépense ?</AlertDialogTitle>
-                                  <AlertDialogDescription>
-                                    Cette action est irréversible. La dépense sera définitivement supprimée.
-                                  </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                  <AlertDialogCancel>Annuler</AlertDialogCancel>
-                                  <AlertDialogAction
-                                    onClick={() => handleDelete(expense.id)}
-                                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                                  >
-                                    Supprimer
-                                  </AlertDialogAction>
-                                </AlertDialogFooter>
-                              </AlertDialogContent>
-                            </AlertDialog>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                    {filteredExpenses.length === 0 && (
+                    {filteredExpenses.length === 0 ? (
                       <TableRow>
                         <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
-                          {debouncedSearch || Object.keys(filters).length > 0
-                            ? 'Aucune dépense ne correspond aux filtres'
-                            : 'Aucune dépense enregistrée'}
+                          {t('empty')}
                         </TableCell>
                       </TableRow>
+                    ) : (
+                      filteredExpenses.map((expense) => (
+                        <TableRow key={expense.id}>
+                          <TableCell>
+                            {format(new Date(expense.date), 'dd/MM/yyyy', { locale: dateLocale })}
+                          </TableCell>
+                          <TableCell>
+                            <Badge
+                              variant="outline"
+                              style={{ borderColor: categoryColors[expense.category], color: categoryColors[expense.category] }}
+                            >
+                              {expenseCategoryLabels[expense.category]}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="font-medium max-w-[200px] truncate">
+                            {expense.description}
+                          </TableCell>
+                          <TableCell className="text-muted-foreground">
+                            {expense.vendor || '-'}
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant="secondary">
+                              {paymentMethodLabels[expense.paymentMethod]}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-right font-medium text-destructive">
+                            {Number(expense.amount).toLocaleString(i18n.language === 'ar' ? 'ar-DZ' : 'fr-DZ')} DZD
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex gap-1">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => handleOpenDialog(expense)}
+                              >
+                                <Pencil className="h-4 w-4" />
+                              </Button>
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <Button variant="ghost" size="icon">
+                                    <Trash2 className="h-4 w-4 text-destructive" />
+                                  </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>{t('delete.title')}</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      {t('delete.description')}
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>{tCommon('actions.cancel')}</AlertDialogCancel>
+                                    <AlertDialogAction
+                                      onClick={() => handleDelete(expense.id)}
+                                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                    >
+                                      {tCommon('actions.delete')}
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))
                     )}
                   </TableBody>
                 </Table>
@@ -518,38 +532,36 @@ export default function ExpensesPage() {
           <TabsContent value="stats" className="mt-4">
             <Card>
               <CardHeader>
-                <CardTitle>Répartition par catégorie</CardTitle>
+                <CardTitle>{t('chart.title')}</CardTitle>
               </CardHeader>
               <CardContent>
-                {chartData.length > 0 ? (
-                  <div className="h-[400px]">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <PieChart>
-                        <Pie
-                          data={chartData}
-                          cx="50%"
-                          cy="50%"
-                          labelLine={false}
-                          label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
-                          outerRadius={150}
-                          fill="#8884d8"
-                          dataKey="value"
-                        >
-                          {chartData.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={entry.color} />
-                          ))}
-                        </Pie>
-                        <Tooltip
-                          formatter={(value: number) => [`${value.toLocaleString('fr-DZ')} DZD`, 'Montant']}
-                        />
-                        <Legend />
-                      </PieChart>
-                    </ResponsiveContainer>
+                {chartData.length === 0 ? (
+                  <div className="text-center text-muted-foreground py-8">
+                    {t('empty')}
                   </div>
                 ) : (
-                  <div className="text-center text-muted-foreground py-12">
-                    Aucune donnée disponible pour afficher le graphique
-                  </div>
+                  <ResponsiveContainer width="100%" height={400}>
+                    <PieChart>
+                      <Pie
+                        data={chartData}
+                        cx="50%"
+                        cy="50%"
+                        labelLine={false}
+                        outerRadius={150}
+                        fill="#8884d8"
+                        dataKey="value"
+                        label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                      >
+                        {chartData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))}
+                      </Pie>
+                      <Tooltip
+                        formatter={(value: number) => `${value.toLocaleString(i18n.language === 'ar' ? 'ar-DZ' : 'fr-DZ')} DZD`}
+                      />
+                      <Legend />
+                    </PieChart>
+                  </ResponsiveContainer>
                 )}
               </CardContent>
             </Card>

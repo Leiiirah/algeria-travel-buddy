@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { format } from 'date-fns';
-import { fr } from 'date-fns/locale';
+import { fr, ar } from 'date-fns/locale';
 import { Plus, Wallet, CreditCard, Banknote, Trash2, Eye } from 'lucide-react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/button';
@@ -52,11 +53,13 @@ import {
   useCreateEmployeeTransaction,
   useDeleteEmployeeTransaction,
 } from '@/hooks/useEmployeeTransactions';
-import { EmployeeTransactionType, employeeTransactionTypeLabels } from '@/types';
+import { EmployeeTransactionType } from '@/types';
 import { AdvancedFilter, FilterConfig } from '@/components/search/AdvancedFilter';
 import { useDebounce } from '@/hooks/useDebounce';
 
 export default function EmployeeAccountingPage() {
+  const { t, i18n } = useTranslation('employees');
+  const { t: tCommon } = useTranslation('common');
   const { isAdmin } = useAuth();
   const { data: transactions, isLoading: loadingTransactions, isError: isTransactionsError } = useEmployeeTransactions();
   const { data: balances, isLoading: loadingBalances } = useAllEmployeeBalances();
@@ -81,6 +84,7 @@ export default function EmployeeAccountingPage() {
   const debouncedSearch = useDebounce(searchQuery, 300);
 
   const isLoading = loadingTransactions || loadingBalances;
+  const dateLocale = i18n.language === 'ar' ? ar : fr;
 
   // Calculate totals
   const totals = {
@@ -96,31 +100,31 @@ export default function EmployeeAccountingPage() {
   const filterConfig: FilterConfig[] = useMemo(() => [
     {
       key: 'employeeId',
-      label: 'Employé',
+      label: t('table.employee'),
       type: 'select',
       options: employees.map(e => ({ value: e.id, label: `${e.firstName} ${e.lastName}` })),
     },
     {
       key: 'type',
-      label: 'Type',
+      label: t('accounting.dialog.type'),
       type: 'select',
       options: [
-        { value: 'avance', label: 'Avance' },
-        { value: 'credit', label: 'Crédit' },
-        { value: 'salaire', label: 'Salaire' },
+        { value: 'avance', label: t('accounting.transactionTypes.avance') },
+        { value: 'credit', label: t('accounting.transactionTypes.credit') },
+        { value: 'salaire', label: t('accounting.transactionTypes.salaire') },
       ],
     },
     {
       key: 'fromDate',
-      label: 'Date début',
+      label: tCommon('filters.fromDate'),
       type: 'date-range',
     },
     {
       key: 'toDate',
-      label: 'Date fin',
+      label: tCommon('filters.toDate'),
       type: 'date-range',
     },
-  ], [employees]);
+  ], [employees, t, tCommon]);
 
   // Filtered transactions based on search and filters
   const filteredTransactions = useMemo(() => {
@@ -208,7 +212,7 @@ export default function EmployeeAccountingPage() {
 
   if (isLoading) {
     return (
-      <DashboardLayout title="Comptabilité Employés">
+      <DashboardLayout title={t('accounting.title')}>
         <div className="space-y-6">
           <div className="flex items-center justify-between">
             <Skeleton className="h-8 w-64" />
@@ -246,32 +250,32 @@ export default function EmployeeAccountingPage() {
   }
 
   return (
-    <DashboardLayout title="Comptabilité Employés" subtitle="Gestion des avances, crédits et salaires">
+    <DashboardLayout title={t('accounting.title')} subtitle={t('accounting.subtitle')}>
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold text-foreground">Comptabilité Employés</h1>
+          <h1 className="text-2xl font-bold text-foreground">{t('accounting.title')}</h1>
           {isAdmin && (
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
               <DialogTrigger asChild>
                 <Button>
-                  <Plus className="mr-2 h-4 w-4" />
-                  Nouvelle Transaction
+                  <Plus className="ltr:mr-2 rtl:ml-2 h-4 w-4" />
+                  {t('accounting.newTransaction')}
                 </Button>
               </DialogTrigger>
               <DialogContent>
                 <DialogHeader>
-                  <DialogTitle>Ajouter une Transaction</DialogTitle>
+                  <DialogTitle>{t('accounting.dialog.title')}</DialogTitle>
                 </DialogHeader>
                 <form onSubmit={handleSubmit} className="space-y-4">
                   <div className="space-y-2">
-                    <Label>Employé</Label>
+                    <Label>{t('table.employee')}</Label>
                     <Select
                       value={formData.employeeId}
                       onValueChange={(value) => setFormData({ ...formData, employeeId: value })}
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder="Sélectionner un employé" />
+                        <SelectValue placeholder={t('accounting.dialog.selectEmployee')} />
                       </SelectTrigger>
                       <SelectContent>
                         {employees.map((emp) => (
@@ -284,7 +288,7 @@ export default function EmployeeAccountingPage() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label>Type</Label>
+                    <Label>{t('accounting.dialog.type')}</Label>
                     <Select
                       value={formData.type}
                       onValueChange={(value) => setFormData({ ...formData, type: value as EmployeeTransactionType })}
@@ -293,15 +297,15 @@ export default function EmployeeAccountingPage() {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="avance">Avance</SelectItem>
-                        <SelectItem value="credit">Crédit</SelectItem>
-                        <SelectItem value="salaire">Salaire</SelectItem>
+                        <SelectItem value="avance">{t('accounting.transactionTypes.avance')}</SelectItem>
+                        <SelectItem value="credit">{t('accounting.transactionTypes.credit')}</SelectItem>
+                        <SelectItem value="salaire">{t('accounting.transactionTypes.salaire')}</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
 
                   <div className="space-y-2">
-                    <Label>Montant (DZD)</Label>
+                    <Label>{t('accounting.dialog.amount')}</Label>
                     <Input
                       type="number"
                       min="0"
@@ -313,7 +317,7 @@ export default function EmployeeAccountingPage() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label>Date</Label>
+                    <Label>{t('accounting.dialog.date')}</Label>
                     <Input
                       type="date"
                       value={formData.date}
@@ -324,7 +328,7 @@ export default function EmployeeAccountingPage() {
 
                   {formData.type === 'salaire' && (
                     <div className="space-y-2">
-                      <Label>Mois concerné</Label>
+                      <Label>{t('accounting.dialog.month')}</Label>
                       <Input
                         type="month"
                         value={formData.month}
@@ -334,20 +338,20 @@ export default function EmployeeAccountingPage() {
                   )}
 
                   <div className="space-y-2">
-                    <Label>Note (optionnel)</Label>
+                    <Label>{t('accounting.dialog.note')}</Label>
                     <Textarea
                       value={formData.note}
                       onChange={(e) => setFormData({ ...formData, note: e.target.value })}
-                      placeholder="Ajouter une note..."
+                      placeholder={t('accounting.dialog.notePlaceholder')}
                     />
                   </div>
 
                   <div className="flex justify-end gap-2">
                     <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
-                      Annuler
+                      {tCommon('actions.cancel')}
                     </Button>
                     <Button type="submit" disabled={createTransaction.isPending}>
-                      {createTransaction.isPending ? 'Enregistrement...' : 'Enregistrer'}
+                      {createTransaction.isPending ? tCommon('actions.saving') : tCommon('actions.save')}
                     </Button>
                   </div>
                 </form>
@@ -360,29 +364,29 @@ export default function EmployeeAccountingPage() {
         <div className="grid gap-4 md:grid-cols-3">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Total Avances</CardTitle>
+              <CardTitle className="text-sm font-medium text-muted-foreground">{t('accounting.stats.totalAdvances')}</CardTitle>
               <Wallet className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{totals.avances.toLocaleString('fr-DZ')} DZD</div>
+              <div className="text-2xl font-bold">{totals.avances.toLocaleString(i18n.language === 'ar' ? 'ar-DZ' : 'fr-DZ')} DZD</div>
             </CardContent>
           </Card>
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Total Crédits</CardTitle>
+              <CardTitle className="text-sm font-medium text-muted-foreground">{t('accounting.stats.totalCredits')}</CardTitle>
               <CreditCard className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-destructive">{totals.credits.toLocaleString('fr-DZ')} DZD</div>
+              <div className="text-2xl font-bold text-destructive">{totals.credits.toLocaleString(i18n.language === 'ar' ? 'ar-DZ' : 'fr-DZ')} DZD</div>
             </CardContent>
           </Card>
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Total Salaires</CardTitle>
+              <CardTitle className="text-sm font-medium text-muted-foreground">{t('accounting.stats.totalSalaries')}</CardTitle>
               <Banknote className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-primary">{totals.salaires.toLocaleString('fr-DZ')} DZD</div>
+              <div className="text-2xl font-bold text-primary">{totals.salaires.toLocaleString(i18n.language === 'ar' ? 'ar-DZ' : 'fr-DZ')} DZD</div>
             </CardContent>
           </Card>
         </div>
@@ -390,8 +394,8 @@ export default function EmployeeAccountingPage() {
         {/* Tabs */}
         <Tabs defaultValue="balances">
           <TabsList>
-            <TabsTrigger value="balances">Situation Employés</TabsTrigger>
-            <TabsTrigger value="history">Historique</TabsTrigger>
+            <TabsTrigger value="balances">{t('accounting.tabs.balances')}</TabsTrigger>
+            <TabsTrigger value="history">{t('accounting.tabs.history')}</TabsTrigger>
           </TabsList>
 
           <TabsContent value="balances" className="mt-4">
@@ -400,11 +404,11 @@ export default function EmployeeAccountingPage() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Employé</TableHead>
-                      <TableHead className="text-right">Avances</TableHead>
-                      <TableHead className="text-right">Crédits</TableHead>
-                      <TableHead className="text-right">Salaires</TableHead>
-                      <TableHead className="text-right">Solde</TableHead>
+                      <TableHead>{t('accounting.table.employee')}</TableHead>
+                      <TableHead className="text-right">{t('accounting.table.advances')}</TableHead>
+                      <TableHead className="text-right">{t('accounting.table.credits')}</TableHead>
+                      <TableHead className="text-right">{t('accounting.table.salaries')}</TableHead>
+                      <TableHead className="text-right">{t('accounting.table.balance')}</TableHead>
                       <TableHead className="w-[50px]"></TableHead>
                     </TableRow>
                   </TableHeader>
@@ -415,16 +419,16 @@ export default function EmployeeAccountingPage() {
                           {balance.firstName} {balance.lastName}
                         </TableCell>
                         <TableCell className="text-right">
-                          {balance.totalAvances.toLocaleString('fr-DZ')} DZD
+                          {balance.totalAvances.toLocaleString(i18n.language === 'ar' ? 'ar-DZ' : 'fr-DZ')} DZD
                         </TableCell>
                         <TableCell className="text-right text-destructive">
-                          {balance.totalCredits.toLocaleString('fr-DZ')} DZD
+                          {balance.totalCredits.toLocaleString(i18n.language === 'ar' ? 'ar-DZ' : 'fr-DZ')} DZD
                         </TableCell>
                         <TableCell className="text-right text-primary">
-                          {balance.totalSalaires.toLocaleString('fr-DZ')} DZD
+                          {balance.totalSalaires.toLocaleString(i18n.language === 'ar' ? 'ar-DZ' : 'fr-DZ')} DZD
                         </TableCell>
                         <TableCell className={`text-right font-bold ${balance.balance >= 0 ? 'text-green-600' : 'text-destructive'}`}>
-                          {balance.balance.toLocaleString('fr-DZ')} DZD
+                          {balance.balance.toLocaleString(i18n.language === 'ar' ? 'ar-DZ' : 'fr-DZ')} DZD
                         </TableCell>
                         <TableCell>
                           <Button
@@ -440,7 +444,7 @@ export default function EmployeeAccountingPage() {
                     {(!balances || balances.length === 0) && (
                       <TableRow>
                         <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
-                          Aucune donnée disponible
+                          {tCommon('noData')}
                         </TableCell>
                       </TableRow>
                     )}
@@ -459,16 +463,16 @@ export default function EmployeeAccountingPage() {
                   filters={filters}
                   onFilterChange={setFilters}
                   filterConfig={filterConfig}
-                  placeholder="Rechercher par employé ou note..."
+                  placeholder={tCommon('search.placeholder')}
                 />
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Date</TableHead>
-                      <TableHead>Employé</TableHead>
-                      <TableHead>Type</TableHead>
-                      <TableHead className="text-right">Montant</TableHead>
-                      <TableHead>Note</TableHead>
+                      <TableHead>{t('accounting.dialog.date')}</TableHead>
+                      <TableHead>{t('accounting.table.employee')}</TableHead>
+                      <TableHead>{t('accounting.dialog.type')}</TableHead>
+                      <TableHead className="text-right">{t('accounting.dialog.amount')}</TableHead>
+                      <TableHead>{t('accounting.dialog.note')}</TableHead>
                       {isAdmin && <TableHead className="w-[50px]"></TableHead>}
                     </TableRow>
                   </TableHeader>
@@ -476,47 +480,44 @@ export default function EmployeeAccountingPage() {
                     {filteredTransactions.map((transaction) => (
                       <TableRow key={transaction.id}>
                         <TableCell>
-                          {format(new Date(transaction.date), 'dd MMM yyyy', { locale: fr })}
+                          {format(new Date(transaction.date), 'dd MMM yyyy', { locale: dateLocale })}
                         </TableCell>
                         <TableCell className="font-medium">
                           {transaction.employee?.firstName} {transaction.employee?.lastName}
                         </TableCell>
                         <TableCell>
                           <Badge variant={getTypeBadgeVariant(transaction.type)}>
-                            {employeeTransactionTypeLabels[transaction.type]}
-                            {transaction.type === 'salaire' && transaction.month && (
-                              <span className="ml-1">({transaction.month})</span>
-                            )}
+                            {t(`accounting.transactionTypes.${transaction.type}`)}
                           </Badge>
                         </TableCell>
                         <TableCell className="text-right font-medium">
-                          {Number(transaction.amount).toLocaleString('fr-DZ')} DZD
+                          {Number(transaction.amount).toLocaleString(i18n.language === 'ar' ? 'ar-DZ' : 'fr-DZ')} DZD
                         </TableCell>
-                        <TableCell className="max-w-[200px] truncate text-muted-foreground">
+                        <TableCell className="text-muted-foreground max-w-[200px] truncate">
                           {transaction.note || '-'}
                         </TableCell>
                         {isAdmin && (
                           <TableCell>
                             <AlertDialog>
                               <AlertDialogTrigger asChild>
-                                <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive">
-                                  <Trash2 className="h-4 w-4" />
+                                <Button variant="ghost" size="icon">
+                                  <Trash2 className="h-4 w-4 text-destructive" />
                                 </Button>
                               </AlertDialogTrigger>
                               <AlertDialogContent>
                                 <AlertDialogHeader>
-                                  <AlertDialogTitle>Supprimer la transaction ?</AlertDialogTitle>
+                                  <AlertDialogTitle>{tCommon('confirmDelete.title')}</AlertDialogTitle>
                                   <AlertDialogDescription>
-                                    Cette action est irréversible. La transaction sera définitivement supprimée.
+                                    {tCommon('confirmDelete.description')}
                                   </AlertDialogDescription>
                                 </AlertDialogHeader>
                                 <AlertDialogFooter>
-                                  <AlertDialogCancel>Annuler</AlertDialogCancel>
+                                  <AlertDialogCancel>{tCommon('actions.cancel')}</AlertDialogCancel>
                                   <AlertDialogAction
                                     onClick={() => handleDelete(transaction.id)}
                                     className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                                   >
-                                    Supprimer
+                                    {tCommon('actions.delete')}
                                   </AlertDialogAction>
                                 </AlertDialogFooter>
                               </AlertDialogContent>
@@ -528,8 +529,7 @@ export default function EmployeeAccountingPage() {
                     {filteredTransactions.length === 0 && (
                       <TableRow>
                         <TableCell colSpan={isAdmin ? 6 : 5} className="text-center text-muted-foreground py-8">
-                          {transactions?.length === 0 ? 'Aucune transaction enregistrée' : 'Aucun résultat pour ces filtres'}
-                          Aucune transaction enregistrée
+                          {tCommon('noData')}
                         </TableCell>
                       </TableRow>
                     )}
@@ -540,37 +540,37 @@ export default function EmployeeAccountingPage() {
           </TabsContent>
         </Tabs>
 
-        {/* Employee Detail Dialog */}
-        <Dialog open={!!selectedEmployeeId} onOpenChange={() => setSelectedEmployeeId(null)}>
+        {/* Employee Details Dialog */}
+        <Dialog open={!!selectedEmployeeId} onOpenChange={(open) => !open && setSelectedEmployeeId(null)}>
           <DialogContent className="max-w-2xl">
             <DialogHeader>
               <DialogTitle>
-                Historique - {selectedEmployee?.firstName} {selectedEmployee?.lastName}
+                {selectedEmployee ? `${selectedEmployee.firstName} ${selectedEmployee.lastName}` : t('accounting.table.employee')}
               </DialogTitle>
             </DialogHeader>
             <div className="max-h-[400px] overflow-y-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Date</TableHead>
-                    <TableHead>Type</TableHead>
-                    <TableHead className="text-right">Montant</TableHead>
-                    <TableHead>Note</TableHead>
+                    <TableHead>{t('accounting.dialog.date')}</TableHead>
+                    <TableHead>{t('accounting.dialog.type')}</TableHead>
+                    <TableHead className="text-right">{t('accounting.dialog.amount')}</TableHead>
+                    <TableHead>{t('accounting.dialog.note')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {selectedEmployeeTransactions?.map((transaction) => (
                     <TableRow key={transaction.id}>
                       <TableCell>
-                        {format(new Date(transaction.date), 'dd MMM yyyy', { locale: fr })}
+                        {format(new Date(transaction.date), 'dd MMM yyyy', { locale: dateLocale })}
                       </TableCell>
                       <TableCell>
                         <Badge variant={getTypeBadgeVariant(transaction.type)}>
-                          {employeeTransactionTypeLabels[transaction.type]}
+                          {t(`accounting.transactionTypes.${transaction.type}`)}
                         </Badge>
                       </TableCell>
                       <TableCell className="text-right font-medium">
-                        {Number(transaction.amount).toLocaleString('fr-DZ')} DZD
+                        {Number(transaction.amount).toLocaleString(i18n.language === 'ar' ? 'ar-DZ' : 'fr-DZ')} DZD
                       </TableCell>
                       <TableCell className="text-muted-foreground">
                         {transaction.note || '-'}
@@ -580,7 +580,7 @@ export default function EmployeeAccountingPage() {
                   {(!selectedEmployeeTransactions || selectedEmployeeTransactions.length === 0) && (
                     <TableRow>
                       <TableCell colSpan={4} className="text-center text-muted-foreground py-8">
-                        Aucune transaction pour cet employé
+                        {tCommon('noData')}
                       </TableCell>
                     </TableRow>
                   )}

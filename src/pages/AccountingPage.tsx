@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { StatsCard } from '@/components/dashboard/StatsCard';
@@ -38,7 +39,6 @@ import {
   CreditCard,
   Receipt,
   Plus,
-  Search,
 } from 'lucide-react';
 import {
   formatDZD,
@@ -54,8 +54,6 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-  LineChart,
-  Line,
 } from 'recharts';
 import { usePayments, useCreatePayment } from '@/hooks/usePayments';
 import { PaymentFilters } from '@/lib/api';
@@ -67,6 +65,8 @@ import { ErrorState } from '@/components/ui/error-state';
 import { EmptyState } from '@/components/ui/empty-state';
 
 const AccountingPage = () => {
+  const { t, i18n } = useTranslation('accounting');
+  const { t: tCommon } = useTranslation('common');
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
   const [filters, setFilters] = useState<PaymentFilters>({});
@@ -77,6 +77,14 @@ const AccountingPage = () => {
     method: 'especes' as PaymentMethod,
     notes: '',
   });
+
+  const formatDate = (dateString: string | Date) => {
+    const date = typeof dateString === 'string' ? new Date(dateString) : dateString;
+    return date.toLocaleDateString(
+      i18n.language === 'ar' ? 'ar-DZ' : 'fr-FR',
+      { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }
+    );
+  };
 
   // React Query hooks
   const { data: payments, isLoading: paymentsLoading, isError: paymentsError, error, refetch } = usePayments({
@@ -112,12 +120,12 @@ const AccountingPage = () => {
 
   // Monthly data for chart
   const monthlyData = [
-    { mois: 'Jan', revenus: 850000, depenses: 320000 },
-    { mois: 'Fév', revenus: 920000, depenses: 280000 },
-    { mois: 'Mar', revenus: 780000, depenses: 350000 },
-    { mois: 'Avr', revenus: 1050000, depenses: 290000 },
-    { mois: 'Mai', revenus: 890000, depenses: 310000 },
-    { mois: 'Juin', revenus: 1150000, depenses: 340000 },
+    { mois: t('reports.months.jan'), revenus: 850000, depenses: 320000 },
+    { mois: t('reports.months.feb'), revenus: 920000, depenses: 280000 },
+    { mois: t('reports.months.mar'), revenus: 780000, depenses: 350000 },
+    { mois: t('reports.months.apr'), revenus: 1050000, depenses: 290000 },
+    { mois: t('reports.months.may'), revenus: 890000, depenses: 310000 },
+    { mois: t('reports.months.jun'), revenus: 1150000, depenses: 340000 },
   ];
 
   const handleAddPayment = () => {
@@ -146,12 +154,12 @@ const AccountingPage = () => {
     const command = commands.find((c) => c.id === commandId);
     if (!command) return 'N/A';
     const service = services?.find((s) => s.id === command.serviceId);
-    return `${service?.name || 'Service'} - ${command.data.clientFullName}`;
+    return `${service?.name || tCommon('service')} - ${command.data.clientFullName}`;
   };
 
   if (paymentsLoading) {
     return (
-      <DashboardLayout title="Comptabilité" subtitle="Suivi financier et traçabilité des paiements">
+      <DashboardLayout title={t('title')} subtitle={t('subtitle')}>
         <AccountingSkeleton />
       </DashboardLayout>
     );
@@ -159,7 +167,7 @@ const AccountingPage = () => {
 
   if (paymentsError) {
     return (
-      <DashboardLayout title="Comptabilité" subtitle="Suivi financier et traçabilité des paiements">
+      <DashboardLayout title={t('title')} subtitle={t('subtitle')}>
         <ErrorState message={error?.message} onRetry={refetch} />
       </DashboardLayout>
     );
@@ -167,36 +175,36 @@ const AccountingPage = () => {
 
   return (
     <DashboardLayout
-      title="Comptabilité"
-      subtitle="Suivi financier et traçabilité des paiements"
+      title={t('title')}
+      subtitle={t('subtitle')}
     >
       {/* Stats Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <StatsCard
-          title="Total encaissé"
+          title={t('stats.totalCollected')}
           value={formatDZD(totalRevenue)}
           icon={DollarSign}
           variant="success"
           trend={{ value: 8, isPositive: true }}
         />
         <StatsCard
-          title="Encaissements du jour"
+          title={t('stats.todayPayments')}
           value={formatDZD(todayTotal)}
-          description={`${todayPayments.length} paiement(s)`}
+          description={t('stats.todayPaymentsDesc', { count: todayPayments.length })}
           icon={CreditCard}
           variant="primary"
         />
         <StatsCard
-          title="Impayés"
+          title={t('stats.unpaid')}
           value={formatDZD(pendingPayments)}
-          description={`${unpaidCommands.length} commande(s)`}
+          description={t('stats.unpaidDesc', { count: unpaidCommands.length })}
           icon={Receipt}
           variant="warning"
         />
         <StatsCard
-          title="Bénéfice total"
+          title={t('stats.totalProfit')}
           value={formatDZD(totalProfit)}
-          description="Sur toutes les commandes"
+          description={t('stats.totalProfitDesc')}
           icon={TrendingUp}
           variant="info"
         />
@@ -204,9 +212,9 @@ const AccountingPage = () => {
 
       <Tabs defaultValue="payments" className="mt-6">
         <TabsList className="bg-muted">
-          <TabsTrigger value="payments">Paiements</TabsTrigger>
-          <TabsTrigger value="unpaid">Impayés</TabsTrigger>
-          <TabsTrigger value="reports">Rapports</TabsTrigger>
+          <TabsTrigger value="payments">{t('tabs.payments')}</TabsTrigger>
+          <TabsTrigger value="unpaid">{t('tabs.unpaid')}</TabsTrigger>
+          <TabsTrigger value="reports">{t('tabs.reports')}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="payments" className="mt-4">
@@ -214,9 +222,9 @@ const AccountingPage = () => {
             <CardHeader>
               <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                  <CardTitle>Historique des paiements</CardTitle>
+                  <CardTitle>{t('payments.title')}</CardTitle>
                   <CardDescription>
-                    Tous les paiements enregistrés
+                    {t('payments.subtitle')}
                   </CardDescription>
                 </div>
                 <div className="flex gap-3 items-center">
@@ -229,12 +237,12 @@ const AccountingPage = () => {
                       filterConfig={[
                         {
                           key: 'fromDate',
-                          label: 'Date début',
+                          label: tCommon('filters.fromDate'),
                           type: 'date-range',
                         },
                         {
                           key: 'toDate',
-                          label: 'Date fin',
+                          label: tCommon('filters.toDate'),
                           type: 'date-range',
                         },
                       ]}
@@ -243,32 +251,32 @@ const AccountingPage = () => {
                   <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                     <DialogTrigger asChild>
                       <Button>
-                        <Plus className="mr-2 h-4 w-4" />
-                        Enregistrer un paiement
+                        <Plus className="ltr:mr-2 rtl:ml-2 h-4 w-4" />
+                        {t('actions.newPayment')}
                       </Button>
                     </DialogTrigger>
                     <DialogContent className="bg-card">
                       <DialogHeader>
-                        <DialogTitle>Nouveau paiement</DialogTitle>
+                        <DialogTitle>{t('dialog.title')}</DialogTitle>
                         <DialogDescription>
-                          Enregistrez un paiement pour une commande
+                          {t('dialog.subtitle')}
                         </DialogDescription>
                       </DialogHeader>
                       <div className="space-y-4 py-4">
                         <div className="space-y-2">
-                          <Label>Commande</Label>
+                          <Label>{t('dialog.form.command')}</Label>
                           <Select
                             value={selectedCommand}
                             onValueChange={setSelectedCommand}
                           >
                             <SelectTrigger>
-                              <SelectValue placeholder="Sélectionner une commande" />
+                              <SelectValue placeholder={t('dialog.form.selectCommand')} />
                             </SelectTrigger>
                             <SelectContent className="bg-popover">
                               {unpaidCommands.length === 0 ? (
                                 <div className="flex flex-col items-center justify-center p-4 space-y-2">
                                   <p className="text-sm text-muted-foreground text-center">
-                                    Aucune commande impayée
+                                    {t('dialog.form.noUnpaidCommands')}
                                   </p>
                                   <Button
                                     variant="secondary"
@@ -279,7 +287,7 @@ const AccountingPage = () => {
                                       navigate('/commandes');
                                     }}
                                   >
-                                    Ajouter une commande
+                                    {t('dialog.form.addCommand')}
                                   </Button>
                                 </div>
                               ) : (
@@ -290,7 +298,7 @@ const AccountingPage = () => {
                                       <div className="flex items-center justify-between gap-4">
                                         <span>{getCommandLabel(command.id)}</span>
                                         <span className="text-muted-foreground">
-                                          Reste: {formatDZD(remaining)}
+                                          {t('dialog.form.remaining')}: {formatDZD(remaining)}
                                         </span>
                                       </div>
                                     </SelectItem>
@@ -302,7 +310,7 @@ const AccountingPage = () => {
                         </div>
                         <div className="grid grid-cols-2 gap-4">
                           <div className="space-y-2">
-                            <Label>Montant (DZD)</Label>
+                            <Label>{t('dialog.form.amount')}</Label>
                             <Input
                               type="number"
                               value={newPayment.amount}
@@ -313,7 +321,7 @@ const AccountingPage = () => {
                             />
                           </div>
                           <div className="space-y-2">
-                            <Label>Mode de paiement</Label>
+                            <Label>{t('dialog.form.method')}</Label>
                             <Select
                               value={newPayment.method}
                               onValueChange={(value: PaymentMethod) =>
@@ -324,31 +332,31 @@ const AccountingPage = () => {
                                 <SelectValue />
                               </SelectTrigger>
                               <SelectContent className="bg-popover">
-                                <SelectItem value="especes">Espèces</SelectItem>
-                                <SelectItem value="virement">Virement</SelectItem>
-                                <SelectItem value="cheque">Chèque</SelectItem>
-                                <SelectItem value="carte">Carte bancaire</SelectItem>
+                                <SelectItem value="especes">{tCommon('paymentMethods.especes')}</SelectItem>
+                                <SelectItem value="virement">{tCommon('paymentMethods.virement')}</SelectItem>
+                                <SelectItem value="cheque">{tCommon('paymentMethods.cheque')}</SelectItem>
+                                <SelectItem value="carte">{tCommon('paymentMethods.carte')}</SelectItem>
                               </SelectContent>
                             </Select>
                           </div>
                         </div>
                         <div className="space-y-2">
-                          <Label>Notes (optionnel)</Label>
+                          <Label>{t('dialog.form.notes')}</Label>
                           <Input
                             value={newPayment.notes}
                             onChange={(e) =>
                               setNewPayment({ ...newPayment, notes: e.target.value })
                             }
-                            placeholder="Notes sur ce paiement..."
+                            placeholder={t('dialog.form.notesPlaceholder')}
                           />
                         </div>
                       </div>
                       <DialogFooter>
                         <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
-                          Annuler
+                          {tCommon('actions.cancel')}
                         </Button>
                         <Button onClick={handleAddPayment} disabled={createPayment.isPending}>
-                          {createPayment.isPending ? 'Enregistrement...' : 'Enregistrer'}
+                          {createPayment.isPending ? t('actions.saving') : tCommon('actions.save')}
                         </Button>
                       </DialogFooter>
                     </DialogContent>
@@ -359,33 +367,27 @@ const AccountingPage = () => {
             <CardContent>
               {allPayments.length === 0 ? (
                 <EmptyState
-                  title="Aucun paiement"
-                  description="Les paiements apparaîtront ici"
+                  title={t('payments.empty.title')}
+                  description={t('payments.empty.description')}
                   icon={Receipt}
                 />
               ) : (
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Date</TableHead>
-                      <TableHead>Commande</TableHead>
-                      <TableHead>Montant</TableHead>
-                      <TableHead>Mode</TableHead>
-                      <TableHead>Enregistré par</TableHead>
-                      <TableHead>Notes</TableHead>
+                      <TableHead>{t('payments.table.date')}</TableHead>
+                      <TableHead>{t('payments.table.command')}</TableHead>
+                      <TableHead>{t('payments.table.amount')}</TableHead>
+                      <TableHead>{t('payments.table.method')}</TableHead>
+                      <TableHead>{t('payments.table.recordedBy')}</TableHead>
+                      <TableHead>{t('payments.table.notes')}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {allPayments.map((payment) => (
                       <TableRow key={payment.id}>
                         <TableCell>
-                          {new Date(payment.createdAt).toLocaleDateString('fr-FR', {
-                            day: '2-digit',
-                            month: 'short',
-                            year: 'numeric',
-                            hour: '2-digit',
-                            minute: '2-digit',
-                          })}
+                          {formatDate(payment.createdAt)}
                         </TableCell>
                         <TableCell>
                           {getCommandLabel(payment.commandId)}
@@ -416,29 +418,29 @@ const AccountingPage = () => {
         <TabsContent value="unpaid" className="mt-4">
           <Card className="border-none shadow-sm">
             <CardHeader>
-              <CardTitle>Commandes impayées</CardTitle>
+              <CardTitle>{t('unpaidCommands.title')}</CardTitle>
               <CardDescription>
-                Commandes en attente de paiement ou partiellement payées
+                {t('unpaidCommands.subtitle')}
               </CardDescription>
             </CardHeader>
             <CardContent>
               {unpaidCommands.length === 0 ? (
                 <EmptyState
-                  title="Aucune commande impayée"
-                  description="Toutes les commandes sont réglées"
+                  title={t('unpaidCommands.empty.title')}
+                  description={t('unpaidCommands.empty.description')}
                   icon={CreditCard}
                 />
               ) : (
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Client</TableHead>
-                      <TableHead>Service</TableHead>
-                      <TableHead>Montant total</TableHead>
-                      <TableHead>Payé</TableHead>
-                      <TableHead>Reste à payer</TableHead>
-                      <TableHead>Statut</TableHead>
-                      <TableHead className="text-right">Action</TableHead>
+                      <TableHead>{t('unpaidCommands.table.client')}</TableHead>
+                      <TableHead>{t('unpaidCommands.table.service')}</TableHead>
+                      <TableHead>{t('unpaidCommands.table.totalAmount')}</TableHead>
+                      <TableHead>{t('unpaidCommands.table.paid')}</TableHead>
+                      <TableHead>{t('unpaidCommands.table.remaining')}</TableHead>
+                      <TableHead>{t('unpaidCommands.table.status')}</TableHead>
+                      <TableHead className="text-right">{t('unpaidCommands.table.action')}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -451,24 +453,16 @@ const AccountingPage = () => {
                           <TableCell className="font-medium">
                             {command.data.clientFullName}
                           </TableCell>
-                          <TableCell>
-                            <Badge variant="outline">{service?.name}</Badge>
-                          </TableCell>
+                          <TableCell>{service?.name || '-'}</TableCell>
                           <TableCell>{formatDZD(command.sellingPrice)}</TableCell>
                           <TableCell className="text-green-600">
                             {formatDZD(command.amountPaid)}
                           </TableCell>
-                          <TableCell className="font-medium text-red-600">
+                        <TableCell className="text-destructive font-medium">
                             {formatDZD(remaining)}
                           </TableCell>
                           <TableCell>
-                            <Badge
-                              variant={
-                                paymentInfo.status === 'partiel'
-                                  ? 'secondary'
-                                  : 'destructive'
-                              }
-                            >
+                            <Badge variant={paymentInfo.status === 'paye' ? 'default' : paymentInfo.status === 'partiel' ? 'secondary' : 'destructive'}>
                               {paymentInfo.label}
                             </Badge>
                           </TableCell>
@@ -477,15 +471,10 @@ const AccountingPage = () => {
                               size="sm"
                               onClick={() => {
                                 setSelectedCommand(command.id);
-                                setNewPayment({
-                                  amount: String(remaining),
-                                  method: 'especes',
-                                  notes: '',
-                                });
                                 setIsDialogOpen(true);
                               }}
                             >
-                              Encaisser
+                              {t('unpaidCommands.addPayment')}
                             </Button>
                           </TableCell>
                         </TableRow>
@@ -499,68 +488,31 @@ const AccountingPage = () => {
         </TabsContent>
 
         <TabsContent value="reports" className="mt-4">
-          <div className="grid gap-6 lg:grid-cols-2">
-            <Card className="border-none shadow-sm">
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle className="text-lg">Évolution mensuelle</CardTitle>
-                    <CardDescription>Revenus vs Dépenses</CardDescription>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={monthlyData}>
-                    <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                    <XAxis dataKey="mois" className="text-xs" />
-                    <YAxis className="text-xs" tickFormatter={(v) => `${v / 1000}k`} />
-                    <Tooltip
-                      formatter={(value: number) => formatDZD(value)}
-                      contentStyle={{
-                        backgroundColor: 'hsl(var(--popover))',
-                        border: '1px solid hsl(var(--border))',
-                        borderRadius: '8px',
-                      }}
-                    />
-                    <Bar dataKey="revenus" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
-                    <Bar dataKey="depenses" fill="hsl(var(--muted-foreground))" radius={[4, 4, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-
-            <Card className="border-none shadow-sm">
-              <CardHeader>
-                <CardTitle className="text-lg">Tendance des revenus</CardTitle>
-                <CardDescription>Progression sur 6 mois</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={300}>
-                  <LineChart data={monthlyData}>
-                    <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                    <XAxis dataKey="mois" className="text-xs" />
-                    <YAxis className="text-xs" tickFormatter={(v) => `${v / 1000}k`} />
-                    <Tooltip
-                      formatter={(value: number) => formatDZD(value)}
-                      contentStyle={{
-                        backgroundColor: 'hsl(var(--popover))',
-                        border: '1px solid hsl(var(--border))',
-                        borderRadius: '8px',
-                      }}
-                    />
-                    <Line
-                      type="monotone"
-                      dataKey="revenus"
-                      stroke="hsl(var(--primary))"
-                      strokeWidth={2}
-                      dot={{ fill: 'hsl(var(--primary))' }}
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-          </div>
+          <Card className="border-none shadow-sm">
+            <CardHeader>
+              <CardTitle>{t('reports.chartTitle')}</CardTitle>
+              <CardDescription>{t('reports.chartSubtitle')}</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={400}>
+                <BarChart data={monthlyData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="mois" />
+                  <YAxis />
+                  <Tooltip
+                    formatter={(value: number) => formatDZD(value)}
+                    labelStyle={{ color: 'var(--foreground)' }}
+                    contentStyle={{
+                      backgroundColor: 'var(--card)',
+                      border: '1px solid var(--border)',
+                    }}
+                  />
+                  <Bar dataKey="revenus" fill="hsl(var(--success))" name={t('reports.revenues')} />
+                  <Bar dataKey="depenses" fill="hsl(var(--destructive))" name={t('reports.expenses')} />
+                </BarChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
     </DashboardLayout>

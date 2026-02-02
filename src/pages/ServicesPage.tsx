@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -24,7 +25,6 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Plus, Settings, FileText, Plane, Hotel, Folder } from 'lucide-react';
-import { getServiceTypeLabel } from '@/lib/utils';
 import { ServiceType } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
 import { Navigate } from 'react-router-dom';
@@ -35,6 +35,8 @@ import { ErrorState } from '@/components/ui/error-state';
 import { EmptyState } from '@/components/ui/empty-state';
 
 const ServicesPage = () => {
+  const { t, i18n } = useTranslation('services');
+  const { t: tCommon } = useTranslation('common');
   const { isAdmin } = useAuth();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingServiceId, setEditingServiceId] = useState<string | null>(null);
@@ -57,6 +59,14 @@ const ServicesPage = () => {
   const createService = useCreateService();
   const updateService = useUpdateService();
   const toggleStatus = useToggleServiceStatus();
+
+  const formatDate = (dateString: string | Date) => {
+    const date = typeof dateString === 'string' ? new Date(dateString) : dateString;
+    return date.toLocaleDateString(
+      i18n.language === 'ar' ? 'ar-DZ' : 'fr-FR',
+      { day: '2-digit', month: 'short', year: 'numeric' }
+    );
+  };
 
   const getServiceIcon = (type: ServiceType) => {
     switch (type) {
@@ -142,8 +152,8 @@ const ServicesPage = () => {
   if (isLoading) {
     return (
       <DashboardLayout
-        title="Configuration des services"
-        subtitle="Gérez les types de services proposés par l'agence"
+        title={t('title')}
+        subtitle={t('subtitle')}
       >
         <ServicesSkeleton />
       </DashboardLayout>
@@ -153,8 +163,8 @@ const ServicesPage = () => {
   if (isError) {
     return (
       <DashboardLayout
-        title="Configuration des services"
-        subtitle="Gérez les types de services proposés par l'agence"
+        title={t('title')}
+        subtitle={t('subtitle')}
       >
         <ErrorState message={error?.message} onRetry={refetch} />
       </DashboardLayout>
@@ -165,14 +175,16 @@ const ServicesPage = () => {
 
   return (
     <DashboardLayout
-      title="Configuration des services"
-      subtitle="Gérez les types de services proposés par l'agence"
+      title={t('title')}
+      subtitle={t('subtitle')}
     >
       <div className="mb-6 flex items-center justify-between">
         <div>
           <p className="text-muted-foreground">
-            {allServices.filter((s) => s.isActive).length} services actifs sur{' '}
-            {allServices.length}
+            {t('activeCount', { 
+              active: allServices.filter((s) => s.isActive).length,
+              total: allServices.length 
+            })}
           </p>
         </div>
         <Dialog open={isDialogOpen} onOpenChange={(open) => {
@@ -181,29 +193,29 @@ const ServicesPage = () => {
         }}>
           <DialogTrigger asChild>
             <Button>
-              <Plus className="mr-2 h-4 w-4" />
-              Nouveau service
+              <Plus className="ltr:mr-2 rtl:ml-2 h-4 w-4" />
+              {t('actions.newService')}
             </Button>
           </DialogTrigger>
           <DialogContent className="bg-card">
             <DialogHeader>
-              <DialogTitle>{editingServiceId ? 'Modifier le service' : 'Créer un service'}</DialogTitle>
+              <DialogTitle>{editingServiceId ? t('dialog.editTitle') : t('dialog.createTitle')}</DialogTitle>
               <DialogDescription>
-                {editingServiceId ? 'Modifiez les informations du service' : 'Ajoutez un nouveau type de service à votre catalogue'}
+                {editingServiceId ? t('dialog.editDesc') : t('dialog.createDesc')}
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4 py-4">
               <div className="space-y-2">
-                <Label htmlFor="serviceName">Nom du service</Label>
+                <Label htmlFor="serviceName">{t('form.name')}</Label>
                 <Input
                   id="serviceName"
                   value={newService.name}
                   onChange={(e) => setNewService({ ...newService, name: e.target.value })}
-                  placeholder="Ex: Visa Schengen France"
+                  placeholder={t('form.namePlaceholder')}
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="serviceType">Type de service</Label>
+                <Label htmlFor="serviceType">{t('form.type')}</Label>
                 <Select
                   value={newService.type}
                   onValueChange={(value: ServiceType) =>
@@ -211,32 +223,32 @@ const ServicesPage = () => {
                   }
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Sélectionner un type" />
+                    <SelectValue placeholder={t('form.selectType')} />
                   </SelectTrigger>
                   <SelectContent className="bg-popover">
-                    <SelectItem value="visa">Visa</SelectItem>
-                    <SelectItem value="residence">Résidence / Hôtel</SelectItem>
-                    <SelectItem value="ticket">Billetterie</SelectItem>
-                    <SelectItem value="dossier">Traitement de dossier</SelectItem>
+                    <SelectItem value="visa">{t('types.visa')}</SelectItem>
+                    <SelectItem value="residence">{t('types.residence')}</SelectItem>
+                    <SelectItem value="ticket">{t('types.ticket')}</SelectItem>
+                    <SelectItem value="dossier">{t('types.dossier')}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="serviceDescription">Description</Label>
+                <Label htmlFor="serviceDescription">{t('form.description')}</Label>
                 <Textarea
                   id="serviceDescription"
                   value={newService.description}
                   onChange={(e) =>
                     setNewService({ ...newService, description: e.target.value })
                   }
-                  placeholder="Décrivez ce service..."
+                  placeholder={t('form.descriptionPlaceholder')}
                   rows={3}
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-4 pt-2 border-t">
                 <div className="space-y-2">
-                  <Label htmlFor="defaultSupplier">Fournisseur par défaut</Label>
+                  <Label htmlFor="defaultSupplier">{t('form.defaultSupplier')}</Label>
                   <Select
                     value={newService.defaultSupplierId}
                     onValueChange={(value) =>
@@ -244,7 +256,7 @@ const ServicesPage = () => {
                     }
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Choisir..." />
+                      <SelectValue placeholder={t('form.selectSupplier')} />
                     </SelectTrigger>
                     <SelectContent className="bg-popover">
                       {suppliers?.filter(s => s.isActive).map((supplier) => (
@@ -256,7 +268,7 @@ const ServicesPage = () => {
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="defaultCost">Coût d'achat par défaut</Label>
+                  <Label htmlFor="defaultCost">{t('form.defaultCost')}</Label>
                   <Input
                     id="defaultCost"
                     type="number"
@@ -264,17 +276,17 @@ const ServicesPage = () => {
                     onChange={(e) =>
                       setNewService({ ...newService, defaultBuyingPrice: e.target.value })
                     }
-                    placeholder="Ex: 12000"
+                    placeholder={t('form.costPlaceholder')}
                   />
                 </div>
               </div>
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
-                Annuler
+                {tCommon('actions.cancel')}
               </Button>
               <Button onClick={handleSaveService} disabled={createService.isPending || updateService.isPending}>
-                {createService.isPending || updateService.isPending ? 'Enregistrement...' : (editingServiceId ? 'Modifier' : 'Créer le service')}
+                {createService.isPending || updateService.isPending ? t('actions.saving') : (editingServiceId ? t('actions.edit') : t('actions.create'))}
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -283,8 +295,8 @@ const ServicesPage = () => {
 
       {allServices.length === 0 ? (
         <EmptyState
-          title="Aucun service"
-          description="Créez votre premier service"
+          title={t('empty.title')}
+          description={t('empty.description')}
           icon={FileText}
         />
       ) : (
@@ -306,7 +318,7 @@ const ServicesPage = () => {
                       <div>
                         <CardTitle className="text-base">{service.name}</CardTitle>
                         <Badge variant="outline" className="mt-1">
-                          {getServiceTypeLabel(service.type)}
+                          {t(`types.${service.type}`)}
                         </Badge>
                       </div>
                     </div>
@@ -321,12 +333,7 @@ const ServicesPage = () => {
                   <p className="text-sm text-muted-foreground">{service.description}</p>
                   <div className="mt-4 flex items-center justify-between text-xs text-muted-foreground">
                     <span>
-                      Créé le{' '}
-                      {new Date(service.createdAt).toLocaleDateString('fr-FR', {
-                        day: '2-digit',
-                        month: 'short',
-                        year: 'numeric',
-                      })}
+                      {t('card.createdAt', { date: formatDate(service.createdAt) })}
                     </span>
                     <Button variant="ghost" size="sm" onClick={() => handleEditService(service)}>
                       <Settings className="h-4 w-4" />
