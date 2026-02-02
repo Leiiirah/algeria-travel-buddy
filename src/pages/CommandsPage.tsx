@@ -38,7 +38,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Plus, Search, MoreHorizontal, Edit, Trash2, Eye, Lock, Unlock, Banknote, CreditCard, TrendingUp } from 'lucide-react';
+import { Plus, Search, MoreHorizontal, Edit, Trash2, Eye, Lock, Unlock, Banknote, CreditCard, TrendingUp, FileDown } from 'lucide-react';
 import {
   formatDZD,
   isCommandEditable,
@@ -55,6 +55,8 @@ import { useDebounce } from '@/hooks/useDebounce';
 import { CommandsSkeleton } from '@/components/skeletons/CommandsSkeleton';
 import { ErrorState } from '@/components/ui/error-state';
 import { EmptyState } from '@/components/ui/empty-state';
+import { generateInvoicePdf } from '@/utils/invoiceGenerator';
+import { format } from 'date-fns';
 
 const CommandsPage = () => {
   const navigate = useNavigate();
@@ -297,6 +299,29 @@ const CommandsPage = () => {
   const getStatusLabel = (status: string): string => {
     const statusKey = status as 'en_attente' | 'en_cours' | 'termine' | 'annule';
     return t(`status.${statusKey}`);
+  };
+
+  const handlePrintInvoice = async (command: any) => {
+    const service = services?.find((s) => s.id === command.serviceId);
+    const supplier = suppliers?.find((s) => s.id === command.supplierId);
+    
+    await generateInvoicePdf({
+      reference: `CMD-${command.id.substring(0, 6).toUpperCase()}`,
+      clientName: command.data.clientFullName || '',
+      clientPhone: command.data.phone || '',
+      paymentDate: format(new Date(command.createdAt), 'dd/MM/yyyy'),
+      amountPaid: Number(command.amountPaid),
+      totalPrice: Number(command.sellingPrice),
+      remaining: Number(command.sellingPrice) - Number(command.amountPaid),
+      service: service?.name || '',
+      serviceType: service?.type || '',
+      destination: command.destination || '',
+      status: getStatusLabel(command.status),
+      departureDate: command.data.departureDate,
+      returnDate: command.data.returnDate,
+      supplier: supplier?.name,
+      language: (window.localStorage.getItem('i18nextLng') || 'fr') as 'fr' | 'ar',
+    });
   };
 
   const renderServiceSpecificFields = () => {
@@ -824,6 +849,10 @@ const CommandsPage = () => {
                               <DropdownMenuItem onClick={() => handleEditCommand(command)}>
                                 <Eye className="ltr:mr-2 rtl:ml-2 h-4 w-4" />
                                 {tCommon('actions.view')}
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handlePrintInvoice(command)}>
+                                <FileDown className="ltr:mr-2 rtl:ml-2 h-4 w-4" />
+                                {t('actions.printInvoice')}
                               </DropdownMenuItem>
                               {canEdit && (
                                 <>
