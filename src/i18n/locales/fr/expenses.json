@@ -44,7 +44,8 @@
     "notePlaceholder": "Ajouter une note..."
   },
   "actions": {
-    "newExpense": "Nouvelle Dépense"
+    "newExpense": "Nouvelle Dépense",
+    "exportPdf": "Exporter en PDF"
   },
   "delete": {
     "title": "Supprimer cette dépense ?",
