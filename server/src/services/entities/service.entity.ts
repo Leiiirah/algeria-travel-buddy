@@ -13,6 +13,9 @@ export enum ServiceType {
   RESIDENCE = 'residence',
   TICKET = 'ticket',
   DOSSIER = 'dossier',
+  BILLET_BATEAU = 'billet_bateau',
+  BILLET_TILEX = 'billet_tilex',
+  BILLETS = 'billets',
 }
 
 @Entity('services')

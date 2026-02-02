@@ -23,8 +23,11 @@
   "types": {
     "visa": "تأشيرة",
     "residence": "إقامة / فندق",
-    "ticket": "حجز تذاكر",
-    "dossier": "معالجة ملف"
+    "ticket": "تذاكر طيران",
+    "dossier": "معالجة ملف",
+    "billet_bateau": "تذكرة باخرة",
+    "billet_tilex": "تذكرة تيلكس",
+    "billets": "تذاكر"
   },
   "actions": {
     "newService": "خدمة جديدة",

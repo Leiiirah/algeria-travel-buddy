@@ -24,7 +24,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Plus, Settings, FileText, Plane, Hotel, Folder } from 'lucide-react';
+import { Plus, Settings, FileText, Plane, Hotel, Folder, Ship, Bus, Ticket } from 'lucide-react';
 import { ServiceType } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
 import { Navigate } from 'react-router-dom';
@@ -78,6 +78,12 @@ const ServicesPage = () => {
         return Plane;
       case 'dossier':
         return Folder;
+      case 'billet_bateau':
+        return Ship;
+      case 'billet_tilex':
+        return Bus;
+      case 'billets':
+        return Ticket;
       default:
         return FileText;
     }
@@ -230,6 +236,9 @@ const ServicesPage = () => {
                     <SelectItem value="residence">{t('types.residence')}</SelectItem>
                     <SelectItem value="ticket">{t('types.ticket')}</SelectItem>
                     <SelectItem value="dossier">{t('types.dossier')}</SelectItem>
+                    <SelectItem value="billet_bateau">{t('types.billet_bateau')}</SelectItem>
+                    <SelectItem value="billet_tilex">{t('types.billet_tilex')}</SelectItem>
+                    <SelectItem value="billets">{t('types.billets')}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

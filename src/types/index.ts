@@ -12,7 +12,7 @@ export interface User {
 }
 
 // Service Types
-export type ServiceType = 'visa' | 'residence' | 'ticket' | 'dossier';
+export type ServiceType = 'visa' | 'residence' | 'ticket' | 'dossier' | 'billet_bateau' | 'billet_tilex' | 'billets';
 
 export interface Service {
   id: string;

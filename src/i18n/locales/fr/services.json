@@ -23,8 +23,11 @@
   "types": {
     "visa": "Visa",
     "residence": "Résidence / Hôtel",
-    "ticket": "Billetterie",
-    "dossier": "Traitement de dossier"
+    "ticket": "Billetterie Avion",
+    "dossier": "Traitement de dossier",
+    "billet_bateau": "Billet Bateau",
+    "billet_tilex": "Billet Tilex",
+    "billets": "Billets"
   },
   "actions": {
     "newService": "Nouveau service",
