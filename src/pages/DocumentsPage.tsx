@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { AdvancedFilter } from '@/components/search/AdvancedFilter';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -28,7 +29,6 @@ import {
   Download,
   Trash2,
   Replace,
-  Search,
   FolderOpen,
   Shield,
   Building,
@@ -43,6 +43,8 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { useAuth } from '@/contexts/AuthContext';
 
 const DocumentsPage = () => {
+  const { t, i18n } = useTranslation('documents');
+  const { t: tCommon } = useTranslation('common');
   const { isAdmin } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
   const [filters, setFilters] = useState<Record<string, any>>({});
@@ -59,11 +61,11 @@ const DocumentsPage = () => {
   const deleteDocument = useDeleteDocument();
 
   const categories: { value: string; label: string; icon: React.ElementType }[] = [
-    { value: 'all', label: 'Tous', icon: FolderOpen },
-    { value: 'assurance', label: 'Assurance', icon: Shield },
-    { value: 'cnas', label: 'CNAS', icon: Building },
-    { value: 'casnos', label: 'CASNOS', icon: Building },
-    { value: 'autre', label: 'Autre', icon: HelpCircle },
+    { value: 'all', label: t('categories.all'), icon: FolderOpen },
+    { value: 'assurance', label: t('categories.assurance'), icon: Shield },
+    { value: 'cnas', label: t('categories.cnas'), icon: Building },
+    { value: 'casnos', label: t('categories.casnos'), icon: Building },
+    { value: 'autre', label: t('categories.autre'), icon: HelpCircle },
   ];
 
   const filteredDocuments = (documents ?? []).filter((doc) => {
@@ -128,9 +130,17 @@ const DocumentsPage = () => {
     count: (documents ?? []).filter((d) => d.category === cat.value).length,
   }));
 
+  const formatDate = (dateString: string | Date) => {
+    const date = typeof dateString === 'string' ? new Date(dateString) : dateString;
+    return date.toLocaleDateString(
+      i18n.language === 'ar' ? 'ar-DZ' : 'fr-FR',
+      { day: '2-digit', month: 'short', year: 'numeric' }
+    );
+  };
+
   if (isLoading) {
     return (
-      <DashboardLayout title="Bibliothèque de documents" subtitle="Gestion électronique des documents (GED)">
+      <DashboardLayout title={t('title')} subtitle={t('subtitle')}>
         <DocumentsSkeleton />
       </DashboardLayout>
     );
@@ -138,14 +148,14 @@ const DocumentsPage = () => {
 
   if (isError) {
     return (
-      <DashboardLayout title="Bibliothèque de documents" subtitle="Gestion électronique des documents (GED)">
+      <DashboardLayout title={t('title')} subtitle={t('subtitle')}>
         <ErrorState message={error?.message} onRetry={refetch} />
       </DashboardLayout>
     );
   }
 
   return (
-    <DashboardLayout title="Bibliothèque de documents" subtitle="Gestion électronique des documents (GED)">
+    <DashboardLayout title={t('title')} subtitle={t('subtitle')}>
       {/* Category Overview */}
       <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {documentsByCategory.map((cat) => {
@@ -176,9 +186,9 @@ const DocumentsPage = () => {
         <CardHeader>
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <CardTitle>Documents</CardTitle>
+              <CardTitle>{t('list.title')}</CardTitle>
               <CardDescription>
-                {filteredDocuments.length} document(s) trouvé(s)
+                {t('list.count', { count: filteredDocuments.length })}
               </CardDescription>
             </div>
             <div className="flex gap-3 items-center">
@@ -191,18 +201,18 @@ const DocumentsPage = () => {
                   filterConfig={[
                     {
                       key: 'category',
-                      label: 'Catégorie',
+                      label: t('filters.category'),
                       type: 'select',
                       options: categories.slice(1).map(c => ({ label: c.label, value: c.value })),
                     },
                     {
                       key: 'fromDate',
-                      label: 'Date début',
+                      label: t('filters.fromDate'),
                       type: 'date-range',
                     },
                     {
                       key: 'toDate',
-                      label: 'Date fin',
+                      label: t('filters.toDate'),
                       type: 'date-range',
                     },
                   ]}
@@ -212,30 +222,30 @@ const DocumentsPage = () => {
                 <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                   <DialogTrigger asChild>
                     <Button>
-                      <Upload className="mr-2 h-4 w-4" />
-                      Téléverser
+                      <Upload className="ltr:mr-2 rtl:ml-2 h-4 w-4" />
+                      {t('actions.upload')}
                     </Button>
                   </DialogTrigger>
                 <DialogContent className="bg-card">
                   <DialogHeader>
-                    <DialogTitle>Téléverser un document</DialogTitle>
+                    <DialogTitle>{t('dialog.uploadTitle')}</DialogTitle>
                     <DialogDescription>
-                      Ajoutez un nouveau document à la bibliothèque
+                      {t('dialog.uploadDesc')}
                     </DialogDescription>
                   </DialogHeader>
                   <div className="space-y-4 py-4">
                     <div className="space-y-2">
-                      <Label>Nom du document</Label>
+                      <Label>{t('form.name')}</Label>
                       <Input
                         value={newDocument.name}
                         onChange={(e) =>
                           setNewDocument({ ...newDocument, name: e.target.value })
                         }
-                        placeholder="Ex: Attestation Assurance 2025"
+                        placeholder={t('form.namePlaceholder')}
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label>Catégorie</Label>
+                      <Label>{t('form.category')}</Label>
                       <Select
                         value={newDocument.category}
                         onValueChange={(value: DocumentCategory) =>
@@ -243,23 +253,23 @@ const DocumentsPage = () => {
                         }
                       >
                         <SelectTrigger>
-                          <SelectValue placeholder="Sélectionner une catégorie" />
+                          <SelectValue placeholder={t('form.selectCategory')} />
                         </SelectTrigger>
                         <SelectContent className="bg-popover">
-                          <SelectItem value="assurance">Assurance</SelectItem>
-                          <SelectItem value="cnas">CNAS</SelectItem>
-                          <SelectItem value="casnos">CASNOS</SelectItem>
-                          <SelectItem value="autre">Autre</SelectItem>
+                          <SelectItem value="assurance">{t('categories.assurance')}</SelectItem>
+                          <SelectItem value="cnas">{t('categories.cnas')}</SelectItem>
+                          <SelectItem value="casnos">{t('categories.casnos')}</SelectItem>
+                          <SelectItem value="autre">{t('categories.autre')}</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
                     <div className="space-y-2">
-                      <Label>Fichier PDF</Label>
+                      <Label>{t('form.file')}</Label>
                       <div className="flex items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/25 p-8">
                         <div className="text-center">
                           <Upload className="mx-auto h-10 w-10 text-muted-foreground" />
                           <p className="mt-2 text-sm text-muted-foreground">
-                            {selectedFile ? selectedFile.name : 'Glissez-déposez ou cliquez pour sélectionner'}
+                            {selectedFile ? selectedFile.name : t('form.dropzone')}
                           </p>
                           <Input
                             type="file"
@@ -273,10 +283,10 @@ const DocumentsPage = () => {
                   </div>
                   <DialogFooter>
                     <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
-                      Annuler
+                      {tCommon('actions.cancel')}
                     </Button>
                     <Button onClick={handleUpload} disabled={uploadDocument.isPending}>
-                      {uploadDocument.isPending ? 'Téléversement...' : 'Téléverser'}
+                      {uploadDocument.isPending ? t('actions.uploading') : t('actions.upload')}
                     </Button>
                   </DialogFooter>
                   </DialogContent>
@@ -288,8 +298,8 @@ const DocumentsPage = () => {
         <CardContent>
           {filteredDocuments.length === 0 ? (
             <EmptyState
-              title="Aucun document trouvé"
-              description="Téléversez un document pour commencer"
+              title={t('empty.title')}
+              description={t('empty.description')}
               icon={FolderOpen}
             />
           ) : (
@@ -312,12 +322,7 @@ const DocumentsPage = () => {
                             {getDocumentCategoryLabel(doc.category)}
                           </Badge>
                           <p className="mt-2 text-xs text-muted-foreground">
-                            Mis à jour le{' '}
-                            {new Date(doc.updatedAt).toLocaleDateString('fr-FR', {
-                              day: '2-digit',
-                              month: 'short',
-                              year: 'numeric',
-                            })}
+                            {t('table.updatedAt', { date: formatDate(doc.updatedAt) })}
                           </p>
                         </div>
                       </div>
@@ -328,8 +333,8 @@ const DocumentsPage = () => {
                           className="flex-1"
                           onClick={() => handleDownload(doc.id)}
                         >
-                          <Download className="mr-2 h-4 w-4" />
-                          Télécharger
+                          <Download className="ltr:mr-2 rtl:ml-2 h-4 w-4" />
+                          {t('actions.download')}
                         </Button>
                         {isAdmin && (
                           <>
