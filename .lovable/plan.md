@@ -1,186 +1,387 @@
 
-# Plan: Add Translations to Commands/Orders Page
+# Plan: Add Translations to Omra Tab
 
 ## Overview
 
-The Commands page (orders tab) has extensive hardcoded French text. Translation files already exist for both French (`commands.json`) and Arabic (`commands.json`). We need to update `CommandsPage.tsx` to use `react-i18next`.
+The Omra module has extensive hardcoded French text across 4 files. Translation files already exist for both French (`fr/omra.json`) and Arabic (`ar/omra.json`) with partial coverage. We need to update the main page and all three tab components to use `react-i18next`, plus add missing translation keys.
 
 ---
 
 ## Current State
 
-- ✅ Translation files exist: `fr/commands.json` and `ar/commands.json`
-- ❌ `CommandsPage.tsx` uses ~50+ hardcoded French strings
+- ✅ Translation files exist with basic structure
+- ❌ `OmraPage.tsx` - 10+ hardcoded strings
+- ❌ `OmraOrdersTab.tsx` - 50+ hardcoded strings
+- ❌ `OmraVisasTab.tsx` - 40+ hardcoded strings
+- ❌ `OmraHotelsTab.tsx` - 25+ hardcoded strings
+- ❌ Status/room type labels in `types/index.ts` are not translated dynamically
 
 ---
 
-## Changes Required
+## Files to Modify
 
-### File to Modify
-
-**`src/pages/CommandsPage.tsx`**
-
-### Modifications
-
-1. **Add import for `useTranslation`**
-   ```typescript
-   import { useTranslation } from 'react-i18next';
-   ```
-
-2. **Initialize translation hook**
-   ```typescript
-   const { t } = useTranslation('commands');
-   ```
-
-3. **Replace all hardcoded strings:**
-
-   | Location | Current (French) | Translation Key |
-   |----------|------------------|-----------------|
-   | DashboardLayout title | `"Commandes"` | `t('title')` |
-   | DashboardLayout subtitle | `"Gestion des commandes clients"` | `t('subtitle')` |
-   | Stats card 1 | `"Total Versements"` | `t('stats.totalPayments')` |
-   | Stats card 2 | `"Total Crédit (Reste)"` | `t('stats.totalCredit')` |
-   | Stats card 3 | `"Total Bénéfice Net"` | `t('stats.totalProfit')` |
-   | Card title | `"Liste des commandes"` | `t('list.title')` |
-   | Card description | `"X commandes au total"` | `t('list.count', { count: ... })` |
-   | Button | `"Nouvelle commande"` | `t('dialog.createTitle')` |
-   | Dialog title (create) | `"Créer une commande"` | `t('dialog.createTitle')` |
-   | Dialog title (edit) | `"Modifier la commande"` | `t('dialog.editTitle')` |
-   | Dialog description | `"Sélectionnez un service..."` | `t('dialog.selectServiceDesc')` |
-   | Form labels | Various | `t('form.*')` |
-   | Filter labels | `"Statut"`, `"Service"`, `"Fournisseur"` | `t('filters.*')` |
-   | Status options | `"En attente"`, `"En cours"`, etc. | `t('status.*')` |
-   | Table headers | All columns | `t('table.*')` |
-   | Empty state | `"Aucune commande"` | `t('empty')` |
-   | Time remaining | `"Verrouillé"`, `"Xh restantes"` | `t('time.*')` |
-   | Actions | `"Voir détails"`, `"Modifier"`, `"Supprimer"` | Using `common` namespace |
-   | Buttons | `"Annuler"`, `"Créer"`, `"Modifier"` | Using `common` namespace |
-
-4. **Update `getTimeRemaining` function to use translations:**
-   ```typescript
-   const getTimeRemaining = (createdAt: Date | string): string => {
-     const createdDate = typeof createdAt === 'string' ? new Date(createdAt) : createdAt;
-     const hoursSinceCreation = (Date.now() - createdDate.getTime()) / (1000 * 60 * 60);
-     if (hoursSinceCreation >= 24) return t('time.locked');
-     const remaining = 24 - hoursSinceCreation;
-     if (remaining < 1) return t('time.minutesRemaining', { minutes: Math.round(remaining * 60) });
-     return t('time.hoursRemaining', { hours: Math.round(remaining) });
-   };
-   ```
-
-5. **Update filter configuration to use translations:**
-   ```typescript
-   filterConfig={[
-     {
-       key: 'status',
-       label: t('filters.status'),
-       type: 'select',
-       options: [
-         { label: t('status.en_attente'), value: 'en_attente' },
-         { label: t('status.en_cours'), value: 'en_cours' },
-         { label: t('status.termine'), value: 'termine' },
-         { label: t('status.annule'), value: 'annule' },
-       ],
-     },
-     // ... more filters
-   ]}
-   ```
-
-6. **Update form field labels in `renderServiceSpecificFields`:**
-   - Replace all `<Label>Prénom</Label>` → `<Label>{t('form.firstName')}</Label>`
-   - Replace all placeholders with translations
-
-7. **Update table headers:**
-   ```tsx
-   <TableHead>{t('table.service')}</TableHead>
-   <TableHead>{t('table.client')}</TableHead>
-   <TableHead>{t('table.destination')}</TableHead>
-   // ... etc
-   ```
-
-8. **Update action menu items using common namespace:**
-   ```tsx
-   const { t: tCommon } = useTranslation('common');
-   
-   <DropdownMenuItem>
-     <Eye className="mr-2 h-4 w-4" />
-     {tCommon('actions.view')}
-   </DropdownMenuItem>
-   ```
+| File | Changes |
+|------|---------|
+| `src/pages/OmraPage.tsx` | Add translations for title, subtitle, stats cards, and tabs |
+| `src/components/omra/OmraOrdersTab.tsx` | Add translations for table, form, dialog, filters, empty state |
+| `src/components/omra/OmraVisasTab.tsx` | Add translations for table, form, dialog, filters, empty state |
+| `src/components/omra/OmraHotelsTab.tsx` | Add translations for table, form, dialog, empty state |
+| `src/i18n/locales/fr/omra.json` | Add missing translation keys |
+| `src/i18n/locales/ar/omra.json` | Add missing translation keys |
 
 ---
 
-## Translation Keys Used
+## Detailed Changes
 
-### From `commands` namespace:
-- `title`, `subtitle`
-- `stats.totalPayments`, `stats.totalCredit`, `stats.totalProfit`
-- `list.title`, `list.count`
-- `dialog.createTitle`, `dialog.editTitle`, `dialog.selectService`, `dialog.selectServiceDesc`
-- `form.service`, `form.firstName`, `form.lastName`, `form.clientFullName`, `form.phone`, `form.destination`, `form.hotelName`, `form.departureDate`, `form.returnDate`, `form.description`, `form.sellingPrice`, `form.amountPaid`, `form.buyingPrice`, `form.supplier`, `form.selectSupplier`
-- `calculations.remaining`, `calculations.profit`
-- `status.en_attente`, `status.en_cours`, `status.termine`, `status.annule`
-- `time.locked`, `time.hoursRemaining`, `time.minutesRemaining`
-- `filters.status`, `filters.service`, `filters.supplier`
-- `table.service`, `table.client`, `table.destination`, `table.sellingPrice`, `table.buyingPrice`, `table.remaining`, `table.profit`, `table.supplier`, `table.status`, `table.actions`
-- `empty`
+### 1. OmraPage.tsx
 
-### From `common` namespace:
-- `actions.view`, `actions.edit`, `actions.delete`, `actions.cancel`, `actions.save`
+Add `useTranslation` hook and replace:
+
+| Current | Translation Key |
+|---------|-----------------|
+| `"Omra"` | `t('title')` |
+| `"Gestion des services Omra"` | `t('subtitle')` |
+| `"Total Versements"` | `t('stats.totalPayments')` |
+| `"Total Crédit (Reste)"` | `t('stats.totalCredit')` |
+| `"Bénéfice Net"` | `t('stats.netProfit')` |
+| `"Commandes"` | `t('tabs.orders')` |
+| `"Visas"` | `t('tabs.visas')` |
+| `"Hôtels"` | `t('tabs.hotels')` |
+
+### 2. OmraOrdersTab.tsx
+
+| Current | Translation Key |
+|---------|-----------------|
+| `"Commandes Omra"` | `t('orders.title')` |
+| `"X commandes au total"` | `t('orders.count', { count })` |
+| `"Nouvelle Commande"` | `t('orders.dialog.createTitle')` |
+| `"Modifier la commande"` | `t('orders.dialog.editTitle')` |
+| `"Nom du client *"` | `t('orders.form.clientName')` |
+| `"Téléphone"` | `t('orders.form.phone')` |
+| `"Date commande"` | `t('orders.form.orderDate')` |
+| `"Période du *"` | `t('orders.form.periodFrom')` |
+| `"Au *"` | `t('orders.form.periodTo')` |
+| `"Type de chambre"` | `t('orders.form.roomType')` |
+| `"Prix de vente (DA)"` | `t('orders.form.sellingPrice')` |
+| `"Versement (DA)"` | `t('orders.form.amountPaid')` |
+| `"Prix d'achat (DA)"` | `t('orders.form.buyingPrice')` |
+| `"Notes"` | `t('orders.form.notes')` |
+| `"Reste à payer"` | `t('calculations.remaining')` |
+| `"Bénéfice net"` | `t('calculations.profit')` |
+| `"Aucune commande"` | `t('orders.empty.title')` |
+| Table headers | `t('orders.table.*')` |
+| Status labels | `t('status.*')` |
+| Room type labels | `t('roomTypes.*')` |
+| Filter labels | `t('filters.*')` |
+| Actions | Using `common` namespace |
+
+### 3. OmraVisasTab.tsx
+
+| Current | Translation Key |
+|---------|-----------------|
+| `"Visas Omra"` | `t('visas.title')` |
+| `"X visas au total"` | `t('visas.count', { count })` |
+| `"Nouveau Visa"` | `t('visas.dialog.createTitle')` |
+| `"Modifier le visa"` | `t('visas.dialog.editTitle')` |
+| `"Date du visa *"` | `t('visas.form.visaDate')` |
+| `"Date d'entrée *"` | `t('visas.form.entryDate')` |
+| Table headers | `t('visas.table.*')` |
+| Empty state | `t('visas.empty.*')` |
+
+### 4. OmraHotelsTab.tsx
+
+| Current | Translation Key |
+|---------|-----------------|
+| `"Gestion des Hôtels"` | `t('hotels.title')` |
+| `"X hôtels enregistrés"` | `t('hotels.count', { count })` |
+| `"Nouvel Hôtel"` | `t('hotels.dialog.createTitle')` |
+| `"Modifier l'hôtel"` | `t('hotels.dialog.editTitle')` |
+| `"Nom de l'hôtel *"` | `t('hotels.form.hotelName')` |
+| `"Localisation"` | `t('hotels.form.location')` |
+| `"Actif"/"Inactif"` | `t('status.active')`/`t('status.inactive')` |
+| Table headers | `t('hotels.table.*')` |
+| Empty state | `t('hotels.empty.*')` |
 
 ---
 
-## Additional Translations Needed
+## Additional Translation Keys Needed
 
-I'll need to add a few missing keys to the translation files:
+### Add to `fr/omra.json`:
 
-**Add to `fr/commands.json`:**
 ```json
 {
-  "form": {
-    "accountingInfo": "Informations comptables",
-    "payment": "Versement (DZD)",
-    "noServiceAvailable": "Aucun service disponible",
-    "addService": "Ajouter un service",
-    "noSupplierAvailable": "Aucun fournisseur disponible",
-    "addSupplier": "Ajouter un fournisseur",
-    "netProfit": "Bénéfice net"
+  "loading": "Chargement...",
+  "calculations": {
+    "remaining": "Reste à payer",
+    "profit": "Bénéfice net"
+  },
+  "filters": {
+    "status": "Statut",
+    "hotel": "Hôtel"
+  },
+  "status": {
+    "en_attente": "En attente",
+    "confirme": "Confirmé",
+    "termine": "Terminé",
+    "annule": "Annulé",
+    "active": "Actif",
+    "inactive": "Inactif"
+  },
+  "roomTypes": {
+    "chambre_1": "Chambre 1 personne",
+    "chambre_2": "Chambre 2 personnes",
+    "chambre_3": "Chambre 3 personnes",
+    "chambre_4": "Chambre 4 personnes",
+    "chambre_5": "Chambre 5 personnes",
+    "suite": "Suite"
+  },
+  "orders": {
+    "count": "{{count}} commandes au total",
+    "empty": {
+      "title": "Aucune commande",
+      "description": "Commencez par créer une commande Omra"
+    },
+    "dialog": {
+      "createDescription": "Créez une nouvelle commande pour le pèlerinage Omra",
+      "editDescription": "Modifiez les informations de la commande"
+    },
+    "form": {
+      "orderDate": "Date commande",
+      "periodFrom": "Période du",
+      "periodTo": "Au",
+      "hotel": "Hôtel",
+      "roomType": "Type de chambre",
+      "noHotelAvailable": "Aucun hôtel disponible",
+      "addHotel": "Ajouter un hôtel",
+      "selectHotel": "Sélectionner un hôtel",
+      "hotelPlaceholder": "Nom de l'hôtel"
+    },
+    "table": {
+      "client": "Client",
+      "period": "Période",
+      "hotel": "Hôtel",
+      "room": "Chambre",
+      "price": "Prix",
+      "status": "Statut",
+      "actions": "Actions",
+      "remaining": "Reste"
+    },
+    "confirm": {
+      "delete": "Êtes-vous sûr de vouloir supprimer cette commande ?"
+    }
+  },
+  "visas": {
+    "count": "{{count}} visas au total",
+    "empty": {
+      "title": "Aucun visa",
+      "description": "Commencez par créer un visa Omra"
+    },
+    "dialog": {
+      "createDescription": "Créez un nouveau visa pour le pèlerinage Omra",
+      "editDescription": "Modifiez les informations du visa"
+    },
+    "form": {
+      "visaDate": "Date du visa",
+      "entryDate": "Date d'entrée",
+      "hotel": "Hôtel",
+      "selectHotel": "Sélectionner un hôtel"
+    },
+    "table": {
+      "client": "Client",
+      "visaDate": "Date Visa",
+      "entryDate": "Date Entrée",
+      "hotel": "Hôtel",
+      "price": "Prix",
+      "status": "Statut",
+      "actions": "Actions",
+      "remaining": "Reste"
+    },
+    "confirm": {
+      "delete": "Êtes-vous sûr de vouloir supprimer ce visa ?"
+    }
+  },
+  "hotels": {
+    "title": "Gestion des Hôtels",
+    "count": "{{count}} hôtels enregistrés",
+    "empty": {
+      "title": "Aucun hôtel",
+      "description": "Commencez par ajouter un hôtel pour vos services Omra"
+    },
+    "dialog": {
+      "createTitle": "Nouvel hôtel",
+      "editTitle": "Modifier l'hôtel",
+      "createDescription": "Ajoutez un nouvel hôtel pour vos services Omra",
+      "editDescription": "Modifiez les informations de l'hôtel"
+    },
+    "form": {
+      "hotelName": "Nom de l'hôtel",
+      "location": "Localisation",
+      "hotelPlaceholder": "Ex: Hotel Makkah Towers",
+      "locationPlaceholder": "Ex: La Mecque, Arabie Saoudite"
+    },
+    "table": {
+      "name": "Nom",
+      "location": "Localisation",
+      "status": "Statut",
+      "actions": "Actions"
+    },
+    "confirm": {
+      "delete": "Êtes-vous sûr de vouloir supprimer cet hôtel ?"
+    }
   },
   "actions": {
-    "saving": "Enregistrement...",
+    "add": "Ajouter",
+    "cancel": "Annuler",
+    "save": "Enregistrer",
     "create": "Créer",
-    "edit": "Modifier"
-  },
-  "empty": {
-    "title": "Aucune commande",
-    "description": "Commencez par créer votre première commande"
+    "edit": "Modifier",
+    "delete": "Supprimer"
   }
 }
 ```
 
-**Add to `ar/commands.json`:**
+### Add to `ar/omra.json`:
+
 ```json
 {
-  "form": {
-    "accountingInfo": "معلومات المحاسبة",
-    "payment": "الدفعة (د.ج)",
-    "noServiceAvailable": "لا توجد خدمات متاحة",
-    "addService": "إضافة خدمة",
-    "noSupplierAvailable": "لا يوجد موردون متاحون",
-    "addSupplier": "إضافة مورد",
-    "netProfit": "صافي الربح"
+  "loading": "جاري التحميل...",
+  "calculations": {
+    "remaining": "المتبقي للدفع",
+    "profit": "صافي الربح"
+  },
+  "filters": {
+    "status": "الحالة",
+    "hotel": "الفندق"
+  },
+  "status": {
+    "en_attente": "قيد الانتظار",
+    "confirme": "مؤكد",
+    "termine": "منتهي",
+    "annule": "ملغى",
+    "active": "نشط",
+    "inactive": "غير نشط"
+  },
+  "roomTypes": {
+    "chambre_1": "غرفة لشخص واحد",
+    "chambre_2": "غرفة لشخصين",
+    "chambre_3": "غرفة لثلاثة أشخاص",
+    "chambre_4": "غرفة لأربعة أشخاص",
+    "chambre_5": "غرفة لخمسة أشخاص",
+    "suite": "جناح"
+  },
+  "orders": {
+    "count": "{{count}} طلب إجمالاً",
+    "empty": {
+      "title": "لا توجد طلبات",
+      "description": "ابدأ بإنشاء طلب عمرة"
+    },
+    "dialog": {
+      "createDescription": "أنشئ طلباً جديداً لرحلة العمرة",
+      "editDescription": "عدّل معلومات الطلب"
+    },
+    "form": {
+      "orderDate": "تاريخ الطلب",
+      "periodFrom": "الفترة من",
+      "periodTo": "إلى",
+      "hotel": "الفندق",
+      "roomType": "نوع الغرفة",
+      "noHotelAvailable": "لا توجد فنادق متاحة",
+      "addHotel": "إضافة فندق",
+      "selectHotel": "اختر فندقاً",
+      "hotelPlaceholder": "اسم الفندق"
+    },
+    "table": {
+      "client": "العميل",
+      "period": "الفترة",
+      "hotel": "الفندق",
+      "room": "الغرفة",
+      "price": "السعر",
+      "status": "الحالة",
+      "actions": "الإجراءات",
+      "remaining": "المتبقي"
+    },
+    "confirm": {
+      "delete": "هل أنت متأكد من حذف هذا الطلب؟"
+    }
+  },
+  "visas": {
+    "count": "{{count}} تأشيرة إجمالاً",
+    "empty": {
+      "title": "لا توجد تأشيرات",
+      "description": "ابدأ بإنشاء تأشيرة عمرة"
+    },
+    "dialog": {
+      "createDescription": "أنشئ تأشيرة جديدة لرحلة العمرة",
+      "editDescription": "عدّل معلومات التأشيرة"
+    },
+    "form": {
+      "visaDate": "تاريخ التأشيرة",
+      "entryDate": "تاريخ الدخول",
+      "hotel": "الفندق",
+      "selectHotel": "اختر فندقاً"
+    },
+    "table": {
+      "client": "العميل",
+      "visaDate": "تاريخ التأشيرة",
+      "entryDate": "تاريخ الدخول",
+      "hotel": "الفندق",
+      "price": "السعر",
+      "status": "الحالة",
+      "actions": "الإجراءات",
+      "remaining": "المتبقي"
+    },
+    "confirm": {
+      "delete": "هل أنت متأكد من حذف هذه التأشيرة؟"
+    }
+  },
+  "hotels": {
+    "title": "إدارة الفنادق",
+    "count": "{{count}} فندق مسجل",
+    "empty": {
+      "title": "لا توجد فنادق",
+      "description": "ابدأ بإضافة فندق لخدمات العمرة"
+    },
+    "dialog": {
+      "createTitle": "فندق جديد",
+      "editTitle": "تعديل الفندق",
+      "createDescription": "أضف فندقاً جديداً لخدمات العمرة",
+      "editDescription": "عدّل معلومات الفندق"
+    },
+    "form": {
+      "hotelName": "اسم الفندق",
+      "location": "الموقع",
+      "hotelPlaceholder": "مثال: أبراج مكة",
+      "locationPlaceholder": "مثال: مكة المكرمة، المملكة العربية السعودية"
+    },
+    "table": {
+      "name": "الاسم",
+      "location": "الموقع",
+      "status": "الحالة",
+      "actions": "الإجراءات"
+    },
+    "confirm": {
+      "delete": "هل أنت متأكد من حذف هذا الفندق؟"
+    }
   },
   "actions": {
-    "saving": "جاري الحفظ...",
+    "add": "إضافة",
+    "cancel": "إلغاء",
+    "save": "حفظ",
     "create": "إنشاء",
-    "edit": "تعديل"
-  },
-  "empty": {
-    "title": "لا توجد طلبات",
-    "description": "ابدأ بإنشاء أول طلب لك"
+    "edit": "تعديل",
+    "delete": "حذف"
   }
 }
 ```
+
+---
+
+## RTL Considerations
+
+All icon margins will be updated to use RTL-aware classes:
+- `mr-2` → `ltr:mr-2 rtl:ml-2`
+
+Date formatting will be locale-aware using `i18n.language`.
 
 ---
 
@@ -188,8 +389,11 @@ I'll need to add a few missing keys to the translation files:
 
 | File | Action |
 |------|--------|
-| `src/pages/CommandsPage.tsx` | Modify - Replace ~50+ hardcoded strings with translation keys |
-| `src/i18n/locales/fr/commands.json` | Modify - Add missing keys |
-| `src/i18n/locales/ar/commands.json` | Modify - Add missing keys |
+| `src/pages/OmraPage.tsx` | Add translations (~10 strings) |
+| `src/components/omra/OmraOrdersTab.tsx` | Add translations (~50 strings) |
+| `src/components/omra/OmraVisasTab.tsx` | Add translations (~40 strings) |
+| `src/components/omra/OmraHotelsTab.tsx` | Add translations (~25 strings) |
+| `src/i18n/locales/fr/omra.json` | Add extensive missing keys |
+| `src/i18n/locales/ar/omra.json` | Add extensive missing keys |
 
-This will make the entire Commands/Orders page fully bilingual with proper RTL support for Arabic.
+This will make the entire Omra module fully bilingual with proper RTL support for Arabic.
