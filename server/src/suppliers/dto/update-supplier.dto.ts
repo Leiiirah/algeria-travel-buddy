@@ -2,8 +2,8 @@ import {
   IsString,
   IsEmail,
   IsOptional,
-  IsArray,
   IsBoolean,
+  IsIn,
 } from 'class-validator';
 
 export class UpdateSupplierDto {
@@ -13,7 +13,16 @@ export class UpdateSupplierDto {
 
   @IsString()
   @IsOptional()
-  contact?: string;
+  @IsIn(['airline', 'hotel', 'visa', 'transport', 'insurance', 'other'])
+  type?: string;
+
+  @IsString()
+  @IsOptional()
+  country?: string;
+
+  @IsString()
+  @IsOptional()
+  city?: string;
 
   @IsString()
   @IsOptional()
@@ -23,10 +32,17 @@ export class UpdateSupplierDto {
   @IsOptional()
   email?: string;
 
-  @IsArray()
-  @IsString({ each: true })
+  @IsString()
   @IsOptional()
-  serviceTypes?: string[];
+  contact?: string;
+
+  @IsString()
+  @IsOptional()
+  currency?: string;
+
+  @IsString()
+  @IsOptional()
+  bankAccount?: string;
 
   @IsBoolean()
   @IsOptional()

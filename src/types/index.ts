@@ -38,13 +38,19 @@ export interface Service {
 }
 
 // Supplier Types
+export type SupplierType = 'airline' | 'hotel' | 'visa' | 'transport' | 'insurance' | 'other';
+
 export interface Supplier {
   id: string;
   name: string;
-  contact: string;
-  phone: string;
-  email: string;
-  serviceTypes: ServiceType[];
+  type: SupplierType;
+  country?: string;
+  city?: string;
+  phone?: string;
+  email?: string;
+  contact?: string;
+  currency: string;
+  bankAccount?: string;
   isActive: boolean;
   createdAt: Date;
 }

@@ -13,8 +13,14 @@ export class Supplier {
   @Column()
   name: string;
 
+  @Column({ default: 'other' })
+  type: string; // airline, hotel, visa, transport, insurance, other
+
   @Column({ nullable: true })
-  contact: string;
+  country: string;
+
+  @Column({ nullable: true })
+  city: string;
 
   @Column({ nullable: true })
   phone: string;
@@ -22,8 +28,14 @@ export class Supplier {
   @Column({ nullable: true })
   email: string;
 
-  @Column('simple-array')
-  serviceTypes: string[];
+  @Column({ nullable: true })
+  contact: string;
+
+  @Column({ default: 'DZD' })
+  currency: string;
+
+  @Column({ nullable: true })
+  bankAccount: string; // IBAN / CCP
 
   @Column({ default: true })
   isActive: boolean;
