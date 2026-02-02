@@ -1,130 +1,178 @@
 
-# Plan: Add New Service Types
+
+# Plan: Dynamic Service Types Management
 
 ## Overview
 
-Add three new service types to the "Type de service" dropdown: **Billet Bateau**, **Billet Tilex**, and **Billets**. This requires updating both frontend and backend code.
+Transform service types from a hardcoded enum to a dynamic database-managed system, allowing admins to create, edit, and delete service types.
+
+---
+
+## Current State
+
+| Component | Current Implementation |
+|-----------|----------------------|
+| Backend | `ServiceType` enum with 7 fixed values |
+| Frontend Types | `ServiceType` union type |
+| Services | Each service has a `type` field (enum value) |
+| Suppliers | Array of `serviceTypes` strings |
+| UI | Hardcoded Select options and icons |
+
+---
+
+## Proposed Architecture
+
+### New Database Entity: `ServiceType`
+
+A new table to store dynamic service types that admins can manage:
+
+```text
+service_types
+├── id (uuid, primary key)
+├── code (string, unique) - e.g., "visa", "residence", "billet_bateau"
+├── nameFr (string) - French label
+├── nameAr (string) - Arabic label
+├── icon (string) - Icon identifier from lucide-react
+├── isActive (boolean, default: true)
+├── createdAt (timestamp)
+└── updatedAt (timestamp)
+```
+
+---
+
+## Files to Create
+
+### Backend
+
+| File | Description |
+|------|-------------|
+| `server/src/service-types/entities/service-type.entity.ts` | New database entity |
+| `server/src/service-types/dto/create-service-type.dto.ts` | Create DTO |
+| `server/src/service-types/dto/update-service-type.dto.ts` | Update DTO |
+| `server/src/service-types/service-types.service.ts` | CRUD service |
+| `server/src/service-types/service-types.controller.ts` | REST endpoints |
+| `server/src/service-types/service-types.module.ts` | Module definition |
+
+### Frontend
+
+| File | Description |
+|------|-------------|
+| `src/hooks/useServiceTypes.ts` | React Query hooks for service types |
+| `src/pages/ServiceTypesPage.tsx` | Admin page to manage service types |
 
 ---
 
 ## Files to Modify
 
+### Backend
+
 | File | Changes |
 |------|---------|
-| `src/types/index.ts` | Add new types to `ServiceType` union |
-| `server/src/services/entities/service.entity.ts` | Add new enum values to `ServiceType` |
-| `src/pages/ServicesPage.tsx` | Add new SelectItems and icons for new types |
-| `src/i18n/locales/fr/services.json` | Add French translations for new types |
-| `src/i18n/locales/ar/services.json` | Add Arabic translations for new types |
+| `server/src/app.module.ts` | Import ServiceTypesModule |
+| `server/src/services/entities/service.entity.ts` | Change `type` from enum to string (references service_type code) |
+| `server/src/services/dto/create-service.dto.ts` | Update type validation |
+| `server/src/services/dto/update-service.dto.ts` | Update type validation |
+
+### Frontend
+
+| File | Changes |
+|------|---------|
+| `src/types/index.ts` | Remove hardcoded `ServiceType` union, add `ServiceTypeEntity` interface |
+| `src/lib/api.ts` | Add API methods for service types CRUD, update DTOs |
+| `src/pages/ServicesPage.tsx` | Fetch service types dynamically, show dynamic icons |
+| `src/pages/SuppliersPage.tsx` | Fetch service types for the dropdown |
+| `src/lib/utils.ts` | Remove `getServiceTypeLabel` or make it dynamic |
+| `src/i18n/locales/fr/common.json` | Remove hardcoded `serviceTypes` (now in DB) |
+| `src/i18n/locales/ar/common.json` | Remove hardcoded `serviceTypes` (now in DB) |
+| `src/App.tsx` | Add route for ServiceTypesPage |
 
 ---
 
-## Detailed Changes
+## New API Endpoints
 
-### 1. Update Frontend Types (`src/types/index.ts`)
+| Method | Endpoint | Description | Auth |
+|--------|----------|-------------|------|
+| GET | `/service-types` | List all service types | Any authenticated |
+| GET | `/service-types/active` | List active service types | Any authenticated |
+| POST | `/service-types` | Create new service type | Admin only |
+| PATCH | `/service-types/:id` | Update service type | Admin only |
+| DELETE | `/service-types/:id` | Soft delete (set isActive=false) | Admin only |
 
-**Line 15** - Add new types to the union:
+---
 
-```typescript
-// Before
-export type ServiceType = 'visa' | 'residence' | 'ticket' | 'dossier';
+## UI: Service Types Management Page
 
-// After
-export type ServiceType = 'visa' | 'residence' | 'ticket' | 'dossier' | 'billet_bateau' | 'billet_tilex' | 'billets';
+A new admin-only page at `/settings/service-types` with:
+
+1. **List view** - Cards or table showing all service types
+2. **Create dialog** - Form with:
+   - Code (unique identifier, e.g., "visa")
+   - French name
+   - Arabic name
+   - Icon selector (dropdown with available Lucide icons)
+3. **Edit functionality** - Modify existing types
+4. **Toggle active/inactive** - Soft delete capability
+5. **Protection** - Cannot delete types that are in use by services
+
+---
+
+## Icon Management
+
+Available icons that admins can choose from:
+
+```text
+FileText, Plane, Hotel, Folder, Ship, Bus, Ticket,
+Globe, CreditCard, Briefcase, MapPin, Users, Package
 ```
 
-### 2. Update Backend Entity (`server/src/services/entities/service.entity.ts`)
+The icon code is stored as a string (e.g., "Plane") and mapped to the actual component at runtime.
 
-**Lines 11-16** - Add new enum values:
+---
 
-```typescript
-export enum ServiceType {
-  VISA = 'visa',
-  RESIDENCE = 'residence',
-  TICKET = 'ticket',
-  DOSSIER = 'dossier',
-  BILLET_BATEAU = 'billet_bateau',
-  BILLET_TILEX = 'billet_tilex',
-  BILLETS = 'billets',
-}
-```
+## Migration Strategy
 
-### 3. Update ServicesPage.tsx
+1. Create `service_types` table
+2. Seed with existing 7 types (visa, residence, ticket, dossier, billet_bateau, billet_tilex, billets)
+3. Modify `services` table to use string instead of enum for `type`
+4. Update all frontend components to use dynamic types
 
-**Lines 71-84** - Add icons for new types in `getServiceIcon`:
+---
 
-```typescript
-const getServiceIcon = (type: ServiceType) => {
-  switch (type) {
-    case 'visa':
-      return FileText;
-    case 'residence':
-      return Hotel;
-    case 'ticket':
-      return Plane;
-    case 'dossier':
-      return Folder;
-    case 'billet_bateau':
-      return Ship;       // New icon for boat
-    case 'billet_tilex':
-      return Bus;        // New icon for bus/tilex
-    case 'billets':
-      return Ticket;     // New icon for general tickets
-    default:
-      return FileText;
+## Translation Files
+
+### French (`src/i18n/locales/fr/serviceTypes.json`)
+
+```json
+{
+  "title": "Types de services",
+  "subtitle": "Gérez les catégories de services proposés",
+  "dialog": {
+    "createTitle": "Nouveau type de service",
+    "editTitle": "Modifier le type",
+    "createDesc": "Ajoutez une nouvelle catégorie de service",
+    "editDesc": "Modifiez les informations du type"
+  },
+  "form": {
+    "code": "Code",
+    "codePlaceholder": "ex: visa_schengen",
+    "nameFr": "Nom (Français)",
+    "nameAr": "Nom (Arabe)",
+    "icon": "Icône",
+    "selectIcon": "Choisir une icône"
+  },
+  "actions": {
+    "newType": "Nouveau type",
+    "create": "Créer",
+    "edit": "Modifier"
+  },
+  "empty": {
+    "title": "Aucun type de service",
+    "description": "Créez votre premier type de service"
+  },
+  "errors": {
+    "codeExists": "Ce code existe déjà",
+    "inUse": "Ce type est utilisé par des services et ne peut être supprimé"
   }
-};
-```
-
-**Line 27** - Import new icons:
-
-```typescript
-import { Plus, Settings, FileText, Plane, Hotel, Folder, Ship, Bus, Ticket } from 'lucide-react';
-```
-
-**Lines 229-232** - Add new SelectItems in the dropdown:
-
-```tsx
-<SelectContent className="bg-popover">
-  <SelectItem value="visa">{t('types.visa')}</SelectItem>
-  <SelectItem value="residence">{t('types.residence')}</SelectItem>
-  <SelectItem value="ticket">{t('types.ticket')}</SelectItem>
-  <SelectItem value="dossier">{t('types.dossier')}</SelectItem>
-  <SelectItem value="billet_bateau">{t('types.billet_bateau')}</SelectItem>
-  <SelectItem value="billet_tilex">{t('types.billet_tilex')}</SelectItem>
-  <SelectItem value="billets">{t('types.billets')}</SelectItem>
-</SelectContent>
-```
-
-### 4. Update French Translations (`src/i18n/locales/fr/services.json`)
-
-Add new type labels:
-
-```json
-"types": {
-  "visa": "Visa",
-  "residence": "Résidence / Hôtel",
-  "ticket": "Billetterie Avion",
-  "dossier": "Traitement de dossier",
-  "billet_bateau": "Billet Bateau",
-  "billet_tilex": "Billet Tilex",
-  "billets": "Billets"
-}
-```
-
-### 5. Update Arabic Translations (`src/i18n/locales/ar/services.json`)
-
-Add new type labels:
-
-```json
-"types": {
-  "visa": "تأشيرة",
-  "residence": "إقامة / فندق",
-  "ticket": "تذاكر طيران",
-  "dossier": "معالجة ملف",
-  "billet_bateau": "تذكرة باخرة",
-  "billet_tilex": "تذكرة تيلكس",
-  "billets": "تذاكر"
 }
 ```
 
@@ -132,12 +180,13 @@ Add new type labels:
 
 ## Summary
 
-| File | Action |
-|------|--------|
-| `src/types/index.ts` | Add 3 new types to ServiceType union |
-| `server/src/services/entities/service.entity.ts` | Add 3 new enum values |
-| `src/pages/ServicesPage.tsx` | Add new icons + SelectItems |
-| `src/i18n/locales/fr/services.json` | Add French translations |
-| `src/i18n/locales/ar/services.json` | Add Arabic translations |
+| Category | Files |
+|----------|-------|
+| **New Backend Files** | 6 files (entity, DTOs, service, controller, module) |
+| **New Frontend Files** | 3 files (hook, page, translations) |
+| **Modified Backend** | 4 files |
+| **Modified Frontend** | 7 files |
+| **Total** | ~20 files |
 
-This will add **Billet Bateau**, **Billet Tilex**, and **Billets** as selectable service types with proper icons and bilingual translations.
+This change allows admins to fully manage service types without code changes, with proper bilingual support and icon customization.
+
