@@ -44,7 +44,9 @@ import { ServiceTypesModule } from './service-types/service-types.module';
         password: configService.get('DB_PASSWORD'),
         database: configService.get('DB_DATABASE', 'elhikma'),
         entities: [__dirname + '/**/*.entity{.ts,.js}'],
-        synchronize: configService.get('NODE_ENV') === 'development',
+        synchronize: false, // NEVER use true in production
+        migrationsRun: true, // Auto-run pending migrations on startup
+        migrations: [__dirname + '/database/migrations/*{.ts,.js}'],
         logging: configService.get('NODE_ENV') === 'development',
       }),
       inject: [ConfigService],

@@ -38,7 +38,7 @@ export class Command {
   @Column({
     type: 'enum',
     enum: CommandStatus,
-    default: CommandStatus.EN_ATTENTE,
+    default: CommandStatus.DOSSIER_INCOMPLET,
   })
   status: CommandStatus;
 
