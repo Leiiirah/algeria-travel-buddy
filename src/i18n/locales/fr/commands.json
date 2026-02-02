@@ -15,20 +15,21 @@
     "service": "Service",
     "destination": "Destination",
     "amounts": "Montants",
+    "price": "Prix",
     "sellingPrice": "P.V.",
     "buyingPrice": "P.A.",
+    "payment": "Versement",
     "remaining": "Reste",
     "profit": "Bénéfice",
     "supplier": "Fournisseur",
     "status": "Statut",
-    "payment": "Paiement",
     "actions": "Actions"
   },
   "dialog": {
     "createTitle": "Nouvelle commande",
     "editTitle": "Modifier la commande",
     "selectService": "Sélectionnez un service",
-    "selectServiceDesc": "Choisissez le type de service pour cette commande"
+    "selectServiceDesc": "Sélectionnez un service et remplissez les informations"
   },
   "form": {
     "service": "Service",
@@ -42,15 +43,20 @@
     "departureDate": "Date de départ",
     "returnDate": "Date de retour",
     "description": "Description du dossier",
-    "sellingPrice": "Prix de vente (DZD)",
-    "amountPaid": "Montant payé (DZD)",
-    "buyingPrice": "Prix d'achat (DZD)",
+    "sellingPrice": "Prix de Vente (DZD)",
+    "amountPaid": "Versement (DZD)",
+    "buyingPrice": "Prix d'Achat (DZD)",
     "supplier": "Fournisseur",
-    "selectSupplier": "Sélectionner un fournisseur"
+    "selectSupplier": "Sélectionner",
+    "accountingInfo": "Informations comptables",
+    "noServiceAvailable": "Aucun service disponible",
+    "addService": "Ajouter un service",
+    "noSupplierAvailable": "Aucun fournisseur disponible",
+    "addSupplier": "Ajouter un fournisseur"
   },
   "calculations": {
     "remaining": "Reste à payer",
-    "profit": "Bénéfice"
+    "profit": "Bénéfice net"
   },
   "status": {
     "en_attente": "En attente",
@@ -66,7 +72,17 @@
   "filters": {
     "status": "Statut",
     "service": "Service",
-    "supplier": "Fournisseur"
+    "supplier": "Fournisseur",
+    "fromDate": "Date début",
+    "toDate": "Date fin"
   },
-  "empty": "Aucune commande trouvée"
+  "actions": {
+    "saving": "Enregistrement...",
+    "create": "Créer",
+    "edit": "Modifier"
+  },
+  "empty": {
+    "title": "Aucune commande",
+    "description": "Commencez par créer votre première commande"
+  }
 }
