@@ -33,11 +33,12 @@ import {
 import logoElHikma from '@/assets/logo-elhikma.png';
 
 export function AppSidebar() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { user, logout, isAdmin } = useAuth();
   const location = useLocation();
   const { state } = useSidebar();
   const isCollapsed = state === 'collapsed';
+  const isRtl = i18n.language === 'ar';
 
   const mainMenuItems = [
     {
@@ -104,7 +105,7 @@ export function AppSidebar() {
   ];
 
   return (
-    <Sidebar collapsible="icon" className="border-r border-sidebar-border">
+    <Sidebar collapsible="icon" side={isRtl ? 'right' : 'left'} className="border-sidebar-border ltr:border-r rtl:border-l">
       <SidebarHeader className="border-b border-sidebar-border p-4">
         <div className="flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-xl overflow-hidden bg-primary/10">
