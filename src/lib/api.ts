@@ -68,18 +68,26 @@ export interface UpdateServiceTypeDto {
 
 export interface CreateSupplierDto {
   name: string;
-  contact: string;
-  phone: string;
-  email: string;
-  serviceTypes: string[];
+  type?: string;
+  country?: string;
+  city?: string;
+  phone?: string;
+  email?: string;
+  contact?: string;
+  currency?: string;
+  bankAccount?: string;
 }
 
 export interface UpdateSupplierDto {
   name?: string;
-  contact?: string;
+  type?: string;
+  country?: string;
+  city?: string;
   phone?: string;
   email?: string;
-  serviceTypes?: string[];
+  contact?: string;
+  currency?: string;
+  bankAccount?: string;
   isActive?: boolean;
 }
 

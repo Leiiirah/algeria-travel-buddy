@@ -9,7 +9,8 @@
     "supplier": "Fournisseur",
     "contact": "Contact",
     "coordinates": "Coordonnées",
-    "services": "Services",
+    "location": "Localisation",
+    "currency": "Devise",
     "status": "Statut",
     "actions": "Actions",
     "since": "Depuis {{date}}"
@@ -21,15 +22,47 @@
     "editDesc": "Modifiez les informations du fournisseur"
   },
   "form": {
-    "companyName": "Nom de l'entreprise",
+    "companyName": "Nom société",
     "companyNamePlaceholder": "Nom du fournisseur",
-    "contactPerson": "Personne de contact",
+    "type": "Type",
+    "typePlaceholder": "Sélectionner un type",
+    "country": "Pays",
+    "countryPlaceholder": "Algérie",
+    "city": "Ville",
+    "cityPlaceholder": "Alger",
+    "contactPerson": "Contact",
     "contactPlaceholder": "Nom du contact",
     "phone": "Téléphone",
     "phonePlaceholder": "+213 555 123 456",
     "email": "Email",
     "emailPlaceholder": "contact@fournisseur.dz",
-    "serviceTypes": "Types de services"
+    "currency": "Devise",
+    "currencyPlaceholder": "DZD",
+    "bankAccount": "IBAN / CCP",
+    "bankAccountPlaceholder": "00799999000123456789",
+    "sections": {
+      "general": "Informations Générales",
+      "location": "Localisation",
+      "contact": "Coordonnées",
+      "banking": "Informations Bancaires"
+    }
+  },
+  "types": {
+    "airline": "Compagnie aérienne",
+    "hotel": "Hôtel",
+    "visa": "Visa",
+    "transport": "Transport",
+    "insurance": "Assurance",
+    "other": "Autre"
+  },
+  "currencies": {
+    "DZD": "Dinar algérien",
+    "EUR": "Euro",
+    "USD": "Dollar US",
+    "SAR": "Riyal saoudien",
+    "AED": "Dirham émirati",
+    "TRY": "Lire turque",
+    "GBP": "Livre sterling"
   },
   "empty": {
     "title": "Aucun fournisseur",

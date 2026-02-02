@@ -9,7 +9,8 @@
     "supplier": "المورد",
     "contact": "جهة الاتصال",
     "coordinates": "بيانات الاتصال",
-    "services": "الخدمات",
+    "location": "الموقع",
+    "currency": "العملة",
     "status": "الحالة",
     "actions": "الإجراءات",
     "since": "منذ {{date}}"
@@ -23,13 +24,45 @@
   "form": {
     "companyName": "اسم الشركة",
     "companyNamePlaceholder": "اسم المورد",
+    "type": "النوع",
+    "typePlaceholder": "اختر النوع",
+    "country": "البلد",
+    "countryPlaceholder": "الجزائر",
+    "city": "المدينة",
+    "cityPlaceholder": "الجزائر العاصمة",
     "contactPerson": "جهة الاتصال",
     "contactPlaceholder": "اسم جهة الاتصال",
     "phone": "الهاتف",
     "phonePlaceholder": "+213 555 123 456",
     "email": "البريد الإلكتروني",
     "emailPlaceholder": "contact@supplier.dz",
-    "serviceTypes": "أنواع الخدمات"
+    "currency": "العملة",
+    "currencyPlaceholder": "DZD",
+    "bankAccount": "IBAN / CCP",
+    "bankAccountPlaceholder": "00799999000123456789",
+    "sections": {
+      "general": "معلومات عامة",
+      "location": "الموقع",
+      "contact": "بيانات الاتصال",
+      "banking": "معلومات بنكية"
+    }
+  },
+  "types": {
+    "airline": "شركة طيران",
+    "hotel": "فندق",
+    "visa": "تأشيرة",
+    "transport": "نقل",
+    "insurance": "تأمين",
+    "other": "أخرى"
+  },
+  "currencies": {
+    "DZD": "دينار جزائري",
+    "EUR": "يورو",
+    "USD": "دولار أمريكي",
+    "SAR": "ريال سعودي",
+    "AED": "درهم إماراتي",
+    "TRY": "ليرة تركية",
+    "GBP": "جنيه إسترليني"
   },
   "empty": {
     "title": "لا يوجد موردون",
