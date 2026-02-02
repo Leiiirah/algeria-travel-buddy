@@ -35,7 +35,7 @@ export interface UpdateUserDto {
 
 export interface CreateServiceDto {
   name: string;
-  type: 'visa' | 'residence' | 'ticket' | 'dossier';
+  type: 'visa' | 'residence' | 'ticket' | 'dossier' | 'billet_bateau' | 'billet_tilex' | 'billets';
   description: string;
   defaultSupplierId?: string;
   defaultBuyingPrice?: number;
@@ -43,6 +43,7 @@ export interface CreateServiceDto {
 
 export interface UpdateServiceDto {
   name?: string;
+  type?: 'visa' | 'residence' | 'ticket' | 'dossier' | 'billet_bateau' | 'billet_tilex' | 'billets';
   description?: string;
   isActive?: boolean;
   defaultSupplierId?: string;
