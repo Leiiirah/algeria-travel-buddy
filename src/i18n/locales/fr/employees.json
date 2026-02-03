@@ -106,6 +106,20 @@
       "note": "Note (optionnel)",
       "notePlaceholder": "Ajouter une note..."
     },
-    "newTransaction": "Nouvelle Transaction"
+    "newTransaction": "Nouvelle Transaction",
+    "employeeDetails": {
+      "title": "Activité de l'employé",
+      "tabs": {
+        "sales": "Ventes",
+        "transactions": "Transactions"
+      },
+      "stats": {
+        "commands": "Commandes",
+        "revenue": "Chiffre d'Affaires",
+        "profit": "Bénéfice",
+        "pending": "Impayés Clients"
+      },
+      "noSales": "Aucune vente enregistrée"
+    }
   }
 }

@@ -52,6 +52,8 @@ import {
   useAllEmployeeBalances,
   useCreateEmployeeTransaction,
   useDeleteEmployeeTransaction,
+  useEmployeeCommands,
+  useEmployeeStatsById,
 } from '@/hooks/useEmployeeTransactions';
 import { useEmployeeStats } from '@/hooks/useAnalytics';
 import { useCommands } from '@/hooks/useCommands';
@@ -77,6 +79,7 @@ export default function EmployeeAccountingPage() {
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<string | null>(null);
+  const [employeeDetailTab, setEmployeeDetailTab] = useState<'sales' | 'transactions'>('sales');
   const [formData, setFormData] = useState({
     employeeId: '',
     type: 'avance' as EmployeeTransactionType,
@@ -85,6 +88,11 @@ export default function EmployeeAccountingPage() {
     month: format(new Date(), 'yyyy-MM'),
     note: '',
   });
+
+  // Admin: fetch selected employee's commands and stats
+  const { data: employeeCommandsData, isLoading: loadingEmployeeCommands } = useEmployeeCommands(selectedEmployeeId || '');
+  const { data: selectedEmployeeStats, isLoading: loadingSelectedStats } = useEmployeeStatsById(selectedEmployeeId || '');
+  const employeeCommands = employeeCommandsData?.data || [];
 
   // Filter state
   const [searchQuery, setSearchQuery] = useState('');
@@ -689,53 +697,170 @@ export default function EmployeeAccountingPage() {
           </TabsContent>
         </Tabs>
 
-        {/* Employee Details Dialog */}
-        <Dialog open={!!selectedEmployeeId} onOpenChange={(open) => !open && setSelectedEmployeeId(null)}>
-          <DialogContent className="max-w-2xl">
+        {/* Employee Details Dialog - Enhanced with tabs for sales and transactions */}
+        <Dialog open={!!selectedEmployeeId} onOpenChange={(open) => {
+          if (!open) {
+            setSelectedEmployeeId(null);
+            setEmployeeDetailTab('sales');
+          }
+        }}>
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
             <DialogHeader>
               <DialogTitle>
                 {selectedEmployee ? `${selectedEmployee.firstName} ${selectedEmployee.lastName}` : t('accounting.table.employee')}
               </DialogTitle>
             </DialogHeader>
-            <div className="max-h-[400px] overflow-y-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>{t('accounting.dialog.date')}</TableHead>
-                    <TableHead>{t('accounting.dialog.type')}</TableHead>
-                    <TableHead className="text-right">{t('accounting.dialog.amount')}</TableHead>
-                    <TableHead>{t('accounting.dialog.note')}</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {selectedEmployeeTransactions?.map((transaction) => (
-                    <TableRow key={transaction.id}>
-                      <TableCell>
-                        {format(new Date(transaction.date), 'dd MMM yyyy', { locale: dateLocale })}
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant={getTypeBadgeVariant(transaction.type)}>
-                          {t(`accounting.transactionTypes.${transaction.type}`)}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-right font-medium">
-                        {Number(transaction.amount).toLocaleString(i18n.language === 'ar' ? 'ar-DZ' : 'fr-DZ')} DZD
-                      </TableCell>
-                      <TableCell className="text-muted-foreground">
-                        {transaction.note || '-'}
-                      </TableCell>
-                    </TableRow>
+            
+            {/* Performance Stats Cards */}
+            <div className="grid gap-3 grid-cols-2 md:grid-cols-4">
+              {loadingSelectedStats ? (
+                <>
+                  {[1, 2, 3, 4].map(i => (
+                    <Card key={i} className="p-3">
+                      <Skeleton className="h-4 w-16 mb-2" />
+                      <Skeleton className="h-6 w-24" />
+                    </Card>
                   ))}
-                  {(!selectedEmployeeTransactions || selectedEmployeeTransactions.length === 0) && (
-                    <TableRow>
-                      <TableCell colSpan={4} className="text-center text-muted-foreground py-8">
-                        {tCommon('noData')}
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
+                </>
+              ) : (
+                <>
+                  <Card className="p-3">
+                    <p className="text-xs text-muted-foreground">{t('accounting.employeeDetails.stats.commands')}</p>
+                    <p className="text-lg font-bold">{selectedEmployeeStats?.totalCommands ?? 0}</p>
+                  </Card>
+                  <Card className="p-3">
+                    <p className="text-xs text-muted-foreground">{t('accounting.employeeDetails.stats.revenue')}</p>
+                    <p className="text-lg font-bold text-primary">{(selectedEmployeeStats?.totalRevenue ?? 0).toLocaleString(i18n.language === 'ar' ? 'ar-DZ' : 'fr-DZ')} DZD</p>
+                  </Card>
+                  <Card className="p-3">
+                    <p className="text-xs text-muted-foreground">{t('accounting.employeeDetails.stats.profit')}</p>
+                    <p className="text-lg font-bold text-green-600">{(selectedEmployeeStats?.totalProfit ?? 0).toLocaleString(i18n.language === 'ar' ? 'ar-DZ' : 'fr-DZ')} DZD</p>
+                  </Card>
+                  <Card className="p-3">
+                    <p className="text-xs text-muted-foreground">{t('accounting.employeeDetails.stats.pending')}</p>
+                    <p className="text-lg font-bold text-destructive">{(selectedEmployeeStats?.pendingAmount ?? 0).toLocaleString(i18n.language === 'ar' ? 'ar-DZ' : 'fr-DZ')} DZD</p>
+                  </Card>
+                </>
+              )}
             </div>
+
+            {/* Tabs for Sales and Transactions */}
+            <Tabs value={employeeDetailTab} onValueChange={(v) => setEmployeeDetailTab(v as 'sales' | 'transactions')} className="flex-1 overflow-hidden flex flex-col">
+              <TabsList className="w-full justify-start">
+                <TabsTrigger value="sales">{t('accounting.employeeDetails.tabs.sales')}</TabsTrigger>
+                <TabsTrigger value="transactions">{t('accounting.employeeDetails.tabs.transactions')}</TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="sales" className="flex-1 overflow-y-auto mt-2">
+                {loadingEmployeeCommands ? (
+                  <div className="space-y-3 py-4">
+                    {[1, 2, 3].map((i) => (
+                      <div key={i} className="flex items-center gap-4">
+                        <Skeleton className="h-4 w-20" />
+                        <Skeleton className="h-4 flex-1" />
+                        <Skeleton className="h-4 w-24" />
+                      </div>
+                    ))}
+                  </div>
+                ) : employeeCommands.length === 0 ? (
+                  <p className="text-center text-muted-foreground py-8">{t('accounting.employeeDetails.noSales')}</p>
+                ) : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>{t('accounting.commandHistory.date')}</TableHead>
+                        <TableHead>{t('accounting.commandHistory.client')}</TableHead>
+                        <TableHead>{t('accounting.commandHistory.service')}</TableHead>
+                        <TableHead className="text-right">{t('accounting.commandHistory.sellingPrice')}</TableHead>
+                        <TableHead className="text-right">{t('accounting.commandHistory.amountPaid')}</TableHead>
+                        <TableHead className="text-right">{t('accounting.commandHistory.remaining')}</TableHead>
+                        <TableHead className="text-right">{t('accounting.commandHistory.profit')}</TableHead>
+                        <TableHead>{t('accounting.commandHistory.status')}</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {employeeCommands.map((command) => {
+                        const sellingPrice = Number(command.sellingPrice || 0);
+                        const amountPaid = Number(command.amountPaid || 0);
+                        const buyingPrice = Number(command.buyingPrice || 0);
+                        const remaining = sellingPrice - amountPaid;
+                        const profit = sellingPrice - buyingPrice;
+                        const commandData = command.data as unknown as Record<string, unknown>;
+                        const clientName = (commandData?.clientFullName || commandData?.nomPrenom || commandData?.clientName || '-') as string;
+                        const serviceName = ((command as unknown as { service?: { name: string } }).service?.name) || '-';
+
+                        return (
+                          <TableRow key={command.id}>
+                            <TableCell>
+                              {format(new Date(command.createdAt), 'dd MMM yyyy', { locale: dateLocale })}
+                            </TableCell>
+                            <TableCell className="font-medium">{clientName}</TableCell>
+                            <TableCell>{serviceName}</TableCell>
+                            <TableCell className="text-right">
+                              {sellingPrice.toLocaleString(i18n.language === 'ar' ? 'ar-DZ' : 'fr-DZ')} DZD
+                            </TableCell>
+                            <TableCell className="text-right text-primary">
+                              {amountPaid.toLocaleString(i18n.language === 'ar' ? 'ar-DZ' : 'fr-DZ')} DZD
+                            </TableCell>
+                            <TableCell className={`text-right ${remaining > 0 ? 'text-destructive' : 'text-muted-foreground'}`}>
+                              {remaining.toLocaleString(i18n.language === 'ar' ? 'ar-DZ' : 'fr-DZ')} DZD
+                            </TableCell>
+                            <TableCell className={`text-right font-medium ${profit >= 0 ? 'text-green-600' : 'text-destructive'}`}>
+                              {profit.toLocaleString(i18n.language === 'ar' ? 'ar-DZ' : 'fr-DZ')} DZD
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant={command.status === 'refuse' ? 'destructive' : command.status === 'retire' || command.status === 'visa_delivre' ? 'default' : 'secondary'}>
+                                {command.status?.replace(/_/g, ' ')}
+                              </Badge>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                )}
+              </TabsContent>
+
+              <TabsContent value="transactions" className="flex-1 overflow-y-auto mt-2">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>{t('accounting.dialog.date')}</TableHead>
+                      <TableHead>{t('accounting.dialog.type')}</TableHead>
+                      <TableHead className="text-right">{t('accounting.dialog.amount')}</TableHead>
+                      <TableHead>{t('accounting.dialog.note')}</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {selectedEmployeeTransactions?.map((transaction) => (
+                      <TableRow key={transaction.id}>
+                        <TableCell>
+                          {format(new Date(transaction.date), 'dd MMM yyyy', { locale: dateLocale })}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={getTypeBadgeVariant(transaction.type)}>
+                            {t(`accounting.transactionTypes.${transaction.type}`)}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-right font-medium">
+                          {Number(transaction.amount).toLocaleString(i18n.language === 'ar' ? 'ar-DZ' : 'fr-DZ')} DZD
+                        </TableCell>
+                        <TableCell className="text-muted-foreground">
+                          {transaction.note || '-'}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                    {(!selectedEmployeeTransactions || selectedEmployeeTransactions.length === 0) && (
+                      <TableRow>
+                        <TableCell colSpan={4} className="text-center text-muted-foreground py-8">
+                          {tCommon('noData')}
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </TabsContent>
+            </Tabs>
           </DialogContent>
         </Dialog>
       </div>
