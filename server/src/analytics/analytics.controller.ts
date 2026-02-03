@@ -1,4 +1,4 @@
-import { Controller, Get, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Query, UseGuards, Request } from '@nestjs/common';
 import { AnalyticsService } from './analytics.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
@@ -8,7 +8,11 @@ export class AnalyticsController {
   constructor(private readonly analyticsService: AnalyticsService) {}
 
   @Get('dashboard')
-  getDashboardStats() { return this.analyticsService.getDashboardStats(); }
+  getDashboardStats(@Request() req: any) {
+    const isAdmin = req.user.role === 'admin';
+    const userId = req.user.id;
+    return this.analyticsService.getDashboardStats(userId, isAdmin);
+  }
 
   @Get('revenue')
   getRevenueStats(@Query('fromDate') fromDate: string, @Query('toDate') toDate: string) { return this.analyticsService.getRevenueStats(fromDate, toDate); }
