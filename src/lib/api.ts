@@ -820,6 +820,22 @@ class ApiClient {
   getTransactionReceiptViewUrl = (transactionId: string): string =>
     `${API_URL}/supplier-transactions/${transactionId}/view`;
 
+  // Fetch PDF as blob with authentication (for iframe viewing and downloading)
+  getTransactionReceiptBlob = async (transactionId: string, mode: 'view' | 'download' = 'view'): Promise<Blob> => {
+    const endpoint = mode === 'view' ? 'view' : 'download';
+    const response = await fetch(`${API_URL}/supplier-transactions/${transactionId}/${endpoint}`, {
+      headers: {
+        Authorization: `Bearer ${this.token}`,
+      },
+    });
+    
+    if (!response.ok) {
+      throw new ApiError(response.status, 'Failed to fetch receipt');
+    }
+    
+    return response.blob();
+  };
+
   // ==================== DOCUMENTS ====================
 
   getDocuments = (category?: string): Promise<Document[]> => {

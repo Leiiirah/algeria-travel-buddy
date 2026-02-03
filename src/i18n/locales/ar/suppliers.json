@@ -89,7 +89,9 @@
       "receipt": "المستند",
       "receiptHint": "PDF فقط (إيصال بنكي، إلخ)",
       "viewReceipt": "عرض المستند",
-      "downloadReceipt": "تحميل"
+      "downloadReceipt": "تحميل",
+      "loadError": "خطأ في تحميل المستند",
+      "downloadError": "خطأ في التنزيل"
     },
     "orders": {
       "title": "طلبات الموردين",
