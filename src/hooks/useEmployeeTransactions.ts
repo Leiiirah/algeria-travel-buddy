@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { api, CreateEmployeeTransactionDto } from '@/lib/api';
+import { api, CreateEmployeeTransactionDto, PaginatedResponse } from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
+import { Command } from '@/types';
 
 export function useEmployeeTransactions() {
   return useQuery({
@@ -77,5 +78,22 @@ export function useDeleteEmployeeTransaction() {
         variant: 'destructive',
       });
     },
+  });
+}
+
+// Admin-only hooks for viewing employee activity
+export function useEmployeeCommands(employeeId: string) {
+  return useQuery<PaginatedResponse<Command>>({
+    queryKey: ['employee-commands', employeeId],
+    queryFn: () => api.getCommandsByEmployee(employeeId),
+    enabled: !!employeeId,
+  });
+}
+
+export function useEmployeeStatsById(employeeId: string) {
+  return useQuery({
+    queryKey: ['employee-stats-by-id', employeeId],
+    queryFn: () => api.getEmployeeStatsById(employeeId),
+    enabled: !!employeeId,
   });
 }

@@ -27,4 +27,13 @@ export class AnalyticsController {
   getEmployeeStats(@Request() req: any) {
     return this.analyticsService.getEmployeeCommandStats(req.user.id);
   }
+
+  @Get('employee-stats/:id')
+  getEmployeeStatsById(@Param('id') id: string, @Request() req: any) {
+    // Admin only endpoint
+    if (req.user.role !== 'admin') {
+      return this.analyticsService.getEmployeeCommandStats(req.user.id);
+    }
+    return this.analyticsService.getEmployeeCommandStats(id);
+  }
 }

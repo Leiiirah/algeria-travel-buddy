@@ -50,6 +50,15 @@ export class CommandsController implements OnModuleInit {
     return this.commandsService.findAll(filters);
   }
 
+  @Get('by-employee/:employeeId')
+  findByEmployee(@Param('employeeId') employeeId: string, @Request() req: any) {
+    // Admin only endpoint
+    if (req.user.role !== 'admin') {
+      throw new NotFoundException('Not found');
+    }
+    return this.commandsService.findAll({ createdBy: employeeId, limit: 1000 });
+  }
+
   @Get('stats')
   getStats() {
     return this.commandsService.getStats();

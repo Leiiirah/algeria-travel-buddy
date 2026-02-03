@@ -106,6 +106,20 @@
       "note": "ملاحظة (اختياري)",
       "notePlaceholder": "أضف ملاحظة..."
     },
-    "newTransaction": "معاملة جديدة"
+    "newTransaction": "معاملة جديدة",
+    "employeeDetails": {
+      "title": "نشاط الموظف",
+      "tabs": {
+        "sales": "المبيعات",
+        "transactions": "المعاملات"
+      },
+      "stats": {
+        "commands": "الطلبات",
+        "revenue": "الإيرادات",
+        "profit": "الربح",
+        "pending": "مستحقات العملاء"
+      },
+      "noSales": "لا توجد مبيعات مسجلة"
+    }
   }
 }
