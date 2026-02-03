@@ -86,6 +86,20 @@ export class SupplierTransactionsController {
     return res.sendFile(transaction.receiptUrl, { root: './uploads/receipts' });
   }
 
+  @Get(':id/view')
+  async viewReceipt(@Param('id') id: string, @Res() res: Response) {
+    const transaction = await this.transactionsService.findOne(id);
+    if (!transaction.receiptUrl) {
+      throw new NotFoundException('No receipt attached to this transaction');
+    }
+    
+    // Set headers for inline viewing (browser displays instead of downloading)
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `inline; filename="${transaction.receiptUrl}"`);
+    
+    return res.sendFile(transaction.receiptUrl, { root: './uploads/receipts' });
+  }
+
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.transactionsService.remove(id);

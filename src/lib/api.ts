@@ -817,6 +817,9 @@ class ApiClient {
   getTransactionReceiptUrl = (transactionId: string): string =>
     `${API_URL}/supplier-transactions/${transactionId}/download`;
 
+  getTransactionReceiptViewUrl = (transactionId: string): string =>
+    `${API_URL}/supplier-transactions/${transactionId}/view`;
+
   // ==================== DOCUMENTS ====================
 
   getDocuments = (category?: string): Promise<Document[]> => {
