@@ -1,21 +1,17 @@
 
-# Plan: Filter Dashboard Stats by User Role
+# Plan: Fix Supplier Dropdown for Employees
 
-## Overview
+## Problem
 
-Update the analytics/dashboard endpoint to filter data based on user role. Employees will only see statistics for their own commands, while admins continue to see global company statistics.
+When employees try to create a command, the supplier dropdown is empty because all supplier endpoints are currently restricted to admin-only access.
 
----
+## Root Cause
 
-## Current State
+In `server/src/suppliers/suppliers.controller.ts`, the `@Roles('admin')` decorator is applied at the **class level** (line 20), which blocks ALL endpoints including the read-only ones needed for the command form.
 
-| Component | Current Behavior | Target Behavior |
-|-----------|-----------------|-----------------|
-| `/analytics/dashboard` endpoint | Returns all commands stats | Filter by `createdBy` for employees |
-| Dashboard cards | Show global revenue, pending, etc. | Show personal stats for employees |
-| Weekly chart | Global revenue by day | Personal revenue by day for employees |
-| Service distribution | Global distribution | Personal distribution for employees |
-| Recent commands | Already filtered via `useCommands` | Already correct |
+## Solution
+
+Remove the class-level `@Roles('admin')` decorator and apply it only to the endpoints that require admin access (create, update, delete). The read endpoints (`GET /suppliers`, `GET /suppliers/:id`) should remain accessible to all authenticated users.
 
 ---
 
@@ -23,84 +19,85 @@ Update the analytics/dashboard endpoint to filter data based on user role. Emplo
 
 | File | Changes |
 |------|---------|
-| `server/src/analytics/analytics.controller.ts` | Pass user info to service method |
-| `server/src/analytics/analytics.service.ts` | Add user filtering to `getDashboardStats` |
+| `server/src/suppliers/suppliers.controller.ts` | Move `@Roles('admin')` from class level to only POST, PATCH, DELETE endpoints |
 
 ---
 
 ## Implementation Details
 
-### 1. Update Analytics Controller
+### Current Code (Problematic)
 
 ```typescript
-@Get('dashboard')
-getDashboardStats(@Request() req: any) {
-  const isAdmin = req.user.role === 'admin';
-  const userId = req.user.id;
-  return this.analyticsService.getDashboardStats(userId, isAdmin);
+@Controller('suppliers')
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles('admin') // ❌ Blocks ALL endpoints for employees
+export class SuppliersController {
+  @Get()
+  findAll() { ... }  // ❌ Blocked for employees
+
+  @Post()
+  @Roles('admin')  // Redundant
+  create() { ... }
 }
 ```
 
-### 2. Update Analytics Service
+### Updated Code (Fixed)
 
 ```typescript
-async getDashboardStats(userId?: string, isAdmin?: boolean) {
-  // Build query based on role
-  let queryBuilder = this.commandsRepo.createQueryBuilder('command')
-    .leftJoinAndSelect('command.service', 'service')
-    .orderBy('command.createdAt', 'DESC');
-  
-  // Filter by user for non-admin
-  if (!isAdmin && userId) {
-    queryBuilder = queryBuilder.where('command.createdBy = :userId', { userId });
-  }
-  
-  const commands = await queryBuilder.getMany();
-  
-  // ... rest of calculations remain the same
+@Controller('suppliers')
+@UseGuards(JwtAuthGuard, RolesGuard)
+// No class-level @Roles decorator - READ endpoints accessible to all
+export class SuppliersController {
+  @Get()
+  findAll() { ... }  // ✅ Accessible to all authenticated users
+
+  @Get('accounting')
+  @Roles('admin')  // Only admins can see supplier accounting data
+  findAllWithBalance() { ... }
+
+  @Get(':id')
+  findOne() { ... }  // ✅ Accessible to all
+
+  @Get(':id/balance')
+  @Roles('admin')  // Only admins can see balance details
+  getBalance() { ... }
+
+  @Post()
+  @Roles('admin')  // ✅ Only admins can create
+  create() { ... }
+
+  @Patch(':id')
+  @Roles('admin')  // ✅ Only admins can update
+  update() { ... }
+
+  @Delete(':id')
+  @Roles('admin')  // ✅ Only admins can delete
+  remove() { ... }
 }
 ```
 
 ---
 
-## Data Flow
+## Access Control After Fix
 
-```text
-Admin User:
-  Dashboard Request
-       ↓
-  getDashboardStats(userId, isAdmin=true)
-       ↓
-  Query: SELECT * FROM commands
-       ↓
-  Returns: Global company stats
-
-Employee User:
-  Dashboard Request
-       ↓
-  getDashboardStats(userId, isAdmin=false)
-       ↓
-  Query: SELECT * FROM commands WHERE createdBy = userId
-       ↓
-  Returns: Personal stats only
-```
+| Endpoint | Admin | Employee |
+|----------|-------|----------|
+| `GET /suppliers` | ✅ | ✅ (for dropdown) |
+| `GET /suppliers/:id` | ✅ | ✅ |
+| `GET /suppliers/accounting` | ✅ | ❌ |
+| `GET /suppliers/:id/balance` | ✅ | ❌ |
+| `POST /suppliers` | ✅ | ❌ |
+| `PATCH /suppliers/:id` | ✅ | ❌ |
+| `DELETE /suppliers/:id` | ✅ | ❌ |
 
 ---
 
-## Dashboard Display Changes
+## Why This Is Safe
 
-For employees, the dashboard will show:
-
-| Card | Admin View | Employee View |
-|------|-----------|---------------|
-| Revenue | Total company revenue | Revenue from employee's commands |
-| Today's Commands | All commands today | Employee's commands today |
-| In Progress | All in-progress commands | Employee's in-progress commands |
-| Unpaid Amount | Total company unpaid | Unpaid from employee's commands |
-
-Charts will also be filtered:
-- **Weekly Revenue**: Employee's personal weekly revenue
-- **Service Distribution**: Distribution of employee's own commands
+- Employees can **view** supplier names for selection in command forms
+- Employees **cannot** access sensitive data (accounting/balance info)
+- Employees **cannot** create, modify, or delete suppliers
+- The SuppliersPage route remains admin-only (protected in `App.tsx`)
 
 ---
 
@@ -108,5 +105,5 @@ Charts will also be filtered:
 
 | Category | Count |
 |----------|-------|
-| Backend files | 2 |
-| **Total** | 2 files |
+| Backend files | 1 |
+| **Total** | 1 file |
