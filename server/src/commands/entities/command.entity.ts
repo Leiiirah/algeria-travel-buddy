@@ -54,6 +54,9 @@ export class Command {
   @Column({ type: 'decimal', precision: 10, scale: 2, default: 0 })
   buyingPrice: number;
 
+  @Column({ nullable: true })
+  passportUrl: string;
+
   @Column()
   createdBy: string;
 

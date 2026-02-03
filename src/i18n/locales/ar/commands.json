@@ -52,7 +52,12 @@
     "noServiceAvailable": "لا توجد خدمات متاحة",
     "addService": "إضافة خدمة",
     "noSupplierAvailable": "لا يوجد موردون متاحون",
-    "addSupplier": "إضافة مورد"
+    "addSupplier": "إضافة مورد",
+    "passport": "جواز السفر الممسوح",
+    "passportHelp": "تحميل جواز سفر العميل (PDF، JPG، PNG - الحد الأقصى 10 ميجابايت)",
+    "viewPassport": "عرض جواز السفر",
+    "downloadPassport": "تحميل جواز السفر",
+    "noPassport": "لا يوجد جواز سفر"
   },
   "calculations": {
     "remaining": "المتبقي للدفع",

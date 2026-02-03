@@ -35,4 +35,8 @@ export class CreateCommandDto {
   @IsNumber()
   @IsOptional()
   buyingPrice?: number;
+
+  @IsString()
+  @IsOptional()
+  passportUrl?: string;
 }

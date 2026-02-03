@@ -757,6 +757,36 @@ class ApiClient {
   deleteCommand = (id: string): Promise<void> =>
     this.request(`/commands/${id}`, { method: 'DELETE' });
 
+  // Create command with passport file (for visa commands)
+  createCommandWithPassport = (data: CreateCommandDto, passportFile: File): Promise<Command> => {
+    const formData = new FormData();
+    formData.append('serviceId', data.serviceId);
+    formData.append('supplierId', data.supplierId);
+    formData.append('data', JSON.stringify(data.data));
+    formData.append('destination', data.destination || '');
+    formData.append('sellingPrice', data.sellingPrice.toString());
+    formData.append('amountPaid', data.amountPaid.toString());
+    formData.append('buyingPrice', data.buyingPrice.toString());
+    formData.append('passport', passportFile);
+    return this.requestWithFormData('/commands/with-passport', formData);
+  };
+
+  // Fetch passport as blob for viewing (authenticated)
+  getCommandPassportBlob = async (commandId: string, mode: 'view' | 'download' = 'view'): Promise<Blob> => {
+    const endpoint = mode === 'view' ? 'view' : 'download';
+    const response = await fetch(`${API_URL}/commands/${commandId}/passport/${endpoint}`, {
+      headers: {
+        Authorization: `Bearer ${this.token}`,
+      },
+    });
+
+    if (!response.ok) {
+      throw new ApiError(response.status, 'Failed to fetch passport');
+    }
+
+    return response.blob();
+  };
+
   // ==================== PAYMENTS ====================
 
   getPayments = (filters?: PaymentFilters): Promise<Payment[]> => {
