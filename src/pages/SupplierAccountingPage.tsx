@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import { fr, ar } from 'date-fns/locale';
-import { Plus, ArrowDownCircle, ArrowUpCircle, Wallet, TrendingDown, CreditCard } from 'lucide-react';
+import { Plus, ArrowDownCircle, ArrowUpCircle, Wallet, TrendingDown, CreditCard, FileText } from 'lucide-react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -35,6 +35,7 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { formatDZD, getTransactionTypeLabel } from '@/lib/utils';
+import { api } from '@/lib/api';
 import { SupplierTransactionType } from '@/types';
 import { useSuppliers, useSuppliersWithBalance } from '@/hooks/useSuppliers';
 import { useSupplierTransactions, useCreateSupplierTransaction } from '@/hooks/useSupplierTransactions';
@@ -59,6 +60,7 @@ const SupplierAccountingPage = () => {
     amount: '',
     note: '',
     date: format(new Date(), 'yyyy-MM-dd'),
+    file: null as File | null,
   });
 
   const dateLocale = i18n.language === 'ar' ? ar : fr;
@@ -144,6 +146,7 @@ const SupplierAccountingPage = () => {
         amount,
         note: newTransaction.note,
         date: newTransaction.date,
+        file: newTransaction.file || undefined,
       },
       {
         onSuccess: () => {
@@ -153,6 +156,7 @@ const SupplierAccountingPage = () => {
             amount: '',
             note: '',
             date: format(new Date(), 'yyyy-MM-dd'),
+            file: null,
           });
           setIsDialogOpen(false);
         },
@@ -318,6 +322,21 @@ const SupplierAccountingPage = () => {
                     }
                     placeholder={tCommon('notePlaceholder')}
                   />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="receipt">{t('accounting.transaction.receipt')}</Label>
+                  <Input
+                    id="receipt"
+                    type="file"
+                    accept="application/pdf"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0] || null;
+                      setNewTransaction({ ...newTransaction, file });
+                    }}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    {t('accounting.transaction.receiptHint')}
+                  </p>
                 </div>
               </div>
               <DialogFooter>
@@ -518,6 +537,7 @@ const SupplierAccountingPage = () => {
                         <TableHead>{tCommon('type')}</TableHead>
                         <TableHead className="text-right">{tCommon('amount')}</TableHead>
                         <TableHead>{tCommon('note')}</TableHead>
+                        <TableHead>{t('accounting.transaction.receipt')}</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -544,6 +564,20 @@ const SupplierAccountingPage = () => {
                           </TableCell>
                           <TableCell className="text-muted-foreground max-w-[200px] truncate">
                             {transaction.note || '-'}
+                          </TableCell>
+                          <TableCell>
+                            {transaction.receiptUrl ? (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => window.open(api.getTransactionReceiptUrl(transaction.id), '_blank')}
+                              >
+                                <FileText className="h-4 w-4 ltr:mr-1 rtl:ml-1" />
+                                PDF
+                              </Button>
+                            ) : (
+                              <span className="text-muted-foreground">-</span>
+                            )}
                           </TableCell>
                         </TableRow>
                       ))}

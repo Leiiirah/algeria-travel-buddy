@@ -123,6 +123,7 @@ export interface CreateSupplierTransactionDto {
   type: 'sortie' | 'entree';
   amount: number;
   note: string;
+  file?: File;
 }
 
 export interface UploadDocumentDto {
@@ -791,14 +792,30 @@ class ApiClient {
   getSupplierTransactionsBySupplier = (supplierId: string): Promise<SupplierTransaction[]> =>
     this.request(`/supplier-transactions/supplier/${supplierId}`);
 
-  createSupplierTransaction = (data: CreateSupplierTransactionDto): Promise<SupplierTransaction> =>
-    this.request('/supplier-transactions', {
+  createSupplierTransaction = (data: CreateSupplierTransactionDto): Promise<SupplierTransaction> => {
+    // If file is provided, use multipart form data
+    if (data.file) {
+      const formData = new FormData();
+      formData.append('supplierId', data.supplierId);
+      formData.append('date', data.date);
+      formData.append('type', data.type);
+      formData.append('amount', data.amount.toString());
+      formData.append('note', data.note || '');
+      formData.append('file', data.file);
+      return this.requestWithFormData('/supplier-transactions/with-file', formData);
+    }
+    // Otherwise, use JSON
+    return this.request('/supplier-transactions', {
       method: 'POST',
       body: JSON.stringify(data),
     });
+  };
 
   deleteSupplierTransaction = (id: string): Promise<void> =>
     this.request(`/supplier-transactions/${id}`, { method: 'DELETE' });
+
+  getTransactionReceiptUrl = (transactionId: string): string =>
+    `${API_URL}/supplier-transactions/${transactionId}/download`;
 
   // ==================== DOCUMENTS ====================
 

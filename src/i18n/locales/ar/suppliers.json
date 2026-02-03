@@ -85,7 +85,9 @@
     },
     "transaction": {
       "payment": "دفعة مرسلة",
-      "refund": "استرداد مستلم"
+      "refund": "استرداد مستلم",
+      "receipt": "المستند",
+      "receiptHint": "PDF فقط (إيصال بنكي، إلخ)"
     },
     "orders": {
       "title": "طلبات الموردين",

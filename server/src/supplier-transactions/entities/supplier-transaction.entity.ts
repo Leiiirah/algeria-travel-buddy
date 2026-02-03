@@ -37,6 +37,9 @@ export class SupplierTransaction {
   @Column({ type: 'text', nullable: true })
   note: string;
 
+  @Column({ nullable: true })
+  receiptUrl: string;
+
   @Column()
   recordedBy: string;
 
