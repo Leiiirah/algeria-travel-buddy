@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import { fr, ar } from 'date-fns/locale';
-import { Plus, ArrowDownCircle, ArrowUpCircle, Wallet, TrendingDown, CreditCard, FileText } from 'lucide-react';
+import { Plus, ArrowDownCircle, ArrowUpCircle, Wallet, TrendingDown, CreditCard, FileText, Eye, Download } from 'lucide-react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -53,6 +53,8 @@ const SupplierAccountingPage = () => {
   const navigate = useNavigate();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+  const [isPdfPreviewOpen, setIsPdfPreviewOpen] = useState(false);
+  const [selectedTransactionId, setSelectedTransactionId] = useState<string | null>(null);
   const [selectedSupplierId, setSelectedSupplierId] = useState<string | null>(null);
   const [newTransaction, setNewTransaction] = useState({
     supplierId: '',
@@ -127,6 +129,11 @@ const SupplierAccountingPage = () => {
   const handleOpenDetails = (supplierId: string) => {
     setSelectedSupplierId(supplierId);
     setIsDetailsOpen(true);
+  };
+
+  const handleViewPdf = (transactionId: string) => {
+    setSelectedTransactionId(transactionId);
+    setIsPdfPreviewOpen(true);
   };
 
   const handleAddTransaction = () => {
@@ -397,6 +404,24 @@ const SupplierAccountingPage = () => {
               </div>
             </DialogContent>
           </Dialog>
+
+          {/* PDF Preview Dialog */}
+          <Dialog open={isPdfPreviewOpen} onOpenChange={setIsPdfPreviewOpen}>
+            <DialogContent className="max-w-4xl h-[80vh]">
+              <DialogHeader>
+                <DialogTitle>{t('accounting.transaction.viewReceipt')}</DialogTitle>
+              </DialogHeader>
+              <div className="flex-1 h-full min-h-[500px]">
+                {selectedTransactionId && (
+                  <iframe
+                    src={api.getTransactionReceiptViewUrl(selectedTransactionId)}
+                    className="w-full h-full border-0 rounded-md"
+                    title="PDF Receipt"
+                  />
+                )}
+              </div>
+            </DialogContent>
+          </Dialog>
         </div>
 
         {/* Summary Cards */}
@@ -567,14 +592,24 @@ const SupplierAccountingPage = () => {
                           </TableCell>
                           <TableCell>
                             {transaction.receiptUrl ? (
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => window.open(api.getTransactionReceiptUrl(transaction.id), '_blank')}
-                              >
-                                <FileText className="h-4 w-4 ltr:mr-1 rtl:ml-1" />
-                                PDF
-                              </Button>
+                              <div className="flex gap-1">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleViewPdf(transaction.id)}
+                                  title={t('accounting.transaction.viewReceipt')}
+                                >
+                                  <Eye className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => window.open(api.getTransactionReceiptUrl(transaction.id), '_blank')}
+                                  title={t('accounting.transaction.downloadReceipt')}
+                                >
+                                  <Download className="h-4 w-4" />
+                                </Button>
+                              </div>
                             ) : (
                               <span className="text-muted-foreground">-</span>
                             )}

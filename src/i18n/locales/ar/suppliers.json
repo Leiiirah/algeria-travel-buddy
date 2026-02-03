@@ -87,7 +87,9 @@
       "payment": "دفعة مرسلة",
       "refund": "استرداد مستلم",
       "receipt": "المستند",
-      "receiptHint": "PDF فقط (إيصال بنكي، إلخ)"
+      "receiptHint": "PDF فقط (إيصال بنكي، إلخ)",
+      "viewReceipt": "عرض المستند",
+      "downloadReceipt": "تحميل"
     },
     "orders": {
       "title": "طلبات الموردين",
