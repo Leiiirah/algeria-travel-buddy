@@ -97,7 +97,7 @@ const AppRoutes = () => {
       <Route
         path="/fournisseurs"
         element={
-          <ProtectedRoute>
+          <ProtectedRoute adminOnly>
             <SuppliersPage />
           </ProtectedRoute>
         }
@@ -105,7 +105,7 @@ const AppRoutes = () => {
       <Route
         path="/situation-fournisseurs"
         element={
-          <ProtectedRoute>
+          <ProtectedRoute adminOnly>
             <SupplierAccountingPage />
           </ProtectedRoute>
         }
@@ -113,7 +113,7 @@ const AppRoutes = () => {
       <Route
         path="/comptabilite"
         element={
-          <ProtectedRoute>
+          <ProtectedRoute adminOnly>
             <AccountingPage />
           </ProtectedRoute>
         }

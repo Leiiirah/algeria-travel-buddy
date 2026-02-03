@@ -21,7 +21,12 @@ export class CommandsController {
   constructor(private readonly commandsService: CommandsService) { }
 
   @Get()
-  findAll(@Query() filters: CommandFilters) {
+  findAll(@Query() filters: CommandFilters, @Request() req: any) {
+    // Employees can only see their own commands
+    const isAdmin = req.user.role === 'admin';
+    if (!isAdmin) {
+      filters.createdBy = req.user.id;
+    }
     return this.commandsService.findAll(filters);
   }
 

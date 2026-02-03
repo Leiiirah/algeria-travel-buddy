@@ -63,6 +63,16 @@ export function AppSidebar() {
     },
   ];
 
+  // Items visible to all users
+  const employeeMenuItems = [
+    {
+      titleKey: 'navigation.employeeAccounting',
+      url: '/comptabilite-employes',
+      icon: Users2,
+    },
+  ];
+
+  // Admin-only management items
   const managementMenuItems = [
     {
       titleKey: 'navigation.employees',
@@ -162,33 +172,67 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
 
-        <SidebarGroup>
-          <SidebarGroupLabel className="text-sidebar-muted">
-            {t('groups.management')}
-          </SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {managementMenuItems.map((item) => (
-                <SidebarMenuItem key={item.titleKey}>
-                  <SidebarMenuButton
-                    asChild
-                    isActive={location.pathname === item.url}
-                    tooltip={t(item.titleKey)}
-                  >
-                    <NavLink
-                      to={item.url}
-                      className="flex items-center gap-3"
-                      activeClassName="bg-sidebar-primary/20 text-sidebar-primary"
+        {/* Personal section for employees */}
+        {!isAdmin && (
+          <SidebarGroup>
+            <SidebarGroupLabel className="text-sidebar-muted">
+              {t('groups.personal')}
+            </SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {employeeMenuItems.map((item) => (
+                  <SidebarMenuItem key={item.titleKey}>
+                    <SidebarMenuButton
+                      asChild
+                      isActive={location.pathname === item.url}
+                      tooltip={t(item.titleKey)}
                     >
-                      <item.icon className="h-4 w-4" />
-                      <span>{t(item.titleKey)}</span>
-                    </NavLink>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+                      <NavLink
+                        to={item.url}
+                        className="flex items-center gap-3"
+                        activeClassName="bg-sidebar-primary/20 text-sidebar-primary"
+                      >
+                        <item.icon className="h-4 w-4" />
+                        <span>{t(item.titleKey)}</span>
+                      </NavLink>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
+
+        {/* Admin-only management section */}
+        {isAdmin && (
+          <SidebarGroup>
+            <SidebarGroupLabel className="text-sidebar-muted">
+              {t('groups.management')}
+            </SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {managementMenuItems.map((item) => (
+                  <SidebarMenuItem key={item.titleKey}>
+                    <SidebarMenuButton
+                      asChild
+                      isActive={location.pathname === item.url}
+                      tooltip={t(item.titleKey)}
+                    >
+                      <NavLink
+                        to={item.url}
+                        className="flex items-center gap-3"
+                        activeClassName="bg-sidebar-primary/20 text-sidebar-primary"
+                      >
+                        <item.icon className="h-4 w-4" />
+                        <span>{t(item.titleKey)}</span>
+                      </NavLink>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
 
         {isAdmin && (
           <SidebarGroup>

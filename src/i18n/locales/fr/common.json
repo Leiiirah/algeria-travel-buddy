@@ -15,6 +15,7 @@
   },
   "groups": {
     "main": "Principal",
+    "personal": "Personnel",
     "management": "Gestion",
     "administration": "Administration"
   },
