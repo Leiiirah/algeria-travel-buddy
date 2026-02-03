@@ -1,6 +1,13 @@
 {
   "title": "الطلبات",
   "subtitle": "إدارة طلبات العملاء",
+  "details": {
+    "title": "تفاصيل الطلب",
+    "passportLoadError": "فشل تحميل جواز السفر",
+    "service": "الخدمة",
+    "createdAt": "تاريخ الإنشاء",
+    "createdBy": "أنشئ بواسطة"
+  },
   "stats": {
     "totalPayments": "إجمالي المدفوعات",
     "totalCredit": "إجمالي الدين (المتبقي)",

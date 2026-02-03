@@ -38,13 +38,13 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Plus, Search, MoreHorizontal, Edit, Trash2, Eye, Lock, Unlock, Banknote, CreditCard, TrendingUp, FileDown } from 'lucide-react';
+import { Plus, Search, MoreHorizontal, Edit, Trash2, Eye, Lock, Unlock, Banknote, CreditCard, TrendingUp, FileDown, Download, Loader2 } from 'lucide-react';
 import {
   formatDZD,
   isCommandEditable,
   getPaymentStatusFromAmounts,
 } from '@/lib/utils';
-import { CommandData, calculateRemainingBalance, calculateNetProfit } from '@/types';
+import { CommandData, calculateRemainingBalance, calculateNetProfit, Command } from '@/types';
 import { CommandFilters, api } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { AdvancedFilter } from '@/components/search/AdvancedFilter';
@@ -69,6 +69,10 @@ const CommandsPage = () => {
   const [selectedService, setSelectedService] = useState<string>('');
   const [editingCommandId, setEditingCommandId] = useState<string | null>(null);
   const [passportFile, setPassportFile] = useState<File | null>(null);
+  // Details dialog state
+  const [viewingCommand, setViewingCommand] = useState<Command | null>(null);
+  const [passportBlobUrl, setPassportBlobUrl] = useState<string | null>(null);
+  const [isLoadingPassport, setIsLoadingPassport] = useState(false);
   // Form states
   const [formData, setFormData] = useState({
     clientFullName: '',
@@ -370,7 +374,48 @@ const CommandsPage = () => {
     });
   };
 
-  const renderServiceSpecificFields = () => {
+  // View command details with passport
+  const handleViewCommand = async (command: Command) => {
+    setViewingCommand(command);
+    setPassportBlobUrl(null);
+    
+    // If command has a passport, load it
+    if (command.passportUrl) {
+      setIsLoadingPassport(true);
+      try {
+        const blob = await api.getCommandPassportBlob(command.id, 'view');
+        const url = URL.createObjectURL(blob);
+        setPassportBlobUrl(url);
+      } catch (error) {
+        console.error('Failed to load passport:', error);
+      } finally {
+        setIsLoadingPassport(false);
+      }
+    }
+  };
+
+  const handleDownloadPassport = async (commandId: string) => {
+    try {
+      const blob = await api.getCommandPassportBlob(commandId, 'download');
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'passport.pdf';
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Failed to download passport:', error);
+    }
+  };
+
+  const closeDetailsDialog = () => {
+    setViewingCommand(null);
+    if (passportBlobUrl) {
+      URL.revokeObjectURL(passportBlobUrl);
+      setPassportBlobUrl(null);
+    }
+  };
+
     const serviceType = getServiceType(selectedService);
 
     switch (serviceType) {
@@ -913,7 +958,7 @@ const CommandsPage = () => {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end" className="bg-popover">
-                              <DropdownMenuItem onClick={() => handleEditCommand(command)}>
+                              <DropdownMenuItem onClick={() => handleViewCommand(command)}>
                                 <Eye className="ltr:mr-2 rtl:ml-2 h-4 w-4" />
                                 {tCommon('actions.view')}
                               </DropdownMenuItem>
@@ -948,6 +993,182 @@ const CommandsPage = () => {
           )}
         </CardContent>
       </Card>
+
+      {/* View Details Dialog */}
+      <Dialog open={!!viewingCommand} onOpenChange={(open) => {
+        if (!open) closeDetailsDialog();
+      }}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{t('details.title')}</DialogTitle>
+          </DialogHeader>
+          
+          {viewingCommand && (() => {
+            const viewService = services?.find((s) => s.id === viewingCommand.serviceId);
+            const viewSupplier = suppliers?.find((s) => s.id === viewingCommand.supplierId);
+            const viewRemaining = calculateRemainingBalance(viewingCommand.sellingPrice, viewingCommand.amountPaid);
+            const viewProfit = calculateNetProfit(viewingCommand.sellingPrice, viewingCommand.buyingPrice);
+            
+            return (
+              <div className="space-y-6">
+                {/* Service and Date Info */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label className="text-muted-foreground text-xs">{t('details.service')}</Label>
+                    <p className="font-medium">{viewService?.name || '-'}</p>
+                  </div>
+                  <div>
+                    <Label className="text-muted-foreground text-xs">{t('details.createdAt')}</Label>
+                    <p className="font-medium">{format(new Date(viewingCommand.createdAt), 'dd/MM/yyyy HH:mm')}</p>
+                  </div>
+                </div>
+
+                {/* Client Information */}
+                <div className="border-t pt-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label className="text-muted-foreground text-xs">{t('table.client')}</Label>
+                      <p className="font-medium">{viewingCommand.data.clientFullName}</p>
+                    </div>
+                    <div>
+                      <Label className="text-muted-foreground text-xs">{t('form.phone')}</Label>
+                      <p className="font-medium">{viewingCommand.data.phone || '-'}</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Visa-specific fields */}
+                {viewingCommand.data.type === 'visa' && (
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label className="text-muted-foreground text-xs">{t('form.firstName')}</Label>
+                      <p className="font-medium">{viewingCommand.data.firstName || '-'}</p>
+                    </div>
+                    <div>
+                      <Label className="text-muted-foreground text-xs">{t('form.lastName')}</Label>
+                      <p className="font-medium">{viewingCommand.data.lastName || '-'}</p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Residence-specific fields */}
+                {viewingCommand.data.type === 'residence' && (
+                  <div>
+                    <Label className="text-muted-foreground text-xs">{t('form.hotelName')}</Label>
+                    <p className="font-medium">{viewingCommand.data.hotelName || '-'}</p>
+                  </div>
+                )}
+
+                {/* Ticket-specific fields */}
+                {viewingCommand.data.type === 'ticket' && (
+                  <div>
+                    <Label className="text-muted-foreground text-xs">{t('form.company')}</Label>
+                    <p className="font-medium">{viewingCommand.data.company || '-'}</p>
+                  </div>
+                )}
+
+                {/* Dossier-specific fields */}
+                {viewingCommand.data.type === 'dossier' && (
+                  <div>
+                    <Label className="text-muted-foreground text-xs">{t('form.description')}</Label>
+                    <p className="font-medium">{viewingCommand.data.description || '-'}</p>
+                  </div>
+                )}
+
+                {/* Destination and Supplier */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label className="text-muted-foreground text-xs">{t('form.destination')}</Label>
+                    <p className="font-medium">{viewingCommand.destination || '-'}</p>
+                  </div>
+                  <div>
+                    <Label className="text-muted-foreground text-xs">{t('form.supplier')}</Label>
+                    <p className="font-medium">{viewSupplier?.name || '-'}</p>
+                  </div>
+                </div>
+
+                {/* Status */}
+                <div>
+                  <Label className="text-muted-foreground text-xs">{t('table.status')}</Label>
+                  <div className="mt-1">
+                    <Badge variant={getStatusVariant(viewingCommand.status)}>
+                      {getStatusLabel(viewingCommand.status)}
+                    </Badge>
+                  </div>
+                </div>
+
+                {/* Passport Section - Only for Visa */}
+                {viewingCommand.data.type === 'visa' && (
+                  <div className="border-t pt-4">
+                    <Label className="text-muted-foreground text-xs mb-2 block">{t('form.passport')}</Label>
+                    {viewingCommand.passportUrl ? (
+                      <div className="space-y-3">
+                        {isLoadingPassport ? (
+                          <div className="flex items-center justify-center h-[300px] bg-muted rounded-lg">
+                            <Loader2 className="h-6 w-6 animate-spin" />
+                          </div>
+                        ) : passportBlobUrl ? (
+                          <>
+                            {/* Display based on file type */}
+                            {viewingCommand.passportUrl.toLowerCase().endsWith('.pdf') ? (
+                              <iframe
+                                src={passportBlobUrl}
+                                className="w-full h-[400px] rounded-lg border"
+                                title="Passport Preview"
+                              />
+                            ) : (
+                              <img
+                                src={passportBlobUrl}
+                                alt="Passport"
+                                className="max-w-full max-h-[400px] rounded-lg border mx-auto block"
+                              />
+                            )}
+                            <div className="flex gap-2">
+                              <Button variant="outline" size="sm" onClick={() => handleDownloadPassport(viewingCommand.id)}>
+                                <Download className="h-4 w-4 ltr:mr-2 rtl:ml-2" />
+                                {t('form.downloadPassport')}
+                              </Button>
+                            </div>
+                          </>
+                        ) : (
+                          <p className="text-sm text-destructive">{t('details.passportLoadError')}</p>
+                        )}
+                      </div>
+                    ) : (
+                      <p className="text-sm text-muted-foreground">{t('form.noPassport')}</p>
+                    )}
+                  </div>
+                )}
+                
+                {/* Financial Information */}
+                <div className="border-t pt-4">
+                  <h4 className="font-medium mb-3">{t('form.accountingInfo')}</h4>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div>
+                      <Label className="text-muted-foreground text-xs">{t('table.sellingPrice')}</Label>
+                      <p className="font-medium">{formatDZD(viewingCommand.sellingPrice)}</p>
+                    </div>
+                    <div>
+                      <Label className="text-muted-foreground text-xs">{t('table.payment')}</Label>
+                      <p className="font-medium">{formatDZD(viewingCommand.amountPaid)}</p>
+                    </div>
+                    <div>
+                      <Label className="text-muted-foreground text-xs">{t('table.remaining')}</Label>
+                      <p className={`font-medium ${viewRemaining > 0 ? 'text-destructive' : 'text-green-600'}`}>
+                        {formatDZD(viewRemaining)}
+                      </p>
+                    </div>
+                    <div>
+                      <Label className="text-muted-foreground text-xs">{t('table.profit')}</Label>
+                      <p className="font-medium text-green-600">{formatDZD(viewProfit)}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
+        </DialogContent>
+      </Dialog>
     </DashboardLayout >
   );
 };
