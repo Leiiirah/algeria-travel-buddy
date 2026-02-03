@@ -29,4 +29,8 @@ export class CreateSupplierTransactionDto {
   @IsString()
   @IsOptional()
   note?: string;
+
+  @IsString()
+  @IsOptional()
+  receiptUrl?: string;
 }

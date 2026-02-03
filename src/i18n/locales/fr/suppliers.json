@@ -85,7 +85,9 @@
     },
     "transaction": {
       "payment": "Paiement envoyé",
-      "refund": "Remboursement reçu"
+      "refund": "Remboursement reçu",
+      "receipt": "Justificatif",
+      "receiptHint": "PDF uniquement (reçu bancaire, etc.)"
     },
     "orders": {
       "title": "Commandes Fournisseurs",

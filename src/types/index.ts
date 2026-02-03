@@ -149,6 +149,7 @@ export interface SupplierTransaction {
   type: SupplierTransactionType;
   amount: number;
   note: string;
+  receiptUrl?: string;
   recordedBy: string;
   createdAt: Date;
 }
