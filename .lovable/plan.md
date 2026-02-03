@@ -1,17 +1,32 @@
 
-# Plan: Fix Supplier Dropdown for Employees
+# Plan: Add Employee Command Statistics to Personal Accounting
 
 ## Problem
 
-When employees try to create a command, the supplier dropdown is empty because all supplier endpoints are currently restricted to admin-only access.
+When an employee creates a command, their personal accounting page (`/comptabilite-employes`) doesn't reflect this. Currently, this page only shows manually-entered transactions (advances, credits, salaries) by the admin.
 
-## Root Cause
+Employees expect to see statistics about the commands they've created - their personal performance metrics.
 
-In `server/src/suppliers/suppliers.controller.ts`, the `@Roles('admin')` decorator is applied at the **class level** (line 20), which blocks ALL endpoints including the read-only ones needed for the command form.
+---
 
 ## Solution
 
-Remove the class-level `@Roles('admin')` decorator and apply it only to the endpoints that require admin access (create, update, delete). The read endpoints (`GET /suppliers`, `GET /suppliers/:id`) should remain accessible to all authenticated users.
+Enhance the employee's personal accounting view to include a **"My Performance"** section that displays statistics from their own commands:
+
+- Total revenue (from their commands)
+- Total profit (selling price - buying price)
+- Pending amounts (unpaid balances from clients)
+- Number of commands by status
+
+---
+
+## Current vs Proposed View
+
+| Section | Current (Employee View) | Proposed (Employee View) |
+|---------|------------------------|--------------------------|
+| My Performance | Not shown | NEW: Revenue, Profit, Pending, Command Stats |
+| Transactions | Advances, Credits, Salaries | Unchanged |
+| Balance | Salary balance only | Unchanged |
 
 ---
 
@@ -19,91 +34,169 @@ Remove the class-level `@Roles('admin')` decorator and apply it only to the endp
 
 | File | Changes |
 |------|---------|
-| `server/src/suppliers/suppliers.controller.ts` | Move `@Roles('admin')` from class level to only POST, PATCH, DELETE endpoints |
+| `server/src/analytics/analytics.service.ts` | Add new method `getEmployeeCommandStats(userId)` |
+| `server/src/analytics/analytics.controller.ts` | Add new endpoint `GET /analytics/employee-stats` |
+| `src/lib/api.ts` | Add `getEmployeeStats()` API function |
+| `src/hooks/useAnalytics.ts` | Add `useEmployeeStats()` hook |
+| `src/pages/EmployeeAccountingPage.tsx` | Add "My Performance" cards for employees |
+| `src/i18n/locales/fr/employees.json` | Add translation keys for new stats |
+| `src/i18n/locales/ar/employees.json` | Add Arabic translations |
 
 ---
 
 ## Implementation Details
 
-### Current Code (Problematic)
+### 1. Backend - Add Employee Stats Endpoint
 
+**analytics.service.ts** - New method:
 ```typescript
-@Controller('suppliers')
-@UseGuards(JwtAuthGuard, RolesGuard)
-@Roles('admin') // ❌ Blocks ALL endpoints for employees
-export class SuppliersController {
-  @Get()
-  findAll() { ... }  // ❌ Blocked for employees
+async getEmployeeCommandStats(userId: string) {
+  const commands = await this.commandsRepo.find({
+    where: { createdBy: userId },
+    relations: ['service'],
+  });
 
-  @Post()
-  @Roles('admin')  // Redundant
-  create() { ... }
+  const totalRevenue = commands.reduce(
+    (sum, c) => sum + Number(c.sellingPrice || 0), 0
+  );
+  const totalProfit = commands.reduce(
+    (sum, c) => sum + (Number(c.sellingPrice || 0) - Number(c.buyingPrice || 0)), 0
+  );
+  const pendingAmount = commands.reduce(
+    (sum, c) => sum + Math.max(0, Number(c.sellingPrice || 0) - Number(c.amountPaid || 0)), 0
+  );
+
+  return {
+    totalCommands: commands.length,
+    totalRevenue,
+    totalProfit,
+    pendingAmount,
+    byStatus: {
+      en_attente: commands.filter(c => c.status === 'dossier_incomplet').length,
+      en_cours: commands.filter(c => c.status === 'en_traitement').length,
+      termine: commands.filter(c => c.status === 'retire').length,
+    },
+  };
 }
 ```
 
-### Updated Code (Fixed)
-
+**analytics.controller.ts** - New endpoint:
 ```typescript
-@Controller('suppliers')
-@UseGuards(JwtAuthGuard, RolesGuard)
-// No class-level @Roles decorator - READ endpoints accessible to all
-export class SuppliersController {
-  @Get()
-  findAll() { ... }  // ✅ Accessible to all authenticated users
+@Get('employee-stats')
+getEmployeeStats(@Request() req: any) {
+  return this.analyticsService.getEmployeeCommandStats(req.user.id);
+}
+```
 
-  @Get('accounting')
-  @Roles('admin')  // Only admins can see supplier accounting data
-  findAllWithBalance() { ... }
+### 2. Frontend - API and Hook
 
-  @Get(':id')
-  findOne() { ... }  // ✅ Accessible to all
+**api.ts**:
+```typescript
+async getEmployeeStats() {
+  const response = await this.client.get('/analytics/employee-stats');
+  return response.data;
+}
+```
 
-  @Get(':id/balance')
-  @Roles('admin')  // Only admins can see balance details
-  getBalance() { ... }
+**useAnalytics.ts**:
+```typescript
+export function useEmployeeStats() {
+  return useQuery({
+    queryKey: ['employee-stats'],
+    queryFn: () => api.getEmployeeStats(),
+  });
+}
+```
 
-  @Post()
-  @Roles('admin')  // ✅ Only admins can create
-  create() { ... }
+### 3. Frontend - Update Employee Accounting Page
 
-  @Patch(':id')
-  @Roles('admin')  // ✅ Only admins can update
-  update() { ... }
+For employees (non-admin), add a new section at the top with 4 cards:
 
-  @Delete(':id')
-  @Roles('admin')  // ✅ Only admins can delete
-  remove() { ... }
+| Card | Description |
+|------|-------------|
+| Mes Commandes | Total number of commands created |
+| Mon Chiffre d'Affaires | Total revenue from their commands |
+| Mon Bénéfice | Total profit (selling - buying price) |
+| Impayés Clients | Total pending amounts from clients |
+
+The existing transactions section (advances/credits/salaries) will remain below.
+
+---
+
+## Visual Layout for Employees
+
+```text
+┌──────────────────────────────────────────────────────────┐
+│  Ma Comptabilité Personnelle                             │
+├──────────────────────────────────────────────────────────┤
+│                                                          │
+│  ┌─────────────┐ ┌─────────────┐ ┌─────────────┐ ┌─────────────┐
+│  │ Mes         │ │ Mon CA      │ │ Mon         │ │ Impayés     │
+│  │ Commandes   │ │ 250,000 DZD │ │ Bénéfice    │ │ 45,000 DZD  │
+│  │ 15          │ │             │ │ 75,000 DZD  │ │             │
+│  └─────────────┘ └─────────────┘ └─────────────┘ └─────────────┘
+│                                                          │
+│  ─────────────────────────────────────────────────────   │
+│                                                          │
+│  Mes Transactions (Avances, Crédits, Salaires)           │
+│  ... existing table ...                                  │
+│                                                          │
+└──────────────────────────────────────────────────────────┘
+```
+
+---
+
+## Translation Keys
+
+**French (employees.json)**:
+```json
+{
+  "accounting": {
+    "myPerformance": {
+      "title": "Ma Performance",
+      "myCommands": "Mes Commandes",
+      "myRevenue": "Mon Chiffre d'Affaires",
+      "myProfit": "Mon Bénéfice",
+      "clientPending": "Impayés Clients"
+    }
+  }
+}
+```
+
+**Arabic (employees.json)**:
+```json
+{
+  "accounting": {
+    "myPerformance": {
+      "title": "أدائي",
+      "myCommands": "طلباتي",
+      "myRevenue": "إيراداتي",
+      "myProfit": "أرباحي",
+      "clientPending": "مستحقات العملاء"
+    }
+  }
 }
 ```
 
 ---
 
-## Access Control After Fix
+## Access Control
 
 | Endpoint | Admin | Employee |
 |----------|-------|----------|
-| `GET /suppliers` | ✅ | ✅ (for dropdown) |
-| `GET /suppliers/:id` | ✅ | ✅ |
-| `GET /suppliers/accounting` | ✅ | ❌ |
-| `GET /suppliers/:id/balance` | ✅ | ❌ |
-| `POST /suppliers` | ✅ | ❌ |
-| `PATCH /suppliers/:id` | ✅ | ❌ |
-| `DELETE /suppliers/:id` | ✅ | ❌ |
+| `GET /analytics/employee-stats` | Returns own stats | Returns own stats |
+
+The endpoint always returns stats for the currently authenticated user based on their ID from the JWT token.
 
 ---
 
-## Why This Is Safe
-
-- Employees can **view** supplier names for selection in command forms
-- Employees **cannot** access sensitive data (accounting/balance info)
-- Employees **cannot** create, modify, or delete suppliers
-- The SuppliersPage route remains admin-only (protected in `App.tsx`)
-
----
-
-## File Summary
+## Summary
 
 | Category | Count |
 |----------|-------|
-| Backend files | 1 |
-| **Total** | 1 file |
+| Backend files | 2 |
+| Frontend files | 4 |
+| Translation files | 2 |
+| **Total** | 8 files |
+
+This implementation ensures that when an employee creates a command, they will immediately see updated statistics in their personal accounting page, reflecting their contribution to the company.
