@@ -1,9 +1,9 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import { fr, ar } from 'date-fns/locale';
-import { Plus, ArrowDownCircle, ArrowUpCircle, Wallet, TrendingDown, CreditCard, FileText, Eye, Download } from 'lucide-react';
+import { Plus, ArrowDownCircle, ArrowUpCircle, Wallet, TrendingDown, CreditCard, FileText, Eye, Download, Loader2 } from 'lucide-react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -46,15 +46,19 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { SupplierOrdersTab } from '@/components/suppliers/SupplierOrdersTab';
 import { SupplierReceiptsTab } from '@/components/suppliers/SupplierReceiptsTab';
 import { SupplierInvoicesTab } from '@/components/suppliers/SupplierInvoicesTab';
+import { useToast } from '@/hooks/use-toast';
 
 const SupplierAccountingPage = () => {
   const { t, i18n } = useTranslation('suppliers');
   const { t: tCommon } = useTranslation('common');
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [isPdfPreviewOpen, setIsPdfPreviewOpen] = useState(false);
   const [selectedTransactionId, setSelectedTransactionId] = useState<string | null>(null);
+  const [pdfBlobUrl, setPdfBlobUrl] = useState<string | null>(null);
+  const [isPdfLoading, setIsPdfLoading] = useState(false);
   const [selectedSupplierId, setSelectedSupplierId] = useState<string | null>(null);
   const [newTransaction, setNewTransaction] = useState({
     supplierId: '',
@@ -135,6 +139,55 @@ const SupplierAccountingPage = () => {
     setSelectedTransactionId(transactionId);
     setIsPdfPreviewOpen(true);
   };
+
+  const handleDownloadPdf = async (transactionId: string) => {
+    try {
+      const blob = await api.getTransactionReceiptBlob(transactionId, 'download');
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `receipt-${transactionId}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Failed to download PDF:', error);
+      toast({
+        title: t('accounting.transaction.downloadError'),
+        variant: 'destructive',
+      });
+    }
+  };
+
+  // Fetch PDF blob when preview dialog opens
+  useEffect(() => {
+    if (isPdfPreviewOpen && selectedTransactionId) {
+      setIsPdfLoading(true);
+      setPdfBlobUrl(null);
+      
+      api.getTransactionReceiptBlob(selectedTransactionId, 'view')
+        .then(blob => {
+          const url = URL.createObjectURL(blob);
+          setPdfBlobUrl(url);
+        })
+        .catch(error => {
+          console.error('Failed to load PDF:', error);
+          toast({
+            title: t('accounting.transaction.loadError'),
+            variant: 'destructive',
+          });
+        })
+        .finally(() => setIsPdfLoading(false));
+    }
+    
+    // Cleanup blob URL when dialog closes
+    return () => {
+      if (pdfBlobUrl) {
+        URL.revokeObjectURL(pdfBlobUrl);
+      }
+    };
+  }, [isPdfPreviewOpen, selectedTransactionId]);
 
   const handleAddTransaction = () => {
     if (!newTransaction.supplierId || !newTransaction.amount) {
@@ -406,18 +459,36 @@ const SupplierAccountingPage = () => {
           </Dialog>
 
           {/* PDF Preview Dialog */}
-          <Dialog open={isPdfPreviewOpen} onOpenChange={setIsPdfPreviewOpen}>
+          <Dialog open={isPdfPreviewOpen} onOpenChange={(open) => {
+            setIsPdfPreviewOpen(open);
+            if (!open) {
+              // Cleanup blob URL when dialog closes
+              if (pdfBlobUrl) {
+                URL.revokeObjectURL(pdfBlobUrl);
+                setPdfBlobUrl(null);
+              }
+              setSelectedTransactionId(null);
+            }
+          }}>
             <DialogContent className="max-w-4xl h-[80vh]">
               <DialogHeader>
                 <DialogTitle>{t('accounting.transaction.viewReceipt')}</DialogTitle>
               </DialogHeader>
               <div className="flex-1 h-full min-h-[500px]">
-                {selectedTransactionId && (
+                {isPdfLoading ? (
+                  <div className="flex items-center justify-center h-full">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                  </div>
+                ) : pdfBlobUrl ? (
                   <iframe
-                    src={api.getTransactionReceiptViewUrl(selectedTransactionId)}
+                    src={pdfBlobUrl}
                     className="w-full h-full border-0 rounded-md"
                     title="PDF Receipt"
                   />
+                ) : (
+                  <div className="flex items-center justify-center h-full text-muted-foreground">
+                    {t('accounting.transaction.loadError')}
+                  </div>
                 )}
               </div>
             </DialogContent>
@@ -604,7 +675,7 @@ const SupplierAccountingPage = () => {
                                 <Button
                                   variant="ghost"
                                   size="sm"
-                                  onClick={() => window.open(api.getTransactionReceiptUrl(transaction.id), '_blank')}
+                                  onClick={() => handleDownloadPdf(transaction.id)}
                                   title={t('accounting.transaction.downloadReceipt')}
                                 >
                                   <Download className="h-4 w-4" />

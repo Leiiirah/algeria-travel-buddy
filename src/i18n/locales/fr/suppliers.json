@@ -89,7 +89,9 @@
       "receipt": "Justificatif",
       "receiptHint": "PDF uniquement (reçu bancaire, etc.)",
       "viewReceipt": "Voir le justificatif",
-      "downloadReceipt": "Télécharger"
+      "downloadReceipt": "Télécharger",
+      "loadError": "Erreur lors du chargement du document",
+      "downloadError": "Erreur lors du téléchargement"
     },
     "orders": {
       "title": "Commandes Fournisseurs",
