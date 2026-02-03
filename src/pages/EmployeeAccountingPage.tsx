@@ -66,7 +66,7 @@ export default function EmployeeAccountingPage() {
   const { data: transactions, isLoading: loadingTransactions, isError: isTransactionsError } = useEmployeeTransactions();
   const { data: balances, isLoading: loadingBalances } = useAllEmployeeBalances();
   const { data: users } = useUsers();
-  const { data: employeeStats, isLoading: loadingStats } = useEmployeeStats();
+  const { data: employeeStats, isLoading: loadingStats, isError: statsError, refetch: refetchStats } = useEmployeeStats();
   const createTransaction = useCreateEmployeeTransaction();
   const deleteTransaction = useDeleteEmployeeTransaction();
 
@@ -364,35 +364,59 @@ export default function EmployeeAccountingPage() {
         </div>
 
         {/* My Performance Section - For non-admin users */}
-        {!isAdmin && employeeStats && (
+        {!isAdmin && (
           <div className="space-y-4">
             <h2 className="text-lg font-semibold text-foreground">{t('accounting.myPerformance.title')}</h2>
-            <div className="grid gap-4 md:grid-cols-4">
-              <StatsCard
-                title={t('accounting.myPerformance.myCommands')}
-                value={employeeStats.totalCommands}
-                icon={ClipboardList}
-                variant="info"
-              />
-              <StatsCard
-                title={t('accounting.myPerformance.myRevenue')}
-                value={`${employeeStats.totalRevenue.toLocaleString(i18n.language === 'ar' ? 'ar-DZ' : 'fr-DZ')} DZD`}
-                icon={FileText}
-                variant="primary"
-              />
-              <StatsCard
-                title={t('accounting.myPerformance.myProfit')}
-                value={`${employeeStats.totalProfit.toLocaleString(i18n.language === 'ar' ? 'ar-DZ' : 'fr-DZ')} DZD`}
-                icon={TrendingUp}
-                variant="success"
-              />
-              <StatsCard
-                title={t('accounting.myPerformance.clientPending')}
-                value={`${employeeStats.pendingAmount.toLocaleString(i18n.language === 'ar' ? 'ar-DZ' : 'fr-DZ')} DZD`}
-                icon={AlertCircle}
-                variant="warning"
-              />
-            </div>
+            
+            {loadingStats ? (
+              <div className="grid gap-4 md:grid-cols-4">
+                {[1, 2, 3, 4].map(i => (
+                  <Card key={i}>
+                    <CardContent className="pt-6">
+                      <Skeleton className="h-4 w-24 mb-2" />
+                      <Skeleton className="h-8 w-full" />
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            ) : statsError ? (
+              <Card className="border-destructive/50 bg-destructive/5">
+                <CardContent className="pt-6 text-center">
+                  <AlertCircle className="h-8 w-8 mx-auto text-destructive mb-2" />
+                  <p className="text-muted-foreground">{tCommon('errors.loadFailed')}</p>
+                  <Button variant="outline" size="sm" className="mt-4" onClick={() => refetchStats()}>
+                    {tCommon('actions.retry')}
+                  </Button>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="grid gap-4 md:grid-cols-4">
+                <StatsCard
+                  title={t('accounting.myPerformance.myCommands')}
+                  value={employeeStats?.totalCommands ?? 0}
+                  icon={ClipboardList}
+                  variant="info"
+                />
+                <StatsCard
+                  title={t('accounting.myPerformance.myRevenue')}
+                  value={`${(employeeStats?.totalRevenue ?? 0).toLocaleString(i18n.language === 'ar' ? 'ar-DZ' : 'fr-DZ')} DZD`}
+                  icon={FileText}
+                  variant="primary"
+                />
+                <StatsCard
+                  title={t('accounting.myPerformance.myProfit')}
+                  value={`${(employeeStats?.totalProfit ?? 0).toLocaleString(i18n.language === 'ar' ? 'ar-DZ' : 'fr-DZ')} DZD`}
+                  icon={TrendingUp}
+                  variant="success"
+                />
+                <StatsCard
+                  title={t('accounting.myPerformance.clientPending')}
+                  value={`${(employeeStats?.pendingAmount ?? 0).toLocaleString(i18n.language === 'ar' ? 'ar-DZ' : 'fr-DZ')} DZD`}
+                  icon={AlertCircle}
+                  variant="warning"
+                />
+              </div>
+            )}
           </div>
         )}
 
