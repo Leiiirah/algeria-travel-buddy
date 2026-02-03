@@ -6,7 +6,8 @@
     "passportLoadError": "فشل تحميل جواز السفر",
     "service": "الخدمة",
     "createdAt": "تاريخ الإنشاء",
-    "createdBy": "أنشئ بواسطة"
+    "createdBy": "أنشئ بواسطة",
+    "clickToEnlarge": "انقر للتكبير"
   },
   "stats": {
     "totalPayments": "إجمالي المدفوعات",
