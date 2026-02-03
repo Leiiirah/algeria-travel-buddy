@@ -81,6 +81,21 @@
       "credit": "Crédit",
       "salaire": "Salaire"
     },
+    "commandHistory": {
+      "title": "Mes Commandes",
+      "date": "Date",
+      "client": "Client",
+      "service": "Service",
+      "sellingPrice": "Prix de Vente",
+      "amountPaid": "Montant Payé",
+      "remaining": "Reste à Payer",
+      "profit": "Bénéfice",
+      "status": "Statut",
+      "empty": "Aucune commande trouvée"
+    },
+    "transactionHistory": {
+      "title": "Mes Transactions"
+    },
     "dialog": {
       "title": "Ajouter une Transaction",
       "selectEmployee": "Sélectionner un employé",
