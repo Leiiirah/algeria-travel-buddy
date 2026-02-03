@@ -1,6 +1,13 @@
 {
   "title": "Commandes",
   "subtitle": "Gestion des commandes clients",
+  "details": {
+    "title": "Détails de la commande",
+    "passportLoadError": "Impossible de charger le passeport",
+    "service": "Service",
+    "createdAt": "Date de création",
+    "createdBy": "Créé par"
+  },
   "stats": {
     "totalPayments": "Total Versements",
     "totalCredit": "Total Crédit (Reste)",
