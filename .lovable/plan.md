@@ -1,60 +1,33 @@
 
 
-# Plan: Fix Employee Command Statistics Display
+# Plan: Add Employee Command History to Historique Tab
 
-## Problem Analysis
+## Problem
 
-After thoroughly scanning the codebase, I found that the **implementation exists** but may have issues preventing it from working properly. The expected flow is:
+Currently, the "Historique" (History) tab in the Employee Accounting page only shows manual transactions (advances, credits, salaries) entered by the admin. The employee cannot see the details of the commands they created - their actual sales activity.
 
-1. Employee creates a command
-2. Command is saved with `createdBy` = employee's user ID
-3. Employee visits `/comptabilite-employes` (Employee Accounting page)
-4. Frontend calls `GET /analytics/employee-stats`
-5. Backend returns stats calculated from commands where `createdBy` matches employee's ID
-6. Frontend displays "Ma Performance" section with stats
-
-## Current Implementation Status
-
-| Component | Status | Location |
-|-----------|--------|----------|
-| Backend endpoint | Exists | `server/src/analytics/analytics.controller.ts` line 26-29 |
-| Backend service method | Exists | `server/src/analytics/analytics.service.ts` lines 143-170 |
-| Frontend API function | Exists | `src/lib/api.ts` lines 852-863 |
-| Frontend hook | Exists | `src/hooks/useAnalytics.ts` lines 33-37 |
-| Frontend UI | Exists | `src/pages/EmployeeAccountingPage.tsx` lines 366-397 |
-| Translations | Exists | `src/i18n/locales/fr/employees.json` lines 56-62 |
-
-## Identified Issues
-
-### Issue 1: Query Cache Invalidation
-When a command is created, `['analytics']` is invalidated, but the `useEmployeeStats` query uses `['analytics', 'employee-stats']`. This should work due to partial matching, but we should verify.
-
-### Issue 2: Conditional Rendering May Hide Debug Information
-The section only shows when `!isAdmin && employeeStats`. If `employeeStats` is `undefined` or `null` (due to an API error), the section won't display at all - no error message shown.
-
-### Issue 3: Backend Server Deployment
-The NestJS server code exists but may not be deployed or running with the latest changes.
-
----
+The employee wants to see:
+- A list of all commands they created
+- Client information, service type, amounts (selling price, amount paid, profit)
+- Payment status for each command
 
 ## Solution
 
-### Step 1: Add Error Handling and Debug Information
+Enhance the "Historique" tab with a new sub-section showing the employee's **Command History** - a detailed table of all commands they've created with financial details.
 
-Update `EmployeeAccountingPage.tsx` to show error states and ensure the component provides feedback when data is missing.
+For **non-admin users**, the Historique tab will show:
+1. **My Commands** section - Table with all their commands and financial details
+2. **My Transactions** section - Existing table of advances/credits/salaries (read-only)
 
-**Changes to make:**
-- Add error state from the `useEmployeeStats` hook
-- Show a loading state or error message when stats cannot be loaded
-- Add fallback values to prevent UI from breaking
+For **admin users**, behavior remains unchanged.
 
-### Step 2: Ensure Query Invalidation Works
+---
 
-Update `useCreateCommand` to explicitly invalidate the employee-stats query key for immediate feedback.
+## Current vs Proposed Layout
 
-### Step 3: Add Default Values for Stats
-
-Ensure the backend returns default values (0) even when there are no commands, rather than throwing an error.
+| Tab | Current (Employee) | Proposed (Employee) |
+|-----|-------------------|---------------------|
+| Historique | Transactions only (avances, crédits, salaires) | **My Commands** (with client, service, prices, profit) + Transactions |
 
 ---
 
@@ -62,111 +35,154 @@ Ensure the backend returns default values (0) even when there are no commands, r
 
 | File | Changes |
 |------|---------|
-| `src/pages/EmployeeAccountingPage.tsx` | Add error handling, improve conditional rendering, show loading/error states |
-| `src/hooks/useCommands.ts` | Add explicit invalidation for `employee-stats` query |
-| `server/src/analytics/analytics.service.ts` | Ensure robust handling when no commands exist |
+| `server/src/commands/commands.service.ts` | Add method to get employee commands with full details |
+| `src/lib/api.ts` | Add `getMyCommands()` API function |
+| `src/hooks/useCommands.ts` | Add `useMyCommands()` hook |
+| `src/pages/EmployeeAccountingPage.tsx` | Add "My Commands" table in Historique tab for employees |
+| `src/i18n/locales/fr/employees.json` | Add translation keys for command history |
+| `src/i18n/locales/ar/employees.json` | Add Arabic translations |
 
 ---
 
-## Detailed Implementation
+## Implementation Details
 
-### 1. Update EmployeeAccountingPage.tsx
+### 1. Backend - Use Existing Commands Endpoint
 
-```typescript
-// Add error state from hook
-const { data: employeeStats, isLoading: loadingStats, isError: statsError } = useEmployeeStats();
+The `/commands` endpoint already filters by `createdBy` for non-admin users (line 23-30 in commands.controller.ts). We can use the existing API - no backend changes needed!
 
-// Update the My Performance section
-{!isAdmin && (
-  <div className="space-y-4">
-    <h2 className="text-lg font-semibold text-foreground">
-      {t('accounting.myPerformance.title')}
-    </h2>
-    
-    {loadingStats ? (
-      <div className="grid gap-4 md:grid-cols-4">
-        {[1, 2, 3, 4].map(i => (
-          <Card key={i}>
-            <CardContent className="pt-6">
-              <Skeleton className="h-8 w-full" />
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-    ) : statsError ? (
-      <Card>
-        <CardContent className="pt-6 text-center text-muted-foreground">
-          {tCommon('error.loadFailed')}
-        </CardContent>
-      </Card>
-    ) : (
-      <div className="grid gap-4 md:grid-cols-4">
-        <StatsCard
-          title={t('accounting.myPerformance.myCommands')}
-          value={employeeStats?.totalCommands ?? 0}
-          icon={ClipboardList}
-          variant="info"
-        />
-        {/* ... rest of stats cards with fallback values */}
-      </div>
-    )}
-  </div>
-)}
+### 2. Frontend - API and Hook
+
+We can reuse the existing `useCommands()` hook since it already returns only the employee's commands for non-admin users.
+
+### 3. Update EmployeeAccountingPage
+
+Add a new section in the "Historique" tab showing commands with the following columns:
+
+| Column | Description |
+|--------|-------------|
+| Date | Command creation date |
+| Client | Client name (from command data) |
+| Service | Service type |
+| Selling Price | Total amount charged to client |
+| Amount Paid | How much client has paid |
+| Remaining | Unpaid balance |
+| Profit | Selling price - buying price |
+| Status | Command status |
+
+---
+
+## Visual Layout for Employees
+
+```text
+┌──────────────────────────────────────────────────────────────────┐
+│ Tabs: [Situation Employés] [Historique]                          │
+├──────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│ Historique Tab Content:                                          │
+│                                                                  │
+│ ┌────────────────────────────────────────────────────────────┐   │
+│ │ MES COMMANDES                                               │   │
+│ ├────────────────────────────────────────────────────────────┤   │
+│ │ Date       │ Client  │ Service │ Prix │ Payé │ Reste │Gain │   │
+│ ├────────────────────────────────────────────────────────────┤   │
+│ │ 15 Jan     │ Ahmed   │ Visa    │ 50k  │ 30k  │ 20k   │ 10k │   │
+│ │ 12 Jan     │ Sara    │ Ticket  │ 80k  │ 80k  │ 0     │ 15k │   │
+│ │ ...        │ ...     │ ...     │ ...  │ ...  │ ...   │ ... │   │
+│ └────────────────────────────────────────────────────────────┘   │
+│                                                                  │
+│ ┌────────────────────────────────────────────────────────────┐   │
+│ │ MES TRANSACTIONS (Avances, Crédits, Salaires)               │   │
+│ ├────────────────────────────────────────────────────────────┤   │
+│ │ Date       │ Type    │ Montant │ Note                      │   │
+│ ├────────────────────────────────────────────────────────────┤   │
+│ │ 10 Jan     │ Avance  │ 5,000   │ Avance sur salaire        │   │
+│ │ ...        │ ...     │ ...     │ ...                       │   │
+│ └────────────────────────────────────────────────────────────┘   │
+│                                                                  │
+└──────────────────────────────────────────────────────────────────┘
 ```
 
-### 2. Update useCommands.ts
+---
 
-```typescript
-onSuccess: () => {
-  queryClient.invalidateQueries({ queryKey: ['commands'] });
-  queryClient.invalidateQueries({ queryKey: ['analytics'] });
-  queryClient.invalidateQueries({ queryKey: ['analytics', 'employee-stats'] });
-  // ... rest
-}
-```
+## Translation Keys to Add
 
-### 3. Update analytics.service.ts (Backend)
-
-Ensure the method handles empty results gracefully:
-
-```typescript
-async getEmployeeCommandStats(userId: string) {
-  const commands = await this.commandsRepo.find({
-    where: { createdBy: userId },
-    relations: ['service'],
-  });
-
-  // Always return valid structure even if no commands
-  if (!commands || commands.length === 0) {
-    return {
-      totalCommands: 0,
-      totalRevenue: 0,
-      totalProfit: 0,
-      pendingAmount: 0,
-      byStatus: {
-        en_attente: 0,
-        en_cours: 0,
-        termine: 0,
-      },
-    };
+**French (employees.json)**:
+```json
+{
+  "accounting": {
+    "commandHistory": {
+      "title": "Mes Commandes",
+      "client": "Client",
+      "service": "Service",
+      "sellingPrice": "Prix de Vente",
+      "amountPaid": "Montant Payé",
+      "remaining": "Reste à Payer",
+      "profit": "Bénéfice",
+      "status": "Statut"
+    },
+    "transactionHistory": {
+      "title": "Mes Transactions"
+    }
   }
+}
+```
 
-  // ... existing calculation logic
+**Arabic (employees.json)**:
+```json
+{
+  "accounting": {
+    "commandHistory": {
+      "title": "طلباتي",
+      "client": "العميل",
+      "service": "الخدمة",
+      "sellingPrice": "سعر البيع",
+      "amountPaid": "المبلغ المدفوع",
+      "remaining": "المتبقي",
+      "profit": "الربح",
+      "status": "الحالة"
+    },
+    "transactionHistory": {
+      "title": "معاملاتي"
+    }
+  }
 }
 ```
 
 ---
 
-## Testing Checklist
+## Command Status Mapping
 
-After implementation, verify:
+| Backend Status | French Display |
+|---------------|----------------|
+| dossier_incomplet | Dossier Incomplet |
+| depose | Déposé |
+| en_traitement | En Traitement |
+| accepte | Accepté |
+| refuse | Refusé |
+| visa_delivre | Visa Délivré |
+| retire | Retiré |
 
-1. Log in as an employee
-2. Navigate to `/comptabilite-employes`
-3. Verify "Ma Performance" section is visible (even with 0 values)
-4. Create a new command
-5. Navigate back to `/comptabilite-employes`
-6. Verify the stats have updated to reflect the new command
+---
+
+## Access Control
+
+| Content | Admin | Employee |
+|---------|-------|----------|
+| All employee balances | Yes | Only own |
+| All transactions history | Yes | Only own |
+| **Command history** | All commands | **Only own commands** |
+
+The commands API already enforces this restriction (line 27-29 in commands.controller.ts).
+
+---
+
+## Technical Notes
+
+1. Reuse existing `useCommands()` hook - no new API endpoint needed
+2. Extract client name from `command.data.nomPrenom` or `command.data.clientName` 
+3. Calculate remaining = sellingPrice - amountPaid
+4. Calculate profit = sellingPrice - buyingPrice
+5. Show appropriate status badge colors
 
 ---
 
@@ -174,13 +190,14 @@ After implementation, verify:
 
 | Category | Count |
 |----------|-------|
-| Frontend files | 2 |
-| Backend files | 1 |
-| **Total** | 3 files |
+| Backend files | 0 (reusing existing endpoint) |
+| Frontend files | 3 |
+| Translation files | 2 |
+| **Total** | 5 files |
 
-The main fix ensures that:
-1. The section always shows for employees (not hidden when stats are 0)
-2. Error states are properly displayed
-3. Query invalidation is explicit and reliable
-4. Backend handles edge cases gracefully
+This implementation allows employees to see:
+- All commands they created with full financial details
+- Their profit on each command
+- Outstanding payments from clients
+- Existing salary/advance/credit transactions
 
