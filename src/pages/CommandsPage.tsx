@@ -416,6 +416,7 @@ const CommandsPage = () => {
     }
   };
 
+  const renderServiceSpecificFields = () => {
     const serviceType = getServiceType(selectedService);
 
     switch (serviceType) {
