@@ -98,6 +98,7 @@ export interface Command {
   amountPaid: number;            // Versement (montant déjà payé)
   buyingPrice: number;           // Prix d'achat (coût fournisseur)
   supplierId: string;            // Fournisseur lié
+  passportUrl?: string;          // Scanned passport file for visa commands
   createdBy: string;
   createdAt: Date;
   updatedAt: Date;
