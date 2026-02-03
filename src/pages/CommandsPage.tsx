@@ -45,7 +45,7 @@ import {
   getPaymentStatusFromAmounts,
 } from '@/lib/utils';
 import { CommandData, calculateRemainingBalance, calculateNetProfit } from '@/types';
-import { CommandFilters } from '@/lib/api';
+import { CommandFilters, api } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { AdvancedFilter } from '@/components/search/AdvancedFilter';
 import { useCommands, useCommandStats, useCreateCommand, useUpdateCommand, useDeleteCommand } from '@/hooks/useCommands';
@@ -68,7 +68,7 @@ const CommandsPage = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedService, setSelectedService] = useState<string>('');
   const [editingCommandId, setEditingCommandId] = useState<string | null>(null);
-
+  const [passportFile, setPassportFile] = useState<File | null>(null);
   // Form states
   const [formData, setFormData] = useState({
     clientFullName: '',
@@ -156,6 +156,7 @@ const CommandsPage = () => {
       description: '',
     });
     setEditingCommandId(null);
+    setPassportFile(null);
   };
 
   const handleCreateCommand = () => {
@@ -229,16 +230,33 @@ const CommandsPage = () => {
         }
       );
     } else {
-      createCommand.mutate(
-        commandPayload,
-        {
-          onSuccess: () => {
+      // Check if this is a visa command with a passport file (new command only)
+      const serviceType = getServiceType(selectedService);
+      if (serviceType === 'visa' && passportFile && !editingCommandId) {
+        // Use the API method with FormData for file upload
+        api.createCommandWithPassport(commandPayload, passportFile)
+          .then(() => {
             setIsDialogOpen(false);
             setSelectedService('');
             resetForm();
-          },
-        }
-      );
+            // Refetch commands to show the new one
+            refetch();
+          })
+          .catch((error) => {
+            console.error('Error creating command with passport:', error);
+          });
+      } else {
+        createCommand.mutate(
+          commandPayload,
+          {
+            onSuccess: () => {
+              setIsDialogOpen(false);
+              setSelectedService('');
+              resetForm();
+            },
+          }
+        );
+      }
     }
   };
 
@@ -358,24 +376,44 @@ const CommandsPage = () => {
     switch (serviceType) {
       case 'visa':
         return (
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label>{t('form.firstName')}</Label>
-              <Input
-                value={formData.firstName}
-                onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
-                placeholder={t('form.firstName')}
-              />
+          <>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>{t('form.firstName')}</Label>
+                <Input
+                  value={formData.firstName}
+                  onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+                  placeholder={t('form.firstName')}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>{t('form.lastName')}</Label>
+                <Input
+                  value={formData.lastName}
+                  onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+                  placeholder={t('form.lastName')}
+                />
+              </div>
             </div>
-            <div className="space-y-2">
-              <Label>{t('form.lastName')}</Label>
-              <Input
-                value={formData.lastName}
-                onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
-                placeholder={t('form.lastName')}
-              />
-            </div>
-          </div>
+            {/* Passport Upload - only for new commands */}
+            {!editingCommandId && (
+              <div className="space-y-2">
+                <Label>{t('form.passport')}</Label>
+                <Input
+                  type="file"
+                  accept=".pdf,.jpg,.jpeg,.png"
+                  onChange={(e) => setPassportFile(e.target.files?.[0] || null)}
+                  className="cursor-pointer"
+                />
+                <p className="text-xs text-muted-foreground">{t('form.passportHelp')}</p>
+                {passportFile && (
+                  <p className="text-xs text-green-600 dark:text-green-400">
+                    ✓ {passportFile.name}
+                  </p>
+                )}
+              </div>
+            )}
+          </>
         );
 
       case 'residence':

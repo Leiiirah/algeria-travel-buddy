@@ -52,7 +52,12 @@
     "noServiceAvailable": "Aucun service disponible",
     "addService": "Ajouter un service",
     "noSupplierAvailable": "Aucun fournisseur disponible",
-    "addSupplier": "Ajouter un fournisseur"
+    "addSupplier": "Ajouter un fournisseur",
+    "passport": "Passeport scanné",
+    "passportHelp": "Télécharger le passeport du client (PDF, JPG, PNG - max 10 Mo)",
+    "viewPassport": "Voir le passeport",
+    "downloadPassport": "Télécharger le passeport",
+    "noPassport": "Aucun passeport"
   },
   "calculations": {
     "remaining": "Reste à payer",

@@ -9,16 +9,36 @@ import {
   Query,
   UseGuards,
   Request,
+  UseInterceptors,
+  UploadedFile,
+  Res,
+  NotFoundException,
+  OnModuleInit,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { diskStorage } from 'multer';
+import { Response } from 'express';
+import * as path from 'path';
+import * as fs from 'fs';
+import { v4 as uuidv4 } from 'uuid';
 import { CommandsService, CommandFilters } from './commands.service';
 import { CreateCommandDto } from './dto/create-command.dto';
 import { UpdateCommandDto } from './dto/update-command.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { Transform } from 'class-transformer';
 
 @Controller('commands')
 @UseGuards(JwtAuthGuard)
-export class CommandsController {
-  constructor(private readonly commandsService: CommandsService) { }
+export class CommandsController implements OnModuleInit {
+  constructor(private readonly commandsService: CommandsService) {}
+
+  onModuleInit() {
+    // Create uploads/passports directory if it doesn't exist
+    const uploadDir = './uploads/passports';
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+  }
 
   @Get()
   findAll(@Query() filters: CommandFilters, @Request() req: any) {
@@ -43,6 +63,71 @@ export class CommandsController {
   @Post()
   create(@Body() createCommandDto: CreateCommandDto, @Request() req: any) {
     return this.commandsService.create(createCommandDto, req.user.id);
+  }
+
+  @Post('with-passport')
+  @UseInterceptors(
+    FileInterceptor('passport', {
+      storage: diskStorage({
+        destination: './uploads/passports',
+        filename: (req, file, cb) => {
+          const ext = path.extname(file.originalname);
+          cb(null, `passport-${uuidv4()}${ext}`);
+        },
+      }),
+      limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
+      fileFilter: (req, file, cb) => {
+        const allowed = ['application/pdf', 'image/jpeg', 'image/png', 'image/webp'];
+        cb(null, allowed.includes(file.mimetype));
+      },
+    }),
+  )
+  createWithPassport(
+    @Body() createDto: any,
+    @UploadedFile() file: Express.Multer.File,
+    @Request() req: any,
+  ) {
+    // Parse data from FormData (strings need to be converted)
+    const parsedDto: CreateCommandDto = {
+      serviceId: createDto.serviceId,
+      supplierId: createDto.supplierId,
+      data: typeof createDto.data === 'string' ? JSON.parse(createDto.data) : createDto.data,
+      destination: createDto.destination,
+      sellingPrice: parseFloat(createDto.sellingPrice) || 0,
+      amountPaid: parseFloat(createDto.amountPaid) || 0,
+      buyingPrice: parseFloat(createDto.buyingPrice) || 0,
+      passportUrl: file?.filename || undefined,
+    };
+    return this.commandsService.create(parsedDto, req.user.id);
+  }
+
+  @Get(':id/passport/view')
+  async viewPassport(@Param('id') id: string, @Res() res: Response) {
+    const command = await this.commandsService.findOne(id);
+    if (!command.passportUrl) {
+      throw new NotFoundException('No passport attached');
+    }
+    const ext = path.extname(command.passportUrl).toLowerCase();
+    const mimeTypes: Record<string, string> = {
+      '.pdf': 'application/pdf',
+      '.jpg': 'image/jpeg',
+      '.jpeg': 'image/jpeg',
+      '.png': 'image/png',
+      '.webp': 'image/webp',
+    };
+    res.setHeader('Content-Type', mimeTypes[ext] || 'application/octet-stream');
+    res.setHeader('Content-Disposition', `inline; filename="${command.passportUrl}"`);
+    return res.sendFile(command.passportUrl, { root: './uploads/passports' });
+  }
+
+  @Get(':id/passport/download')
+  async downloadPassport(@Param('id') id: string, @Res() res: Response) {
+    const command = await this.commandsService.findOne(id);
+    if (!command.passportUrl) {
+      throw new NotFoundException('No passport attached');
+    }
+    res.setHeader('Content-Disposition', `attachment; filename="${command.passportUrl}"`);
+    return res.sendFile(command.passportUrl, { root: './uploads/passports' });
   }
 
   @Patch(':id')

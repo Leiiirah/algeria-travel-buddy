@@ -40,4 +40,8 @@ export class UpdateCommandDto {
   @IsNumber()
   @IsOptional()
   buyingPrice?: number;
+
+  @IsString()
+  @IsOptional()
+  passportUrl?: string;
 }
