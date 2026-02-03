@@ -34,6 +34,7 @@ export const useCreateCommand = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['commands'] });
       queryClient.invalidateQueries({ queryKey: ['analytics'] });
+      queryClient.invalidateQueries({ queryKey: ['analytics', 'employee-stats'] });
       toast({
         title: 'Commande créée',
         description: 'La nouvelle commande a été enregistrée',
@@ -59,6 +60,7 @@ export const useUpdateCommand = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['commands'] });
       queryClient.invalidateQueries({ queryKey: ['analytics'] });
+      queryClient.invalidateQueries({ queryKey: ['analytics', 'employee-stats'] });
       toast({
         title: 'Commande modifiée',
         description: 'Les informations ont été mises à jour',
@@ -107,6 +109,7 @@ export const useDeleteCommand = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['commands'] });
       queryClient.invalidateQueries({ queryKey: ['analytics'] });
+      queryClient.invalidateQueries({ queryKey: ['analytics', 'employee-stats'] });
       toast({
         title: 'Commande supprimée',
         description: 'La commande a été supprimée avec succès',
