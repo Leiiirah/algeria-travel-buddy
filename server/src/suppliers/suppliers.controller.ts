@@ -17,7 +17,6 @@ import { Roles } from '../common/decorators/roles.decorator';
 
 @Controller('suppliers')
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles('admin') // All supplier operations require admin role
 export class SuppliersController {
   constructor(private readonly suppliersService: SuppliersService) { }
 
@@ -27,6 +26,7 @@ export class SuppliersController {
   }
 
   @Get('accounting')
+  @Roles('admin')
   findAllWithBalance() {
     return this.suppliersService.findAllWithBalance();
   }
@@ -37,6 +37,7 @@ export class SuppliersController {
   }
 
   @Get(':id/balance')
+  @Roles('admin')
   getBalance(@Param('id') id: string) {
     return this.suppliersService.getBalance(id);
   }
