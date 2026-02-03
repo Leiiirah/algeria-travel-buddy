@@ -1,323 +1,280 @@
 
-
-# Plan: Enhanced Supplier Information Fields
+# Plan: Role-Based Access Control for Employees
 
 ## Overview
 
-Update the Supplier entity with comprehensive business information fields based on the user's requirements. This replaces the current simple supplier model with a more detailed one suitable for managing airline, hotel, and visa partners.
+Implement stricter access control to restrict employees from accessing supplier information, global company accounting, and document management capabilities. Employees will only see their own commands and their own accounting information.
 
 ---
 
-## Current vs New Supplier Fields
+## Current State Analysis
 
-| Current Field | Status | New Field |
-|---------------|--------|-----------|
-| `name` | Keep | `name` (Nom société) |
-| `contact` | Keep | `contact` |
-| `phone` | Keep | `phone` (Téléphone) |
-| `email` | Keep | `email` |
-| `serviceTypes` | **Replace** | `type` (single supplier type) |
-| - | **Add** | `country` (Pays) |
-| - | **Add** | `city` (Ville) |
-| - | **Add** | `currency` (Devise) |
-| - | **Add** | `bankAccount` (IBAN / CCP) |
-| `isActive` | Keep | `isActive` |
-| `createdAt` | Keep | `createdAt` |
+| Feature | Current Access | Target Access |
+|---------|---------------|---------------|
+| Fournisseurs (Suppliers) | All users | Admin only |
+| Situation Fournisseurs (Supplier Accounting) | All users | Admin only |
+| Comptabilité (Global Accounting) | All users | Admin only |
+| Commandes | All users see all commands | Employees see only their own |
+| Comptabilité Employés | Admin sees all, employees not restricted | Employees see only their own |
+| Documents (GED) | All users can view, admin can modify | All users can view, admin only can add/modify |
 
 ---
 
-## New Supplier Type Options
+## Changes Required
 
-Based on the travel agency context, supplier types will include:
-
-| Code | French | Arabic |
-|------|--------|--------|
-| `airline` | Compagnie aérienne | شركة طيران |
-| `hotel` | Hôtel | فندق |
-| `visa` | Visa | تأشيرة |
-| `transport` | Transport | نقل |
-| `insurance` | Assurance | تأمين |
-| `other` | Autre | أخرى |
-
----
-
-## Files to Create
-
-| File | Purpose |
-|------|---------|
-| `server/src/database/migrations/TIMESTAMP-AddSupplierFields.ts` | Database migration for new columns |
-
----
-
-## Files to Modify
-
-### Backend (6 files)
+### Frontend Changes
 
 | File | Changes |
 |------|---------|
-| `server/src/suppliers/entities/supplier.entity.ts` | Add new columns, replace `serviceTypes[]` with `type` |
-| `server/src/suppliers/dto/create-supplier.dto.ts` | Add new field validators |
-| `server/src/suppliers/dto/update-supplier.dto.ts` | Add optional new fields |
-| `server/typeorm.config.ts` | Already configured (no changes needed) |
+| `src/App.tsx` | Add `adminOnly` to routes: `/fournisseurs`, `/situation-fournisseurs`, `/comptabilite` |
+| `src/components/layout/AppSidebar.tsx` | Move Suppliers, Supplier Accounting, and Global Accounting to admin-only menu |
+| `src/pages/CommandsPage.tsx` | Filter commands by `createdBy === user.id` for non-admin users |
+| `src/pages/EmployeeAccountingPage.tsx` | For employees, redirect to their own accounting view only |
+| `src/pages/DocumentsPage.tsx` | Already implemented (admin-only upload/delete) - verify no changes needed |
+| `src/hooks/useCommands.ts` | Pass `createdBy` filter for non-admin users |
+| `src/lib/api.ts` | Add `createdBy` to `CommandFilters` interface |
 
-### Frontend (5 files)
+### Backend Changes
 
 | File | Changes |
 |------|---------|
-| `src/types/index.ts` | Update `Supplier` interface |
-| `src/lib/api.ts` | Update `CreateSupplierDto` and `UpdateSupplierDto` |
-| `src/pages/SuppliersPage.tsx` | Update form fields and table columns |
-| `src/i18n/locales/fr/suppliers.json` | Add French translations |
-| `src/i18n/locales/ar/suppliers.json` | Add Arabic translations |
+| `server/src/commands/commands.controller.ts` | Add role-based filtering (employees only see own commands) |
+| `server/src/commands/commands.service.ts` | Add `createdBy` filter to `findAll` method |
+| `server/src/suppliers/suppliers.controller.ts` | Add `@Roles('admin')` to all endpoints |
+| `server/src/supplier-transactions/supplier-transactions.controller.ts` | Add `@Roles('admin')` to all endpoints |
+| `server/src/payments/payments.controller.ts` | Add `@Roles('admin')` to list/create endpoints |
+| `server/src/employee-transactions/employee-transactions.controller.ts` | Employees can only access their own transactions |
 
 ---
 
 ## Implementation Details
 
-### 1. Database Migration
-
-```sql
--- Add new columns to suppliers table
-ALTER TABLE "suppliers" 
-  ADD COLUMN "type" character varying DEFAULT 'other',
-  ADD COLUMN "country" character varying,
-  ADD COLUMN "city" character varying,
-  ADD COLUMN "currency" character varying DEFAULT 'DZD',
-  ADD COLUMN "bankAccount" character varying;
-
--- Migrate existing serviceTypes data to new type column
--- Take the first service type as the main type
-UPDATE "suppliers" SET "type" = 
-  CASE 
-    WHEN "serviceTypes" LIKE 'visa%' THEN 'visa'
-    WHEN "serviceTypes" LIKE 'ticket%' THEN 'airline'
-    WHEN "serviceTypes" LIKE 'residence%' THEN 'hotel'
-    ELSE 'other'
-  END;
-
--- Drop the old serviceTypes column
-ALTER TABLE "suppliers" DROP COLUMN "serviceTypes";
-```
-
-### 2. Updated Supplier Entity
+### 1. Restrict Routes in App.tsx
 
 ```typescript
-@Entity('suppliers')
-export class Supplier {
-  @PrimaryGeneratedColumn('uuid')
-  id: string;
-
-  @Column()
-  name: string;
-
-  @Column({ default: 'other' })
-  type: string;  // airline, hotel, visa, transport, insurance, other
-
-  @Column({ nullable: true })
-  country: string;
-
-  @Column({ nullable: true })
-  city: string;
-
-  @Column({ nullable: true })
-  phone: string;
-
-  @Column({ nullable: true })
-  email: string;
-
-  @Column({ nullable: true })
-  contact: string;
-
-  @Column({ default: 'DZD' })
-  currency: string;
-
-  @Column({ nullable: true })
-  bankAccount: string;  // IBAN / CCP
-
-  @Column({ default: true })
-  isActive: boolean;
-
-  @CreateDateColumn()
-  createdAt: Date;
-}
-```
-
-### 3. Updated Form UI (SuppliersPage)
-
-The form will be reorganized into logical sections:
-
-```text
-+------------------------------------------+
-| INFORMATIONS GÉNÉRALES                    |
-| +----------------+  +------------------+  |
-| | Nom société *  |  | Type *           |  |
-| +----------------+  +------------------+  |
-|                                          |
-| LOCALISATION                             |
-| +----------------+  +------------------+  |
-| | Pays           |  | Ville            |  |
-| +----------------+  +------------------+  |
-|                                          |
-| COORDONNÉES                              |
-| +----------------+  +------------------+  |
-| | Téléphone      |  | Email            |  |
-| +----------------+  +------------------+  |
-| +--------------------------------------+ |
-| | Contact (personne)                   | |
-| +--------------------------------------+ |
-|                                          |
-| INFORMATIONS BANCAIRES                   |
-| +----------------+  +------------------+  |
-| | Devise         |  | IBAN / CCP       |  |
-| +----------------+  +------------------+  |
-+------------------------------------------+
-```
-
-### 4. Updated Table Display
-
-| Column | Content |
-|--------|---------|
-| Fournisseur | Name + Type badge |
-| Localisation | Country, City |
-| Coordonnées | Phone, Email |
-| Contact | Contact person name |
-| Devise | Currency code |
-| Statut | Active/Inactive badge |
-| Actions | Edit, Delete buttons |
-
----
-
-## Translations
-
-### French (`suppliers.json`)
-
-```json
-{
-  "form": {
-    "companyName": "Nom société",
-    "type": "Type",
-    "country": "Pays",
-    "countryPlaceholder": "Algérie",
-    "city": "Ville",
-    "cityPlaceholder": "Alger",
-    "phone": "Téléphone",
-    "email": "Email",
-    "contactPerson": "Contact",
-    "currency": "Devise",
-    "currencyPlaceholder": "DZD",
-    "bankAccount": "IBAN / CCP",
-    "bankAccountPlaceholder": "00799999000123456789"
-  },
-  "types": {
-    "airline": "Compagnie aérienne",
-    "hotel": "Hôtel",
-    "visa": "Visa",
-    "transport": "Transport",
-    "insurance": "Assurance",
-    "other": "Autre"
-  },
-  "table": {
-    "supplier": "Fournisseur",
-    "location": "Localisation",
-    "coordinates": "Coordonnées",
-    "contact": "Contact",
-    "currency": "Devise",
-    "status": "Statut",
-    "actions": "Actions"
+// Routes that become admin-only
+<Route
+  path="/fournisseurs"
+  element={
+    <ProtectedRoute adminOnly>
+      <SuppliersPage />
+    </ProtectedRoute>
   }
-}
-```
-
-### Arabic (`suppliers.json`)
-
-```json
-{
-  "form": {
-    "companyName": "اسم الشركة",
-    "type": "النوع",
-    "country": "البلد",
-    "countryPlaceholder": "الجزائر",
-    "city": "المدينة",
-    "cityPlaceholder": "الجزائر العاصمة",
-    "phone": "الهاتف",
-    "email": "البريد الإلكتروني",
-    "contactPerson": "جهة الاتصال",
-    "currency": "العملة",
-    "currencyPlaceholder": "DZD",
-    "bankAccount": "IBAN / CCP",
-    "bankAccountPlaceholder": "00799999000123456789"
-  },
-  "types": {
-    "airline": "شركة طيران",
-    "hotel": "فندق",
-    "visa": "تأشيرة",
-    "transport": "نقل",
-    "insurance": "تأمين",
-    "other": "أخرى"
-  },
-  "table": {
-    "supplier": "المورد",
-    "location": "الموقع",
-    "coordinates": "بيانات الاتصال",
-    "contact": "جهة الاتصال",
-    "currency": "العملة",
-    "status": "الحالة",
-    "actions": "الإجراءات"
+/>
+<Route
+  path="/situation-fournisseurs"
+  element={
+    <ProtectedRoute adminOnly>
+      <SupplierAccountingPage />
+    </ProtectedRoute>
   }
+/>
+<Route
+  path="/comptabilite"
+  element={
+    <ProtectedRoute adminOnly>
+      <AccountingPage />
+    </ProtectedRoute>
+  }
+/>
+```
+
+### 2. Update Sidebar Navigation
+
+Move supplier-related items to the admin-only section:
+
+**Current Structure:**
+```
+Main Menu:
+  - Dashboard
+  - Commands
+  - Omra
+  - Documents
+
+Management (visible to all):
+  - Employees
+  - Suppliers
+  - Supplier Accounting
+  - Employee Accounting
+  - Accounting
+
+Administration (admin only):
+  - Services
+  - Service Types
+  - Expenses
+```
+
+**New Structure:**
+```
+Main Menu (all users):
+  - Dashboard
+  - Commands
+  - Omra
+  - Documents
+
+Personal (employees only):
+  - My Accounting
+
+Management (admin only):
+  - Employees
+  - Suppliers
+  - Supplier Accounting
+  - Employee Accounting
+  - Accounting
+
+Administration (admin only):
+  - Services
+  - Service Types
+  - Expenses
+```
+
+### 3. Filter Commands for Employees
+
+**Backend - commands.service.ts:**
+```typescript
+// Add createdBy filter
+async findAll(filters: CommandFilters = {}, userId?: string, isAdmin?: boolean): Promise<PaginatedResponse<Command>> {
+  // ... existing code ...
+  
+  // If not admin, only show user's own commands
+  if (!isAdmin && userId) {
+    queryBuilder.andWhere('command.createdBy = :userId', { userId });
+  }
+  
+  // ... rest of the code
 }
 ```
 
+**Backend - commands.controller.ts:**
+```typescript
+@Get()
+findAll(@Query() filters: CommandFilters, @Request() req: any) {
+  const isAdmin = req.user.role === 'admin';
+  return this.commandsService.findAll(filters, req.user.id, isAdmin);
+}
+```
+
+### 4. Restrict Backend Endpoints
+
+**suppliers.controller.ts** - Add `@Roles('admin')` to all read endpoints:
+```typescript
+@Controller('suppliers')
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles('admin')  // All supplier operations require admin
+export class SuppliersController { ... }
+```
+
+**supplier-transactions.controller.ts:**
+```typescript
+@Controller('supplier-transactions')
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles('admin')  // All supplier transaction operations require admin
+export class SupplierTransactionsController { ... }
+```
+
+**payments.controller.ts:**
+```typescript
+@Controller('payments')
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles('admin')  // Accounting operations require admin
+export class PaymentsController { ... }
+```
+
+### 5. Employee Accounting Self-Access
+
+**employee-transactions.controller.ts:**
+```typescript
+@Get()
+findAll(@Request() req: any) {
+  // Admin sees all, employee sees only their own
+  if (req.user.role === 'admin') {
+    return this.service.findAll();
+  }
+  return this.service.findByEmployee(req.user.id);
+}
+
+@Get('balances')
+getAllBalances(@Request() req: any) {
+  // Admin sees all balances, employee sees only their own
+  if (req.user.role === 'admin') {
+    return this.service.getAllBalances();
+  }
+  return this.service.getEmployeeBalance(req.user.id);
+}
+```
+
+**Update EmployeeAccountingPage.tsx for employees:**
+- Show only their own transactions
+- Hide the "new transaction" button (already done with `isAdmin` check)
+- Display personal balance summary
+
 ---
 
-## Currency Options
+## Security Considerations
 
-Common currencies for travel agencies:
+| Layer | Protection |
+|-------|------------|
+| **Frontend Routes** | `ProtectedRoute` with `adminOnly` prop |
+| **Frontend Navigation** | Sidebar hides admin-only links |
+| **Backend Controllers** | `@Roles('admin')` decorator |
+| **Backend Services** | Filter by `userId` for non-admin requests |
 
-| Code | Label |
-|------|-------|
-| `DZD` | Dinar algérien |
-| `EUR` | Euro |
-| `USD` | Dollar US |
-| `SAR` | Riyal saoudien |
-| `AED` | Dirham émirati |
-| `TRY` | Lire turque |
-| `GBP` | Livre sterling |
-
----
-
-## Impact on Other Components
-
-### Supplier Accounting Page
-
-The `SupplierAccountingPage` will benefit from showing:
-- Currency in financial summaries
-- Bank account for payment references
-
-### Commands Page
-
-When selecting a supplier for a command, the dropdown can now show:
-- Supplier name + type badge
-- Location info for context
+This multi-layer approach ensures:
+1. Users cannot navigate to restricted pages
+2. Even if they try direct URL access, they're redirected
+3. API calls are rejected if unauthorized
+4. Database queries only return authorized data
 
 ---
 
-## Migration Strategy
+## Access Control Summary
 
-Since this is using the new TypeORM migration workflow:
-
-1. **Create migration file**: `server/src/database/migrations/TIMESTAMP-AddSupplierFields.ts`
-2. **Run migration**: `npm run migration:run`
-3. **Existing data**: Old `serviceTypes` array will be mapped to the new single `type` field
+| Page/Feature | Admin | Employee |
+|--------------|-------|----------|
+| Dashboard | ✅ Full stats | ✅ Limited stats (own commands only) |
+| Commands | ✅ See all, edit all | ✅ See own only, edit within 24h |
+| Omra | ✅ Full access | ✅ Full access |
+| Documents | ✅ Upload, modify, delete | 👁️ View only |
+| Suppliers | ✅ Full access | ❌ No access |
+| Supplier Accounting | ✅ Full access | ❌ No access |
+| Global Accounting | ✅ Full access | ❌ No access |
+| Employee Accounting | ✅ See all employees | 👁️ See own only |
+| Expenses | ✅ Full access | ❌ No access |
+| Services | ✅ Full access | ❌ No access |
+| Employees | ✅ Full access | ❌ No access |
 
 ---
 
-## File Summary
+## Files to Modify
+
+### Frontend (7 files)
+| File | Type |
+|------|------|
+| `src/App.tsx` | Route protection |
+| `src/components/layout/AppSidebar.tsx` | Navigation visibility |
+| `src/pages/CommandsPage.tsx` | Add user context for filtering |
+| `src/pages/EmployeeAccountingPage.tsx` | Employee self-view mode |
+| `src/hooks/useCommands.ts` | Pass user ID to API |
+| `src/lib/api.ts` | Add createdBy filter |
+| `src/pages/DashboardPage.tsx` | Filter stats for employees |
+
+### Backend (6 files)
+| File | Type |
+|------|------|
+| `server/src/commands/commands.controller.ts` | Role-based filtering |
+| `server/src/commands/commands.service.ts` | Add createdBy filter |
+| `server/src/suppliers/suppliers.controller.ts` | Add admin role requirement |
+| `server/src/supplier-transactions/supplier-transactions.controller.ts` | Add admin role |
+| `server/src/payments/payments.controller.ts` | Add admin role |
+| `server/src/employee-transactions/employee-transactions.controller.ts` | Self-access for employees |
+
+---
+
+## Summary
 
 | Category | Count |
 |----------|-------|
-| **Migration file** | 1 (new) |
-| **Backend files** | 3 (modified) |
-| **Frontend files** | 4 (modified) |
-| **Translation files** | 2 (modified) |
-| **Total** | 10 files |
+| Frontend files | 7 |
+| Backend files | 6 |
+| **Total** | 13 files |
 
