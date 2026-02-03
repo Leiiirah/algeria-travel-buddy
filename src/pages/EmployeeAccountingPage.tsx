@@ -54,6 +54,7 @@ import {
   useDeleteEmployeeTransaction,
 } from '@/hooks/useEmployeeTransactions';
 import { useEmployeeStats } from '@/hooks/useAnalytics';
+import { useCommands } from '@/hooks/useCommands';
 import { EmployeeTransactionType } from '@/types';
 import { AdvancedFilter, FilterConfig } from '@/components/search/AdvancedFilter';
 import { useDebounce } from '@/hooks/useDebounce';
@@ -67,8 +68,12 @@ export default function EmployeeAccountingPage() {
   const { data: balances, isLoading: loadingBalances } = useAllEmployeeBalances();
   const { data: users } = useUsers();
   const { data: employeeStats, isLoading: loadingStats, isError: statsError, refetch: refetchStats } = useEmployeeStats();
+  const { data: commandsData, isLoading: loadingCommands } = useCommands();
   const createTransaction = useCreateEmployeeTransaction();
   const deleteTransaction = useDeleteEmployeeTransaction();
+
+  // Commands list for employees (API already filters by createdBy for non-admins)
+  const myCommands = !isAdmin ? (commandsData?.data || []) : [];
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<string | null>(null);
@@ -514,9 +519,93 @@ export default function EmployeeAccountingPage() {
             </Card>
           </TabsContent>
 
-          <TabsContent value="history" className="mt-4">
+          <TabsContent value="history" className="mt-4 space-y-6">
+            {/* My Commands Section - For employees only */}
+            {!isAdmin && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">{t('accounting.commandHistory.title')}</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {loadingCommands ? (
+                    <div className="space-y-3">
+                      {[1, 2, 3].map((i) => (
+                        <div key={i} className="flex items-center gap-4">
+                          <Skeleton className="h-4 w-20" />
+                          <Skeleton className="h-4 flex-1" />
+                          <Skeleton className="h-4 w-24" />
+                        </div>
+                      ))}
+                    </div>
+                  ) : myCommands.length === 0 ? (
+                    <p className="text-center text-muted-foreground py-8">{t('accounting.commandHistory.empty')}</p>
+                  ) : (
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>{t('accounting.commandHistory.date')}</TableHead>
+                          <TableHead>{t('accounting.commandHistory.client')}</TableHead>
+                          <TableHead>{t('accounting.commandHistory.service')}</TableHead>
+                          <TableHead className="text-right">{t('accounting.commandHistory.sellingPrice')}</TableHead>
+                          <TableHead className="text-right">{t('accounting.commandHistory.amountPaid')}</TableHead>
+                          <TableHead className="text-right">{t('accounting.commandHistory.remaining')}</TableHead>
+                          <TableHead className="text-right">{t('accounting.commandHistory.profit')}</TableHead>
+                          <TableHead>{t('accounting.commandHistory.status')}</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {myCommands.map((command) => {
+                          const sellingPrice = Number(command.sellingPrice || 0);
+                          const amountPaid = Number(command.amountPaid || 0);
+                          const buyingPrice = Number(command.buyingPrice || 0);
+                          const remaining = sellingPrice - amountPaid;
+                          const profit = sellingPrice - buyingPrice;
+                          // Extract client name from command data - check multiple possible field names
+                          const commandData = command.data as unknown as Record<string, unknown>;
+                          const clientName = (commandData?.clientFullName || commandData?.nomPrenom || commandData?.clientName || '-') as string;
+                          // Get service name from the populated relation (returned by API)
+                          const serviceName = ((command as unknown as { service?: { name: string } }).service?.name) || '-';
+
+                          return (
+                            <TableRow key={command.id}>
+                              <TableCell>
+                                {format(new Date(command.createdAt), 'dd MMM yyyy', { locale: dateLocale })}
+                              </TableCell>
+                              <TableCell className="font-medium">{clientName}</TableCell>
+                              <TableCell>{serviceName}</TableCell>
+                              <TableCell className="text-right">
+                                {sellingPrice.toLocaleString(i18n.language === 'ar' ? 'ar-DZ' : 'fr-DZ')} DZD
+                              </TableCell>
+                              <TableCell className="text-right text-primary">
+                                {amountPaid.toLocaleString(i18n.language === 'ar' ? 'ar-DZ' : 'fr-DZ')} DZD
+                              </TableCell>
+                              <TableCell className={`text-right ${remaining > 0 ? 'text-destructive' : 'text-muted-foreground'}`}>
+                                {remaining.toLocaleString(i18n.language === 'ar' ? 'ar-DZ' : 'fr-DZ')} DZD
+                              </TableCell>
+                              <TableCell className={`text-right font-medium ${profit >= 0 ? 'text-green-600' : 'text-destructive'}`}>
+                                {profit.toLocaleString(i18n.language === 'ar' ? 'ar-DZ' : 'fr-DZ')} DZD
+                              </TableCell>
+                              <TableCell>
+                                <Badge variant={command.status === 'refuse' ? 'destructive' : command.status === 'retire' || command.status === 'visa_delivre' ? 'default' : 'secondary'}>
+                                  {command.status?.replace(/_/g, ' ')}
+                                </Badge>
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
+                      </TableBody>
+                    </Table>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Transactions Section */}
             <Card>
-              <CardContent className="pt-6 space-y-4">
+              <CardHeader>
+                <CardTitle className="text-lg">{!isAdmin ? t('accounting.transactionHistory.title') : t('accounting.tabs.history')}</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
                 <AdvancedFilter
                   searchQuery={searchQuery}
                   onSearchChange={setSearchQuery}

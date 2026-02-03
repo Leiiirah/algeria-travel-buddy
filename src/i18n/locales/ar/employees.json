@@ -81,6 +81,21 @@
       "credit": "قرض",
       "salaire": "راتب"
     },
+    "commandHistory": {
+      "title": "طلباتي",
+      "date": "التاريخ",
+      "client": "العميل",
+      "service": "الخدمة",
+      "sellingPrice": "سعر البيع",
+      "amountPaid": "المبلغ المدفوع",
+      "remaining": "المتبقي",
+      "profit": "الربح",
+      "status": "الحالة",
+      "empty": "لا توجد طلبات"
+    },
+    "transactionHistory": {
+      "title": "معاملاتي"
+    },
     "dialog": {
       "title": "إضافة معاملة",
       "selectEmployee": "اختر موظفاً",
