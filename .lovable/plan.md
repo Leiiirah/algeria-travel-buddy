@@ -1,151 +1,161 @@
 
 
-# Plan: Add Inline PDF Viewer for Supplier Transaction Receipts
+# Plan: Fix 401 Unauthorized Error for PDF Download/View
 
 ## Problem
 
-Currently, when clicking the PDF button in the transaction history, the file is downloaded. You want to **view the PDF directly in the app** without downloading it.
+When clicking the Eye icon (view) or Download icon in the transaction history, you get a **401 Unauthorized** error because:
 
----
+1. The PDF endpoints (`/download` and `/view`) are protected by `JwtAuthGuard`
+2. When using an `<iframe>` or `window.open()`, the browser makes a **direct GET request** without the `Authorization: Bearer` header
+3. The JWT token is stored in localStorage and only sent by the ApiClient's `request()` method, not by browser-initiated requests
 
-## Solution Overview
+## Root Cause
 
-Add a transaction details dialog with an embedded PDF viewer that displays the receipt inline using an `<iframe>` or `<object>` element.
-
----
-
-## Current vs Proposed
-
-| Current | Proposed |
-|---------|----------|
-| PDF button triggers download | PDF button opens preview dialog |
-| No inline viewing | Embedded PDF viewer in modal |
-| `window.open()` to download URL | Dialog with `<iframe src="...">` |
-
----
-
-## Implementation
-
-### 1. Backend: Add Inline View Endpoint
-
-Create a new endpoint that returns the PDF with `Content-Disposition: inline` (for browser viewing) instead of `attachment` (for download).
-
-**File**: `server/src/supplier-transactions/supplier-transactions.controller.ts`
-
-```typescript
-@Get(':id/view')
-async viewReceipt(@Param('id') id: string, @Res() res: Response) {
-  const transaction = await this.transactionsService.findOne(id);
-  if (!transaction.receiptUrl) {
-    throw new NotFoundException('No receipt attached to this transaction');
-  }
-  
-  const filePath = path.join('./uploads/receipts', transaction.receiptUrl);
-  
-  // Set headers for inline viewing
-  res.setHeader('Content-Type', 'application/pdf');
-  res.setHeader('Content-Disposition', `inline; filename="${transaction.receiptUrl}"`);
-  
-  return res.sendFile(transaction.receiptUrl, { root: './uploads/receipts' });
-}
+```
+Frontend: iframe src="http://server/api/supplier-transactions/xxx/view"
+           ↓
+Browser:  Direct GET request (NO Authorization header!)
+           ↓
+Backend:  JwtAuthGuard checks for Authorization header
+           ↓
+Result:   401 Unauthorized
 ```
 
-### 2. Frontend: Add API Method for Viewing
+## Solution Options
+
+| Option | Description | Pros | Cons |
+|--------|-------------|------|------|
+| **A. Token as Query Param** | Pass JWT as `?token=xxx` for these endpoints | Simple, works with iframe | Token exposed in URL/logs |
+| **B. Fetch + Blob URL** | Fetch PDF via API, create Blob URL for iframe | Most secure, token never exposed | More complex, memory management |
+| **C. Signed Temporary URL** | Backend generates time-limited signed URL | Very secure | Requires additional endpoint + signing logic |
+
+**Recommended: Option B (Fetch + Blob URL)** - This is the most secure approach as the JWT token is never exposed in URLs or browser history.
+
+---
+
+## Implementation Details
+
+### 1. Add API method to fetch PDF as Blob
 
 **File**: `src/lib/api.ts`
 
 ```typescript
-getTransactionReceiptViewUrl = (transactionId: string): string =>
-  `${API_URL}/supplier-transactions/${transactionId}/view`;
-```
-
-### 3. Frontend: Add PDF Preview Dialog
-
-**File**: `src/pages/SupplierAccountingPage.tsx`
-
-Add state for the PDF preview dialog:
-```typescript
-const [selectedTransactionId, setSelectedTransactionId] = useState<string | null>(null);
-const [isPdfPreviewOpen, setIsPdfPreviewOpen] = useState(false);
-
-const handleViewPdf = (transactionId: string) => {
-  setSelectedTransactionId(transactionId);
-  setIsPdfPreviewOpen(true);
+// Add a new method to fetch PDF as blob (authenticated)
+getTransactionReceiptBlob = async (transactionId: string, mode: 'view' | 'download' = 'view'): Promise<Blob> => {
+  const endpoint = mode === 'view' ? 'view' : 'download';
+  const response = await fetch(`${API_URL}/supplier-transactions/${transactionId}/${endpoint}`, {
+    headers: {
+      Authorization: `Bearer ${this.token}`,
+    },
+  });
+  
+  if (!response.ok) {
+    throw new ApiError(response.status, 'Failed to fetch receipt');
+  }
+  
+  return response.blob();
 };
 ```
 
-Add the PDF preview dialog:
+### 2. Update SupplierAccountingPage to use Blob URL
+
+**File**: `src/pages/SupplierAccountingPage.tsx`
+
+Add state and effect for PDF blob:
+
+```typescript
+const [pdfBlobUrl, setPdfBlobUrl] = useState<string | null>(null);
+const [isPdfLoading, setIsPdfLoading] = useState(false);
+
+// Fetch PDF when dialog opens
+useEffect(() => {
+  if (isPdfPreviewOpen && selectedTransactionId) {
+    setIsPdfLoading(true);
+    api.getTransactionReceiptBlob(selectedTransactionId, 'view')
+      .then(blob => {
+        const url = URL.createObjectURL(blob);
+        setPdfBlobUrl(url);
+      })
+      .catch(error => {
+        console.error('Failed to load PDF:', error);
+        toast.error(t('accounting.transaction.loadError'));
+      })
+      .finally(() => setIsPdfLoading(false));
+  }
+  
+  // Cleanup blob URL when dialog closes
+  return () => {
+    if (pdfBlobUrl) {
+      URL.revokeObjectURL(pdfBlobUrl);
+      setPdfBlobUrl(null);
+    }
+  };
+}, [isPdfPreviewOpen, selectedTransactionId]);
+```
+
+Update the iframe to use blob URL:
+
 ```tsx
-{/* PDF Preview Dialog */}
 <Dialog open={isPdfPreviewOpen} onOpenChange={setIsPdfPreviewOpen}>
   <DialogContent className="max-w-4xl h-[80vh]">
     <DialogHeader>
       <DialogTitle>{t('accounting.transaction.viewReceipt')}</DialogTitle>
     </DialogHeader>
     <div className="flex-1 h-full min-h-[500px]">
-      {selectedTransactionId && (
+      {isPdfLoading ? (
+        <div className="flex items-center justify-center h-full">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+        </div>
+      ) : pdfBlobUrl ? (
         <iframe
-          src={api.getTransactionReceiptViewUrl(selectedTransactionId)}
+          src={pdfBlobUrl}
           className="w-full h-full border-0 rounded-md"
           title="PDF Receipt"
         />
+      ) : (
+        <div className="flex items-center justify-center h-full text-muted-foreground">
+          {t('accounting.transaction.loadError')}
+        </div>
       )}
     </div>
   </DialogContent>
 </Dialog>
 ```
 
-Update the PDF button in the history table:
-```tsx
-<TableCell>
-  {transaction.receiptUrl ? (
-    <div className="flex gap-1">
-      {/* View button */}
-      <Button
-        variant="ghost"
-        size="sm"
-        onClick={() => handleViewPdf(transaction.id)}
-        title={t('accounting.transaction.viewReceipt')}
-      >
-        <Eye className="h-4 w-4" />
-      </Button>
-      {/* Download button */}
-      <Button
-        variant="ghost"
-        size="sm"
-        onClick={() => window.open(api.getTransactionReceiptUrl(transaction.id), '_blank')}
-        title={t('accounting.transaction.downloadReceipt')}
-      >
-        <Download className="h-4 w-4" />
-      </Button>
-    </div>
-  ) : (
-    <span className="text-muted-foreground">-</span>
-  )}
-</TableCell>
-```
+### 3. Update Download Handler
 
-### 4. Add Translations
+Update the download button to use authenticated fetch:
 
-**File**: `src/i18n/locales/fr/suppliers.json`
-```json
-{
-  "accounting": {
-    "transaction": {
-      "viewReceipt": "Voir le justificatif",
-      "downloadReceipt": "Télécharger"
-    }
+```typescript
+const handleDownloadPdf = async (transactionId: string) => {
+  try {
+    const blob = await api.getTransactionReceiptBlob(transactionId, 'download');
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `receipt-${transactionId}.pdf`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  } catch (error) {
+    console.error('Failed to download PDF:', error);
+    toast.error(t('accounting.transaction.downloadError'));
   }
-}
+};
 ```
 
-**File**: `src/i18n/locales/ar/suppliers.json`
+### 4. Add Missing Translations
+
+**Files**: `src/i18n/locales/fr/suppliers.json` and `src/i18n/locales/ar/suppliers.json`
+
 ```json
 {
   "accounting": {
     "transaction": {
-      "viewReceipt": "عرض المستند",
-      "downloadReceipt": "تحميل"
+      "loadError": "Erreur lors du chargement du document",
+      "downloadError": "Erreur lors du téléchargement"
     }
   }
 }
@@ -153,34 +163,28 @@ Update the PDF button in the history table:
 
 ---
 
-## Visual Layout
+## Flow Diagram
 
-### Transaction History Row (Updated)
 ```
-┌─────────────────────────────────────────────────────────────────────┐
-│ Date       │ Supplier    │ Type    │ Amount    │ Note   │ Receipt  │
-├─────────────────────────────────────────────────────────────────────┤
-│ 15 Jan     │ Air Algérie │ Sortie  │ -50,000   │ ...    │ 👁️ 📥     │
-│ 12 Jan     │ Marriott    │ Sortie  │ -80,000   │ ...    │    -     │
-└─────────────────────────────────────────────────────────────────────┘
-                                                         ▲    ▲
-                                                      View  Download
-```
+┌─────────────────────────────────────────────────────────────────┐
+│                     CURRENT (BROKEN)                            │
+├─────────────────────────────────────────────────────────────────┤
+│  User clicks Eye  →  iframe src="URL"  →  No auth  →  401      │
+└─────────────────────────────────────────────────────────────────┘
 
-### PDF Preview Dialog
-```
-┌────────────────────────────────────────────────────────┐
-│  Voir le justificatif                              [X] │
-├────────────────────────────────────────────────────────┤
-│  ┌──────────────────────────────────────────────────┐  │
-│  │                                                  │  │
-│  │                  [PDF CONTENT]                   │  │
-│  │                                                  │  │
-│  │           Embedded PDF Viewer (iframe)           │  │
-│  │                                                  │  │
-│  │                                                  │  │
-│  └──────────────────────────────────────────────────┘  │
-└────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────┐
+│                     PROPOSED (FIXED)                            │
+├─────────────────────────────────────────────────────────────────┤
+│  User clicks Eye                                                │
+│        ↓                                                        │
+│  ApiClient.getTransactionReceiptBlob()                          │
+│        ↓ (includes Authorization header)                        │
+│  Backend returns PDF                                            │
+│        ↓                                                        │
+│  Create Blob URL: blob:http://xxx                               │
+│        ↓                                                        │
+│  iframe src="blob:http://xxx"  →  PDF displays!                 │
+└─────────────────────────────────────────────────────────────────┘
 ```
 
 ---
@@ -189,23 +193,10 @@ Update the PDF button in the history table:
 
 | File | Changes |
 |------|---------|
-| `server/src/supplier-transactions/supplier-transactions.controller.ts` | Add `/view` endpoint with inline Content-Disposition |
-| `src/lib/api.ts` | Add `getTransactionReceiptViewUrl` method |
-| `src/pages/SupplierAccountingPage.tsx` | Add PDF preview dialog, Eye icon, state management |
-| `src/i18n/locales/fr/suppliers.json` | Add `viewReceipt`, `downloadReceipt` translations |
-| `src/i18n/locales/ar/suppliers.json` | Add Arabic translations |
-
----
-
-## Technical Notes
-
-1. **Iframe PDF Viewing**: Most modern browsers support viewing PDFs in iframes. The `Content-Disposition: inline` header tells the browser to display the PDF instead of downloading it.
-
-2. **Authentication**: The iframe will include credentials because the API client uses `Bearer` token. However, since this is a direct URL in an iframe, we need to ensure the auth token is passed. We can handle this by:
-   - Using a temporary signed URL approach, OR
-   - Having the backend accept the token as a query parameter for this specific endpoint
-
-3. **CORS**: The PDF viewer should work as long as CORS is properly configured (which it already is in your setup).
+| `src/lib/api.ts` | Add `getTransactionReceiptBlob()` method |
+| `src/pages/SupplierAccountingPage.tsx` | Use blob URL for iframe, add loading state, update download handler |
+| `src/i18n/locales/fr/suppliers.json` | Add error translations |
+| `src/i18n/locales/ar/suppliers.json` | Add error translations |
 
 ---
 
@@ -213,15 +204,14 @@ Update the PDF button in the history table:
 
 | Category | Count |
 |----------|-------|
-| Backend files | 1 |
+| API methods | 1 new |
 | Frontend files | 1 |
 | Translation files | 2 |
-| API changes | 1 |
-| **Total** | 5 files |
+| **Total** | 4 files |
 
-This implementation:
-1. Adds an inline PDF viewing endpoint
-2. Creates a modal dialog with embedded PDF viewer
-3. Keeps the download option available
-4. Provides both "view" and "download" actions for each receipt
+This fix ensures:
+1. **Authentication works** - JWT token sent via fetch Authorization header
+2. **Security** - Token never exposed in URLs or browser history
+3. **User experience** - Loading spinner while PDF loads
+4. **Memory management** - Blob URLs properly revoked when dialog closes
 
