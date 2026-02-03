@@ -15,11 +15,18 @@ export class AnalyticsService {
     @InjectRepository(SupplierTransaction) private transactionsRepo: Repository<SupplierTransaction>,
   ) { }
 
-  async getDashboardStats() {
-    const commands = await this.commandsRepo.find({
-      relations: ['service'],
-      order: { createdAt: 'DESC' }
-    });
+  async getDashboardStats(userId?: string, isAdmin?: boolean) {
+    // Build query based on role
+    let queryBuilder = this.commandsRepo.createQueryBuilder('command')
+      .leftJoinAndSelect('command.service', 'service')
+      .orderBy('command.createdAt', 'DESC');
+    
+    // Filter by user for non-admin
+    if (!isAdmin && userId) {
+      queryBuilder = queryBuilder.where('command.createdBy = :userId', { userId });
+    }
+    
+    const commands = await queryBuilder.getMany();
 
     const totalRevenue = commands.reduce((sum, c) => sum + Number(c.sellingPrice || 0), 0);
     const totalProfit = commands.reduce((sum, c) => sum + (Number(c.sellingPrice || 0) - Number(c.buyingPrice || 0)), 0);
