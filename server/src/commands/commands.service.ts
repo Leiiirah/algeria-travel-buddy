@@ -14,6 +14,7 @@ export interface CommandFilters {
   toDate?: string;
   page?: number;
   limit?: number;
+  createdBy?: string; // Filter by creator (for employee access)
 }
 
 export interface PaginatedResponse<T> {
@@ -41,6 +42,7 @@ export class CommandsService {
       toDate,
       page = 1,
       limit = 20,
+      createdBy,
     } = filters;
 
     const queryBuilder = this.commandsRepository
@@ -78,6 +80,11 @@ export class CommandsService {
       queryBuilder.andWhere('command.createdAt <= :toDate', {
         toDate: new Date(toDate),
       });
+    }
+
+    // Filter by creator (for employee access control)
+    if (createdBy) {
+      queryBuilder.andWhere('command.createdBy = :createdBy', { createdBy });
     }
 
     const total = await queryBuilder.getCount();

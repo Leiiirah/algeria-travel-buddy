@@ -11,9 +11,12 @@ import {
 import { SupplierTransactionsService } from './supplier-transactions.service';
 import { CreateSupplierTransactionDto } from './dto/create-supplier-transaction.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { RolesGuard } from '../common/guards/roles.guard';
+import { Roles } from '../common/decorators/roles.decorator';
 
 @Controller('supplier-transactions')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles('admin') // All supplier transaction operations require admin role
 export class SupplierTransactionsController {
   constructor(
     private readonly transactionsService: SupplierTransactionsService,

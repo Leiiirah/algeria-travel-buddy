@@ -20,24 +20,39 @@ export class EmployeeTransactionsController {
   constructor(private readonly service: EmployeeTransactionsService) {}
 
   @Get()
-  @Roles('admin')
-  findAll() {
-    return this.service.findAll();
+  findAll(@CurrentUser() user: { id: string; role: string }) {
+    // Admin sees all, employee sees only their own
+    if (user.role === 'admin') {
+      return this.service.findAll();
+    }
+    return this.service.findByEmployee(user.id);
   }
 
   @Get('balances')
-  @Roles('admin')
-  getAllBalances() {
-    return this.service.getAllBalances();
+  getAllBalances(@CurrentUser() user: { id: string; role: string }) {
+    // Admin sees all balances, employee sees only their own
+    if (user.role === 'admin') {
+      return this.service.getAllBalances();
+    }
+    // Return employee's own balance as an array for consistency
+    return this.service.getEmployeeBalance(user.id).then(balance => [balance]);
   }
 
   @Get('employee/:id')
-  findByEmployee(@Param('id') id: string) {
+  findByEmployee(@Param('id') id: string, @CurrentUser() user: { id: string; role: string }) {
+    // Employee can only see their own transactions
+    if (user.role !== 'admin' && user.id !== id) {
+      return [];
+    }
     return this.service.findByEmployee(id);
   }
 
   @Get('employee/:id/balance')
-  getEmployeeBalance(@Param('id') id: string) {
+  getEmployeeBalance(@Param('id') id: string, @CurrentUser() user: { id: string; role: string }) {
+    // Employee can only see their own balance
+    if (user.role !== 'admin' && user.id !== id) {
+      return { totalAvances: 0, totalCredits: 0, totalSalaires: 0, balance: 0 };
+    }
     return this.service.getEmployeeBalance(id);
   }
 

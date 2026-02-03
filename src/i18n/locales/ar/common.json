@@ -15,6 +15,7 @@
   },
   "groups": {
     "main": "الرئيسية",
+    "personal": "الشخصية",
     "management": "الإدارة",
     "administration": "الإدارة العامة"
   },
