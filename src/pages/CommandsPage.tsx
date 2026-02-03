@@ -38,7 +38,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Plus, Search, MoreHorizontal, Edit, Trash2, Eye, Lock, Unlock, Banknote, CreditCard, TrendingUp, FileDown, Download, Loader2 } from 'lucide-react';
+import { Plus, Search, MoreHorizontal, Edit, Trash2, Eye, Lock, Unlock, Banknote, CreditCard, TrendingUp, FileDown, Download, Loader2, X } from 'lucide-react';
 import {
   formatDZD,
   isCommandEditable,
@@ -73,6 +73,7 @@ const CommandsPage = () => {
   const [viewingCommand, setViewingCommand] = useState<Command | null>(null);
   const [passportBlobUrl, setPassportBlobUrl] = useState<string | null>(null);
   const [isLoadingPassport, setIsLoadingPassport] = useState(false);
+  const [isPassportExpanded, setIsPassportExpanded] = useState(false);
   // Form states
   const [formData, setFormData] = useState({
     clientFullName: '',
@@ -1121,7 +1122,9 @@ const CommandsPage = () => {
                               <img
                                 src={passportBlobUrl}
                                 alt="Passport"
-                                className="max-w-full max-h-[400px] rounded-lg border mx-auto block"
+                                className="max-w-full max-h-[400px] rounded-lg border mx-auto block cursor-pointer hover:opacity-90 transition-opacity"
+                                onClick={() => setIsPassportExpanded(true)}
+                                title={t('details.clickToEnlarge')}
                               />
                             )}
                             <div className="flex gap-2">
@@ -1170,6 +1173,27 @@ const CommandsPage = () => {
           })()}
         </DialogContent>
       </Dialog>
+
+      {/* Passport Lightbox */}
+      {isPassportExpanded && passportBlobUrl && (
+        <div 
+          className="fixed inset-0 z-[100] bg-black/90 flex items-center justify-center p-4"
+          onClick={() => setIsPassportExpanded(false)}
+        >
+          <button
+            className="absolute top-4 right-4 text-white hover:text-gray-300 transition-colors"
+            onClick={() => setIsPassportExpanded(false)}
+          >
+            <X className="h-8 w-8" />
+          </button>
+          <img
+            src={passportBlobUrl}
+            alt="Passport Full View"
+            className="max-w-[95vw] max-h-[95vh] object-contain rounded-lg"
+            onClick={(e) => e.stopPropagation()}
+          />
+        </div>
+      )}
     </DashboardLayout >
   );
 };

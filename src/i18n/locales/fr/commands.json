@@ -6,7 +6,8 @@
     "passportLoadError": "Impossible de charger le passeport",
     "service": "Service",
     "createdAt": "Date de création",
-    "createdBy": "Créé par"
+    "createdBy": "Créé par",
+    "clickToEnlarge": "Cliquez pour agrandir"
   },
   "stats": {
     "totalPayments": "Total Versements",
