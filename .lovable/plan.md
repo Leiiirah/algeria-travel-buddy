@@ -1,25 +1,187 @@
 
-# Plan: Fix 413 Payload Too Large Error for Supplier Transaction File Uploads
+
+# Plan: Add Inline PDF Viewer for Supplier Transaction Receipts
 
 ## Problem
 
-When adding a PDF file to a supplier transaction and clicking "Enregistrer", you get an **API ERROR 413** ("Payload Too Large"). This happens even after the previous fixes for the 431 error.
+Currently, when clicking the PDF button in the transaction history, the file is downloaded. You want to **view the PDF directly in the app** without downloading it.
 
-## Root Cause Analysis
+---
 
-The **413 Payload Too Large** error occurs because NestJS/Express has default body size limits that are separate from Multer's file size limits:
+## Solution Overview
 
-| Component | Default Limit | Our Need |
-|-----------|--------------|----------|
-| Express raw body | ~100KB | 20MB+ (for PDFs) |
-| Express JSON body | ~100KB | Already works |
-| Multer file size | 10MB (configured) | Good |
+Add a transaction details dialog with an embedded PDF viewer that displays the receipt inline using an `<iframe>` or `<object>` element.
 
-The problem is that **before** Multer processes the file upload, Express checks the raw body size and rejects it if it exceeds the default limit.
+---
 
-## Solution
+## Current vs Proposed
 
-Configure NestJS to accept larger request bodies globally in `main.ts` by setting the raw body parser limit.
+| Current | Proposed |
+|---------|----------|
+| PDF button triggers download | PDF button opens preview dialog |
+| No inline viewing | Embedded PDF viewer in modal |
+| `window.open()` to download URL | Dialog with `<iframe src="...">` |
+
+---
+
+## Implementation
+
+### 1. Backend: Add Inline View Endpoint
+
+Create a new endpoint that returns the PDF with `Content-Disposition: inline` (for browser viewing) instead of `attachment` (for download).
+
+**File**: `server/src/supplier-transactions/supplier-transactions.controller.ts`
+
+```typescript
+@Get(':id/view')
+async viewReceipt(@Param('id') id: string, @Res() res: Response) {
+  const transaction = await this.transactionsService.findOne(id);
+  if (!transaction.receiptUrl) {
+    throw new NotFoundException('No receipt attached to this transaction');
+  }
+  
+  const filePath = path.join('./uploads/receipts', transaction.receiptUrl);
+  
+  // Set headers for inline viewing
+  res.setHeader('Content-Type', 'application/pdf');
+  res.setHeader('Content-Disposition', `inline; filename="${transaction.receiptUrl}"`);
+  
+  return res.sendFile(transaction.receiptUrl, { root: './uploads/receipts' });
+}
+```
+
+### 2. Frontend: Add API Method for Viewing
+
+**File**: `src/lib/api.ts`
+
+```typescript
+getTransactionReceiptViewUrl = (transactionId: string): string =>
+  `${API_URL}/supplier-transactions/${transactionId}/view`;
+```
+
+### 3. Frontend: Add PDF Preview Dialog
+
+**File**: `src/pages/SupplierAccountingPage.tsx`
+
+Add state for the PDF preview dialog:
+```typescript
+const [selectedTransactionId, setSelectedTransactionId] = useState<string | null>(null);
+const [isPdfPreviewOpen, setIsPdfPreviewOpen] = useState(false);
+
+const handleViewPdf = (transactionId: string) => {
+  setSelectedTransactionId(transactionId);
+  setIsPdfPreviewOpen(true);
+};
+```
+
+Add the PDF preview dialog:
+```tsx
+{/* PDF Preview Dialog */}
+<Dialog open={isPdfPreviewOpen} onOpenChange={setIsPdfPreviewOpen}>
+  <DialogContent className="max-w-4xl h-[80vh]">
+    <DialogHeader>
+      <DialogTitle>{t('accounting.transaction.viewReceipt')}</DialogTitle>
+    </DialogHeader>
+    <div className="flex-1 h-full min-h-[500px]">
+      {selectedTransactionId && (
+        <iframe
+          src={api.getTransactionReceiptViewUrl(selectedTransactionId)}
+          className="w-full h-full border-0 rounded-md"
+          title="PDF Receipt"
+        />
+      )}
+    </div>
+  </DialogContent>
+</Dialog>
+```
+
+Update the PDF button in the history table:
+```tsx
+<TableCell>
+  {transaction.receiptUrl ? (
+    <div className="flex gap-1">
+      {/* View button */}
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={() => handleViewPdf(transaction.id)}
+        title={t('accounting.transaction.viewReceipt')}
+      >
+        <Eye className="h-4 w-4" />
+      </Button>
+      {/* Download button */}
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={() => window.open(api.getTransactionReceiptUrl(transaction.id), '_blank')}
+        title={t('accounting.transaction.downloadReceipt')}
+      >
+        <Download className="h-4 w-4" />
+      </Button>
+    </div>
+  ) : (
+    <span className="text-muted-foreground">-</span>
+  )}
+</TableCell>
+```
+
+### 4. Add Translations
+
+**File**: `src/i18n/locales/fr/suppliers.json`
+```json
+{
+  "accounting": {
+    "transaction": {
+      "viewReceipt": "Voir le justificatif",
+      "downloadReceipt": "Télécharger"
+    }
+  }
+}
+```
+
+**File**: `src/i18n/locales/ar/suppliers.json`
+```json
+{
+  "accounting": {
+    "transaction": {
+      "viewReceipt": "عرض المستند",
+      "downloadReceipt": "تحميل"
+    }
+  }
+}
+```
+
+---
+
+## Visual Layout
+
+### Transaction History Row (Updated)
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│ Date       │ Supplier    │ Type    │ Amount    │ Note   │ Receipt  │
+├─────────────────────────────────────────────────────────────────────┤
+│ 15 Jan     │ Air Algérie │ Sortie  │ -50,000   │ ...    │ 👁️ 📥     │
+│ 12 Jan     │ Marriott    │ Sortie  │ -80,000   │ ...    │    -     │
+└─────────────────────────────────────────────────────────────────────┘
+                                                         ▲    ▲
+                                                      View  Download
+```
+
+### PDF Preview Dialog
+```
+┌────────────────────────────────────────────────────────┐
+│  Voir le justificatif                              [X] │
+├────────────────────────────────────────────────────────┤
+│  ┌──────────────────────────────────────────────────┐  │
+│  │                                                  │  │
+│  │                  [PDF CONTENT]                   │  │
+│  │                                                  │  │
+│  │           Embedded PDF Viewer (iframe)           │  │
+│  │                                                  │  │
+│  │                                                  │  │
+│  └──────────────────────────────────────────────────┘  │
+└────────────────────────────────────────────────────────┘
+```
 
 ---
 
@@ -27,128 +189,23 @@ Configure NestJS to accept larger request bodies globally in `main.ts` by settin
 
 | File | Changes |
 |------|---------|
-| `server/src/main.ts` | Configure body parser limits (20MB) for file uploads |
-| `server/src/supplier-transactions/supplier-transactions.controller.ts` | Increase multer file size limit to 20MB to match |
+| `server/src/supplier-transactions/supplier-transactions.controller.ts` | Add `/view` endpoint with inline Content-Disposition |
+| `src/lib/api.ts` | Add `getTransactionReceiptViewUrl` method |
+| `src/pages/SupplierAccountingPage.tsx` | Add PDF preview dialog, Eye icon, state management |
+| `src/i18n/locales/fr/suppliers.json` | Add `viewReceipt`, `downloadReceipt` translations |
+| `src/i18n/locales/ar/suppliers.json` | Add Arabic translations |
 
 ---
 
-## Implementation Details
+## Technical Notes
 
-### 1. Update `server/src/main.ts`
+1. **Iframe PDF Viewing**: Most modern browsers support viewing PDFs in iframes. The `Content-Disposition: inline` header tells the browser to display the PDF instead of downloading it.
 
-Add body parser configuration to allow larger request bodies:
+2. **Authentication**: The iframe will include credentials because the API client uses `Bearer` token. However, since this is a direct URL in an iframe, we need to ensure the auth token is passed. We can handle this by:
+   - Using a temporary signed URL approach, OR
+   - Having the backend accept the token as a query parameter for this specific endpoint
 
-```typescript
-import { NestFactory } from '@nestjs/core';
-import { ValidationPipe } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import { json, urlencoded } from 'express';
-import { HttpExceptionFilter } from './common/filters/http-exception.filter';
-import { AppModule } from './app.module';
-
-async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
-  const configService = app.get(ConfigService);
-  app.setGlobalPrefix('api');
-
-  // Increase body size limits for file uploads (20MB)
-  app.use(json({ limit: '20mb' }));
-  app.use(urlencoded({ extended: true, limit: '20mb' }));
-
-  // Global exception filter
-  app.useGlobalFilters(new HttpExceptionFilter());
-
-  // Enable CORS
-  const corsOrigin = configService.get<string>('CORS_ORIGIN', '*');
-  const origins = corsOrigin.includes(',')
-    ? corsOrigin.split(',').map((origin) => origin.trim())
-    : corsOrigin;
-
-  app.enableCors({
-    origin: origins,
-    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
-    credentials: true,
-  });
-
-  // Global validation pipe
-  app.useGlobalPipes(
-    new ValidationPipe({
-      whitelist: true,
-      forbidNonWhitelisted: true,
-      transform: true,
-      transformOptions: {
-        enableImplicitConversion: true,
-      },
-    }),
-  );
-
-  const port = configService.get('PORT', 3000);
-  await app.listen(port);
-  console.log(`🚀 Application is running on: http://localhost:${port}`);
-}
-
-bootstrap();
-```
-
-### 2. Update `server/src/supplier-transactions/supplier-transactions.controller.ts`
-
-Increase the Multer file size limit to 20MB to match the body parser limit:
-
-```typescript
-@Post('with-file')
-@UseInterceptors(
-  FileInterceptor('file', {
-    storage: diskStorage({
-      destination: './uploads/receipts',
-      filename: (req, file, cb) => {
-        const ext = path.extname(file.originalname);
-        cb(null, `receipt-${uuidv4()}${ext}`);
-      },
-    }),
-    limits: {
-      fileSize: 20 * 1024 * 1024, // Increased to 20MB maximum
-    },
-    fileFilter: (req, file, cb) => {
-      if (file.mimetype === 'application/pdf') {
-        cb(null, true);
-      } else {
-        cb(new Error('Only PDF files are allowed'), false);
-      }
-    },
-  }),
-)
-createWithFile(
-  @Body() createDto: CreateSupplierTransactionDto,
-  @UploadedFile() file: Express.Multer.File,
-  @Request() req: any,
-) {
-  const receiptUrl = file?.filename || undefined;
-  return this.transactionsService.create({ ...createDto, receiptUrl }, req.user.id);
-}
-```
-
----
-
-## Why This Fixes the 413 Error
-
-1. **Body Parser Limits**: Express processes the raw body before Multer. Without configuring `json()` and `urlencoded()` limits, Express rejects large payloads with a 413 error.
-
-2. **Multipart Form Data**: For file uploads using `multipart/form-data`, the raw body includes the entire file. We need to ensure Express accepts this before passing it to Multer.
-
-3. **Consistent Limits**: Setting both body parser (20MB) and Multer (20MB) to the same limit ensures consistent behavior.
-
----
-
-## Additional Server Considerations
-
-If you're running behind a reverse proxy (Nginx), you may also need to configure the proxy to accept larger bodies. This would be done outside of the NestJS application:
-
-```nginx
-# Example nginx.conf (not in this codebase)
-client_max_body_size 20M;
-```
-
-However, since the server appears to be running directly without a proxy visible in the codebase, the NestJS changes should be sufficient.
+3. **CORS**: The PDF viewer should work as long as CORS is properly configured (which it already is in your setup).
 
 ---
 
@@ -156,10 +213,15 @@ However, since the server appears to be running directly without a proxy visible
 
 | Category | Count |
 |----------|-------|
-| Backend files | 2 |
-| **Total** | 2 files |
+| Backend files | 1 |
+| Frontend files | 1 |
+| Translation files | 2 |
+| API changes | 1 |
+| **Total** | 5 files |
 
-This fix addresses:
-1. **Express body parser limits** - Increases the default limit from ~100KB to 20MB
-2. **Multer consistency** - Updates Multer limit to 20MB to match
-3. **Complete request handling** - Ensures the entire upload pipeline accepts larger files
+This implementation:
+1. Adds an inline PDF viewing endpoint
+2. Creates a modal dialog with embedded PDF viewer
+3. Keeps the download option available
+4. Provides both "view" and "download" actions for each receipt
+
