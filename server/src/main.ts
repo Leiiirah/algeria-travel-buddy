@@ -1,13 +1,19 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { json, urlencoded } from 'express';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   const configService = app.get(ConfigService);
-app.setGlobalPrefix('api');  // <--- ADD THIS LINE HERE
+  app.setGlobalPrefix('api');
+
+  // Increase body size limits for file uploads (20MB)
+  app.use(json({ limit: '20mb' }));
+  app.use(urlencoded({ extended: true, limit: '20mb' }));
+
   // Global exception filter
   app.useGlobalFilters(new HttpExceptionFilter());
 
