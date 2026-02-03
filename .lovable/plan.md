@@ -1,32 +1,60 @@
 
-# Plan: Add Employee Command Statistics to Personal Accounting
 
-## Problem
+# Plan: Fix Employee Command Statistics Display
 
-When an employee creates a command, their personal accounting page (`/comptabilite-employes`) doesn't reflect this. Currently, this page only shows manually-entered transactions (advances, credits, salaries) by the admin.
+## Problem Analysis
 
-Employees expect to see statistics about the commands they've created - their personal performance metrics.
+After thoroughly scanning the codebase, I found that the **implementation exists** but may have issues preventing it from working properly. The expected flow is:
+
+1. Employee creates a command
+2. Command is saved with `createdBy` = employee's user ID
+3. Employee visits `/comptabilite-employes` (Employee Accounting page)
+4. Frontend calls `GET /analytics/employee-stats`
+5. Backend returns stats calculated from commands where `createdBy` matches employee's ID
+6. Frontend displays "Ma Performance" section with stats
+
+## Current Implementation Status
+
+| Component | Status | Location |
+|-----------|--------|----------|
+| Backend endpoint | Exists | `server/src/analytics/analytics.controller.ts` line 26-29 |
+| Backend service method | Exists | `server/src/analytics/analytics.service.ts` lines 143-170 |
+| Frontend API function | Exists | `src/lib/api.ts` lines 852-863 |
+| Frontend hook | Exists | `src/hooks/useAnalytics.ts` lines 33-37 |
+| Frontend UI | Exists | `src/pages/EmployeeAccountingPage.tsx` lines 366-397 |
+| Translations | Exists | `src/i18n/locales/fr/employees.json` lines 56-62 |
+
+## Identified Issues
+
+### Issue 1: Query Cache Invalidation
+When a command is created, `['analytics']` is invalidated, but the `useEmployeeStats` query uses `['analytics', 'employee-stats']`. This should work due to partial matching, but we should verify.
+
+### Issue 2: Conditional Rendering May Hide Debug Information
+The section only shows when `!isAdmin && employeeStats`. If `employeeStats` is `undefined` or `null` (due to an API error), the section won't display at all - no error message shown.
+
+### Issue 3: Backend Server Deployment
+The NestJS server code exists but may not be deployed or running with the latest changes.
 
 ---
 
 ## Solution
 
-Enhance the employee's personal accounting view to include a **"My Performance"** section that displays statistics from their own commands:
+### Step 1: Add Error Handling and Debug Information
 
-- Total revenue (from their commands)
-- Total profit (selling price - buying price)
-- Pending amounts (unpaid balances from clients)
-- Number of commands by status
+Update `EmployeeAccountingPage.tsx` to show error states and ensure the component provides feedback when data is missing.
 
----
+**Changes to make:**
+- Add error state from the `useEmployeeStats` hook
+- Show a loading state or error message when stats cannot be loaded
+- Add fallback values to prevent UI from breaking
 
-## Current vs Proposed View
+### Step 2: Ensure Query Invalidation Works
 
-| Section | Current (Employee View) | Proposed (Employee View) |
-|---------|------------------------|--------------------------|
-| My Performance | Not shown | NEW: Revenue, Profit, Pending, Command Stats |
-| Transactions | Advances, Credits, Salaries | Unchanged |
-| Balance | Salary balance only | Unchanged |
+Update `useCreateCommand` to explicitly invalidate the employee-stats query key for immediate feedback.
+
+### Step 3: Add Default Values for Stats
+
+Ensure the backend returns default values (0) even when there are no commands, rather than throwing an error.
 
 ---
 
@@ -34,21 +62,73 @@ Enhance the employee's personal accounting view to include a **"My Performance"*
 
 | File | Changes |
 |------|---------|
-| `server/src/analytics/analytics.service.ts` | Add new method `getEmployeeCommandStats(userId)` |
-| `server/src/analytics/analytics.controller.ts` | Add new endpoint `GET /analytics/employee-stats` |
-| `src/lib/api.ts` | Add `getEmployeeStats()` API function |
-| `src/hooks/useAnalytics.ts` | Add `useEmployeeStats()` hook |
-| `src/pages/EmployeeAccountingPage.tsx` | Add "My Performance" cards for employees |
-| `src/i18n/locales/fr/employees.json` | Add translation keys for new stats |
-| `src/i18n/locales/ar/employees.json` | Add Arabic translations |
+| `src/pages/EmployeeAccountingPage.tsx` | Add error handling, improve conditional rendering, show loading/error states |
+| `src/hooks/useCommands.ts` | Add explicit invalidation for `employee-stats` query |
+| `server/src/analytics/analytics.service.ts` | Ensure robust handling when no commands exist |
 
 ---
 
-## Implementation Details
+## Detailed Implementation
 
-### 1. Backend - Add Employee Stats Endpoint
+### 1. Update EmployeeAccountingPage.tsx
 
-**analytics.service.ts** - New method:
+```typescript
+// Add error state from hook
+const { data: employeeStats, isLoading: loadingStats, isError: statsError } = useEmployeeStats();
+
+// Update the My Performance section
+{!isAdmin && (
+  <div className="space-y-4">
+    <h2 className="text-lg font-semibold text-foreground">
+      {t('accounting.myPerformance.title')}
+    </h2>
+    
+    {loadingStats ? (
+      <div className="grid gap-4 md:grid-cols-4">
+        {[1, 2, 3, 4].map(i => (
+          <Card key={i}>
+            <CardContent className="pt-6">
+              <Skeleton className="h-8 w-full" />
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    ) : statsError ? (
+      <Card>
+        <CardContent className="pt-6 text-center text-muted-foreground">
+          {tCommon('error.loadFailed')}
+        </CardContent>
+      </Card>
+    ) : (
+      <div className="grid gap-4 md:grid-cols-4">
+        <StatsCard
+          title={t('accounting.myPerformance.myCommands')}
+          value={employeeStats?.totalCommands ?? 0}
+          icon={ClipboardList}
+          variant="info"
+        />
+        {/* ... rest of stats cards with fallback values */}
+      </div>
+    )}
+  </div>
+)}
+```
+
+### 2. Update useCommands.ts
+
+```typescript
+onSuccess: () => {
+  queryClient.invalidateQueries({ queryKey: ['commands'] });
+  queryClient.invalidateQueries({ queryKey: ['analytics'] });
+  queryClient.invalidateQueries({ queryKey: ['analytics', 'employee-stats'] });
+  // ... rest
+}
+```
+
+### 3. Update analytics.service.ts (Backend)
+
+Ensure the method handles empty results gracefully:
+
 ```typescript
 async getEmployeeCommandStats(userId: string) {
   const commands = await this.commandsRepo.find({
@@ -56,137 +136,37 @@ async getEmployeeCommandStats(userId: string) {
     relations: ['service'],
   });
 
-  const totalRevenue = commands.reduce(
-    (sum, c) => sum + Number(c.sellingPrice || 0), 0
-  );
-  const totalProfit = commands.reduce(
-    (sum, c) => sum + (Number(c.sellingPrice || 0) - Number(c.buyingPrice || 0)), 0
-  );
-  const pendingAmount = commands.reduce(
-    (sum, c) => sum + Math.max(0, Number(c.sellingPrice || 0) - Number(c.amountPaid || 0)), 0
-  );
-
-  return {
-    totalCommands: commands.length,
-    totalRevenue,
-    totalProfit,
-    pendingAmount,
-    byStatus: {
-      en_attente: commands.filter(c => c.status === 'dossier_incomplet').length,
-      en_cours: commands.filter(c => c.status === 'en_traitement').length,
-      termine: commands.filter(c => c.status === 'retire').length,
-    },
-  };
-}
-```
-
-**analytics.controller.ts** - New endpoint:
-```typescript
-@Get('employee-stats')
-getEmployeeStats(@Request() req: any) {
-  return this.analyticsService.getEmployeeCommandStats(req.user.id);
-}
-```
-
-### 2. Frontend - API and Hook
-
-**api.ts**:
-```typescript
-async getEmployeeStats() {
-  const response = await this.client.get('/analytics/employee-stats');
-  return response.data;
-}
-```
-
-**useAnalytics.ts**:
-```typescript
-export function useEmployeeStats() {
-  return useQuery({
-    queryKey: ['employee-stats'],
-    queryFn: () => api.getEmployeeStats(),
-  });
-}
-```
-
-### 3. Frontend - Update Employee Accounting Page
-
-For employees (non-admin), add a new section at the top with 4 cards:
-
-| Card | Description |
-|------|-------------|
-| Mes Commandes | Total number of commands created |
-| Mon Chiffre d'Affaires | Total revenue from their commands |
-| Mon Bénéfice | Total profit (selling - buying price) |
-| Impayés Clients | Total pending amounts from clients |
-
-The existing transactions section (advances/credits/salaries) will remain below.
-
----
-
-## Visual Layout for Employees
-
-```text
-┌──────────────────────────────────────────────────────────┐
-│  Ma Comptabilité Personnelle                             │
-├──────────────────────────────────────────────────────────┤
-│                                                          │
-│  ┌─────────────┐ ┌─────────────┐ ┌─────────────┐ ┌─────────────┐
-│  │ Mes         │ │ Mon CA      │ │ Mon         │ │ Impayés     │
-│  │ Commandes   │ │ 250,000 DZD │ │ Bénéfice    │ │ 45,000 DZD  │
-│  │ 15          │ │             │ │ 75,000 DZD  │ │             │
-│  └─────────────┘ └─────────────┘ └─────────────┘ └─────────────┘
-│                                                          │
-│  ─────────────────────────────────────────────────────   │
-│                                                          │
-│  Mes Transactions (Avances, Crédits, Salaires)           │
-│  ... existing table ...                                  │
-│                                                          │
-└──────────────────────────────────────────────────────────┘
-```
-
----
-
-## Translation Keys
-
-**French (employees.json)**:
-```json
-{
-  "accounting": {
-    "myPerformance": {
-      "title": "Ma Performance",
-      "myCommands": "Mes Commandes",
-      "myRevenue": "Mon Chiffre d'Affaires",
-      "myProfit": "Mon Bénéfice",
-      "clientPending": "Impayés Clients"
-    }
+  // Always return valid structure even if no commands
+  if (!commands || commands.length === 0) {
+    return {
+      totalCommands: 0,
+      totalRevenue: 0,
+      totalProfit: 0,
+      pendingAmount: 0,
+      byStatus: {
+        en_attente: 0,
+        en_cours: 0,
+        termine: 0,
+      },
+    };
   }
-}
-```
 
-**Arabic (employees.json)**:
-```json
-{
-  "accounting": {
-    "myPerformance": {
-      "title": "أدائي",
-      "myCommands": "طلباتي",
-      "myRevenue": "إيراداتي",
-      "myProfit": "أرباحي",
-      "clientPending": "مستحقات العملاء"
-    }
-  }
+  // ... existing calculation logic
 }
 ```
 
 ---
 
-## Access Control
+## Testing Checklist
 
-| Endpoint | Admin | Employee |
-|----------|-------|----------|
-| `GET /analytics/employee-stats` | Returns own stats | Returns own stats |
+After implementation, verify:
 
-The endpoint always returns stats for the currently authenticated user based on their ID from the JWT token.
+1. Log in as an employee
+2. Navigate to `/comptabilite-employes`
+3. Verify "Ma Performance" section is visible (even with 0 values)
+4. Create a new command
+5. Navigate back to `/comptabilite-employes`
+6. Verify the stats have updated to reflect the new command
 
 ---
 
@@ -194,9 +174,13 @@ The endpoint always returns stats for the currently authenticated user based on 
 
 | Category | Count |
 |----------|-------|
-| Backend files | 2 |
-| Frontend files | 4 |
-| Translation files | 2 |
-| **Total** | 8 files |
+| Frontend files | 2 |
+| Backend files | 1 |
+| **Total** | 3 files |
 
-This implementation ensures that when an employee creates a command, they will immediately see updated statistics in their personal accounting page, reflecting their contribution to the company.
+The main fix ensures that:
+1. The section always shows for employees (not hidden when stats are 0)
+2. Error states are properly displayed
+3. Query invalidation is explicit and reliable
+4. Backend handles edge cases gracefully
+
