@@ -1,12 +1,19 @@
 
-
-# Plan: Replace Departure/Return Dates with Company Field for Ticket Commands
+# Plan: Add Passport Upload Field for Visa Commands
 
 ## Overview
 
-Modify the "billet d'avion" and "billet bateau" ticket forms to:
-1. **Remove** the departure date and return date fields
-2. **Add** a new "company" field where users can enter the transport company name (e.g., "Air Algérie", "Algérie Ferries")
+Add a file upload field to the visa command form that allows users to upload a scanned copy of the client's passport. The passport file will be stored on the server, and the URL will be saved with the command.
+
+---
+
+## Architecture Decision
+
+Since the `data` column is a JSONB field storing dynamic form data, and passport files need to be served via authenticated endpoints, we'll:
+
+1. Add a new `passportUrl` column to the `commands` table to store the passport file URL
+2. Create file upload endpoints similar to supplier transactions
+3. Update the frontend form to include a file input for visa commands
 
 ---
 
@@ -14,147 +21,215 @@ Modify the "billet d'avion" and "billet bateau" ticket forms to:
 
 | File | Changes |
 |------|---------|
-| `src/types/index.ts` | Update `TicketCommand` interface: remove `departureDate`/`returnDate`, add `company` |
-| `src/pages/CommandsPage.tsx` | Update form state, form rendering, and data handling |
-| `src/utils/invoiceGenerator.ts` | Update invoice to show company instead of dates in itinerary |
-| `src/i18n/locales/fr/commands.json` | Add `company` translation, keep existing for backward compatibility |
-| `src/i18n/locales/ar/commands.json` | Add `company` Arabic translation |
+| `server/src/commands/entities/command.entity.ts` | Add `passportUrl` column |
+| `server/src/commands/dto/create-command.dto.ts` | Add optional `passportUrl` field |
+| `server/src/commands/dto/update-command.dto.ts` | Add optional `passportUrl` field |
+| `server/src/commands/commands.controller.ts` | Add file upload endpoint + view/download endpoints |
+| `server/src/commands/commands.service.ts` | Update create/update to handle passportUrl |
+| `src/lib/api.ts` | Add methods for passport upload and viewing |
+| `src/pages/CommandsPage.tsx` | Add file input for visa type, update form handling |
+| `src/types/index.ts` | Update VisaCommand interface (optional) |
+| `src/i18n/locales/fr/commands.json` | Add translations |
+| `src/i18n/locales/ar/commands.json` | Add Arabic translations |
 
 ---
 
 ## Implementation Details
 
-### 1. Update TypeScript Types
+### 1. Backend: Add passportUrl Column
 
-**File**: `src/types/index.ts`
+**File**: `server/src/commands/entities/command.entity.ts`
 
 ```typescript
-// Before
-export interface TicketCommand extends BaseCommandData {
-  type: 'ticket';
-  departureDate: string;
-  returnDate?: string;
+@Column({ nullable: true })
+passportUrl: string;
+```
+
+### 2. Backend: Update DTOs
+
+**File**: `server/src/commands/dto/create-command.dto.ts`
+
+```typescript
+@IsString()
+@IsOptional()
+passportUrl?: string;
+```
+
+### 3. Backend: Add File Upload Endpoints
+
+**File**: `server/src/commands/commands.controller.ts`
+
+Add imports and new endpoints:
+
+```typescript
+import { FileInterceptor } from '@nestjs/platform-express';
+import { diskStorage } from 'multer';
+import { Response } from 'express';
+import * as path from 'path';
+import { v4 as uuidv4 } from 'uuid';
+
+// Create command with passport file
+@Post('with-passport')
+@UseInterceptors(
+  FileInterceptor('passport', {
+    storage: diskStorage({
+      destination: './uploads/passports',
+      filename: (req, file, cb) => {
+        const ext = path.extname(file.originalname);
+        cb(null, `passport-${uuidv4()}${ext}`);
+      },
+    }),
+    limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
+    fileFilter: (req, file, cb) => {
+      const allowed = ['application/pdf', 'image/jpeg', 'image/png', 'image/webp'];
+      cb(null, allowed.includes(file.mimetype));
+    },
+  }),
+)
+createWithPassport(
+  @Body() createDto: CreateCommandDto,
+  @UploadedFile() file: Express.Multer.File,
+  @Request() req: any,
+) {
+  const passportUrl = file?.filename || undefined;
+  return this.commandsService.create({ ...createDto, passportUrl }, req.user.id);
 }
 
-// After
-export interface TicketCommand extends BaseCommandData {
-  type: 'ticket';
-  company: string; // Transport company name (e.g., "Air Algérie", "Algérie Ferries")
+// View passport inline
+@Get(':id/passport/view')
+async viewPassport(@Param('id') id: string, @Res() res: Response) {
+  const command = await this.commandsService.findOne(id);
+  if (!command.passportUrl) {
+    throw new NotFoundException('No passport attached');
+  }
+  const ext = path.extname(command.passportUrl).toLowerCase();
+  const mimeTypes = { '.pdf': 'application/pdf', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.png': 'image/png' };
+  res.setHeader('Content-Type', mimeTypes[ext] || 'application/octet-stream');
+  res.setHeader('Content-Disposition', `inline; filename="${command.passportUrl}"`);
+  return res.sendFile(command.passportUrl, { root: './uploads/passports' });
+}
+
+// Download passport
+@Get(':id/passport/download')
+async downloadPassport(@Param('id') id: string, @Res() res: Response) {
+  const command = await this.commandsService.findOne(id);
+  if (!command.passportUrl) {
+    throw new NotFoundException('No passport attached');
+  }
+  return res.sendFile(command.passportUrl, { root: './uploads/passports' });
 }
 ```
 
-### 2. Update CommandsPage Form
+### 4. Frontend: Add API Methods
 
-**File**: `src/pages/CommandsPage.tsx`
+**File**: `src/lib/api.ts`
 
-Update form state initialization:
 ```typescript
-const [formData, setFormData] = useState({
-  // ... existing fields
-  company: '',        // NEW
-  // departureDate: '',  // REMOVE
-  // returnDate: '',     // REMOVE
-});
-```
+// Create command with passport file
+createCommandWithPassport = (data: CreateCommandDto, passportFile: File): Promise<Command> => {
+  const formData = new FormData();
+  formData.append('serviceId', data.serviceId);
+  formData.append('supplierId', data.supplierId);
+  formData.append('data', JSON.stringify(data.data));
+  formData.append('destination', data.destination);
+  formData.append('sellingPrice', data.sellingPrice.toString());
+  formData.append('amountPaid', data.amountPaid.toString());
+  formData.append('buyingPrice', data.buyingPrice.toString());
+  formData.append('passport', passportFile);
+  return this.requestWithFormData('/commands/with-passport', formData);
+};
 
-Update form reset:
-```typescript
-const resetForm = () => {
-  setFormData({
-    // ... existing fields
-    company: '',
-    // No more departureDate/returnDate
+// Fetch passport as blob for viewing
+getCommandPassportBlob = async (commandId: string, mode: 'view' | 'download' = 'view'): Promise<Blob> => {
+  const endpoint = mode === 'view' ? 'view' : 'download';
+  const response = await fetch(`${API_URL}/commands/${commandId}/passport/${endpoint}`, {
+    headers: { Authorization: `Bearer ${this.token}` },
   });
+  if (!response.ok) throw new ApiError(response.status, 'Failed to fetch passport');
+  return response.blob();
 };
 ```
 
-Update data building for 'ticket' type:
+### 5. Frontend: Update Form
+
+**File**: `src/pages/CommandsPage.tsx`
+
+Add state for passport file:
 ```typescript
-case 'ticket':
-  data = {
-    ...baseData,
-    type: 'ticket',
-    company: formData.company,
-  };
-  break;
+const [passportFile, setPassportFile] = useState<File | null>(null);
 ```
 
-Update edit command handler:
-```typescript
-} else if (command.data.type === 'ticket') {
-  formUpdates.company = command.data.company || '';
-}
-```
-
-Update form rendering for 'ticket' case:
+Update the visa form to include file upload:
 ```tsx
-case 'ticket':
+case 'visa':
   return (
     <>
-      <div className="space-y-2">
-        <Label>{t('form.clientFullName')}</Label>
-        <Input
-          value={formData.clientFullName}
-          onChange={(e) => setFormData({ ...formData, clientFullName: e.target.value })}
-          placeholder={t('form.clientFullName')}
-        />
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label>{t('form.firstName')}</Label>
+          <Input ... />
+        </div>
+        <div className="space-y-2">
+          <Label>{t('form.lastName')}</Label>
+          <Input ... />
+        </div>
       </div>
+      {/* NEW: Passport Upload */}
       <div className="space-y-2">
-        <Label>{t('form.company')}</Label>
+        <Label>{t('form.passport')}</Label>
         <Input
-          value={formData.company}
-          onChange={(e) => setFormData({ ...formData, company: e.target.value })}
-          placeholder={t('form.companyPlaceholder')}
+          type="file"
+          accept=".pdf,.jpg,.jpeg,.png"
+          onChange={(e) => setPassportFile(e.target.files?.[0] || null)}
         />
+        <p className="text-xs text-muted-foreground">{t('form.passportHelp')}</p>
       </div>
     </>
   );
 ```
 
-### 3. Update Invoice Generator
-
-**File**: `src/utils/invoiceGenerator.ts`
-
-Update interface:
+Update submit handler to use file upload when passport is provided:
 ```typescript
-interface InvoiceData {
-  // ... existing fields
-  company?: string;        // NEW
-  // departureDate?: string;  // REMOVE
-  // returnDate?: string;     // REMOVE
-}
+const handleCreateCommand = () => {
+  // ... existing logic to build data ...
+  
+  if (serviceType === 'visa' && passportFile && !editingCommandId) {
+    createCommand.mutate(
+      { ...commandPayload, passportFile },
+      { onSuccess: () => { /* reset */ } }
+    );
+  } else {
+    // existing flow
+  }
+};
 ```
 
-Update itinerary table to show company instead of dates:
-```typescript
-// Before: showed departure/return dates
-// After: can show company name in the order details or itinerary section
-```
-
-### 4. Update French Translations
+### 6. Add Translations
 
 **File**: `src/i18n/locales/fr/commands.json`
 
 ```json
 {
   "form": {
-    // ... existing
-    "company": "Compagnie",
-    "companyPlaceholder": "Ex: Air Algérie, Algérie Ferries"
+    "passport": "Passeport scanné",
+    "passportHelp": "Télécharger le passeport du client (PDF, JPG, PNG - max 10 Mo)",
+    "viewPassport": "Voir le passeport",
+    "downloadPassport": "Télécharger le passeport",
+    "noPassport": "Aucun passeport"
   }
 }
 ```
-
-### 5. Update Arabic Translations
 
 **File**: `src/i18n/locales/ar/commands.json`
 
 ```json
 {
   "form": {
-    // ... existing
-    "company": "الشركة",
-    "companyPlaceholder": "مثال: الخطوط الجوية الجزائرية، الجزائر للعبارات"
+    "passport": "جواز السفر الممسوح",
+    "passportHelp": "تحميل جواز سفر العميل (PDF، JPG، PNG - الحد الأقصى 10 ميجابايت)",
+    "viewPassport": "عرض جواز السفر",
+    "downloadPassport": "تحميل جواز السفر",
+    "noPassport": "لا يوجد جواز سفر"
   }
 }
 ```
@@ -163,41 +238,51 @@ Update itinerary table to show company instead of dates:
 
 ## Visual Comparison
 
-### Before (Current Form)
+### Before (Current Visa Form)
 ```
-┌──────────────────────────────────────────────┐
-│ Ticket Form                                  │
-├──────────────────────────────────────────────┤
-│ Nom complet du client: [_______________]     │
-│                                              │
-│ ┌─────────────────┐ ┌─────────────────┐     │
-│ │ Date de départ  │ │ Date de retour  │     │
-│ │ [  📅  ]       │ │ [  📅  ]       │     │
-│ └─────────────────┘ └─────────────────┘     │
-└──────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────┐
+│ Visa Form                                        │
+├──────────────────────────────────────────────────┤
+│ ┌──────────────────┐ ┌──────────────────┐       │
+│ │ Prénom           │ │ Nom              │       │
+│ │ [____________]   │ │ [____________]   │       │
+│ └──────────────────┘ └──────────────────┘       │
+└──────────────────────────────────────────────────┘
 ```
 
-### After (New Form)
+### After (New Visa Form)
 ```
-┌──────────────────────────────────────────────┐
-│ Ticket Form                                  │
-├──────────────────────────────────────────────┤
-│ Nom complet du client: [_______________]     │
-│                                              │
-│ Compagnie: [Ex: Air Algérie, Algérie Ferries]│
-└──────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────┐
+│ Visa Form                                        │
+├──────────────────────────────────────────────────┤
+│ ┌──────────────────┐ ┌──────────────────┐       │
+│ │ Prénom           │ │ Nom              │       │
+│ │ [____________]   │ │ [____________]   │       │
+│ └──────────────────┘ └──────────────────┘       │
+│                                                  │
+│ Passeport scanné:                               │
+│ ┌────────────────────────────────────────────┐  │
+│ │ [Choose File] passport_scan.pdf            │  │
+│ └────────────────────────────────────────────┘  │
+│ Télécharger le passeport du client (PDF, JPG...)│
+└──────────────────────────────────────────────────┘
 ```
 
 ---
 
-## Backward Compatibility Note
+## Database Migration
 
-Existing commands with `departureDate`/`returnDate` data will still be stored in the JSONB `data` column. The changes only affect:
-- New command creation
-- Command editing (will show empty company field for old commands)
-- Invoice generation (will gracefully handle missing company field)
+A TypeORM migration will be needed to add the `passportUrl` column:
 
-No database migration is needed since the `data` column is JSONB and flexible.
+```sql
+ALTER TABLE commands ADD COLUMN "passportUrl" VARCHAR NULL;
+```
+
+---
+
+## Upload Directory Setup
+
+The backend will need to create the `uploads/passports` directory on module initialization (similar to how `uploads/receipts` is handled).
 
 ---
 
@@ -205,9 +290,18 @@ No database migration is needed since the `data` column is JSONB and flexible.
 
 | Category | Count |
 |----------|-------|
-| TypeScript types | 1 |
+| Backend entity | 1 |
+| Backend DTOs | 2 |
+| Backend controller | 1 |
+| Backend service | 1 |
+| Frontend API | 1 |
 | Frontend pages | 1 |
-| Utility files | 1 |
 | Translation files | 2 |
-| **Total** | 5 files |
+| **Total** | 9 files |
 
+This implementation:
+1. Adds a new `passportUrl` column to store passport file references
+2. Creates upload/view/download endpoints with authentication
+3. Updates the visa form with a file input
+4. Uses the same Blob URL pattern for authenticated file viewing
+5. Supports PDF, JPG, and PNG formats up to 10MB
