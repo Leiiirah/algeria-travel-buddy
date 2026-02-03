@@ -56,6 +56,9 @@ export class SupplierTransactionsController {
           cb(null, `receipt-${uuidv4()}${ext}`);
         },
       }),
+      limits: {
+        fileSize: 10 * 1024 * 1024, // 10MB maximum
+      },
       fileFilter: (req, file, cb) => {
         if (file.mimetype === 'application/pdf') {
           cb(null, true);

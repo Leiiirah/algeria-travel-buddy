@@ -7,6 +7,7 @@ import {
   IsUUID,
   IsDateString,
 } from 'class-validator';
+import { Transform } from 'class-transformer';
 import { TransactionType } from '../entities/supplier-transaction.entity';
 
 export class CreateSupplierTransactionDto {
@@ -22,6 +23,10 @@ export class CreateSupplierTransactionDto {
   @IsNotEmpty()
   type: TransactionType;
 
+  @Transform(({ value }) => {
+    const parsed = parseFloat(value);
+    return isNaN(parsed) ? value : parsed;
+  })
   @IsNumber()
   @IsNotEmpty()
   amount: number;
