@@ -77,8 +77,7 @@ export interface ResidenceCommand extends BaseCommandData {
 
 export interface TicketCommand extends BaseCommandData {
   type: 'ticket';
-  departureDate: string;
-  returnDate?: string;
+  company: string; // Transport company name (e.g., "Air Algérie", "Algérie Ferries")
 }
 
 export interface DossierCommand extends BaseCommandData {

@@ -13,8 +13,7 @@ interface InvoiceData {
   serviceType: string;
   destination: string;
   status: string;
-  departureDate?: string;
-  returnDate?: string;
+  company?: string;
   supplier?: string;
   language: 'fr' | 'ar';
 }
@@ -153,9 +152,7 @@ export async function generateInvoicePdf(data: InvoiceData): Promise<void> {
       itineraryRows.push([
         destinations[i],
         destinations[i + 1],
-        i === 0 && data.departureDate ? formatDateShort(data.departureDate) : '-',
-        i === destinations.length - 2 && data.returnDate ? formatDateShort(data.returnDate) : '-',
-        '-',
+        data.company || '-',
         'Y',
       ]);
     }
@@ -166,9 +163,7 @@ export async function generateInvoicePdf(data: InvoiceData): Promise<void> {
         head: [[
           isArabic ? 'من' : 'De',
           isArabic ? 'إلى' : 'À',
-          isArabic ? 'المغادرة' : 'Départ',
-          isArabic ? 'الوصول' : 'Arrivée',
-          isArabic ? 'الرحلة' : 'Vol',
+          isArabic ? 'الشركة' : 'Compagnie',
           isArabic ? 'الدرجة' : 'Classe',
         ]],
         body: itineraryRows,

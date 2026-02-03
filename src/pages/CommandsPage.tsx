@@ -81,8 +81,7 @@ const CommandsPage = () => {
     firstName: '',
     lastName: '',
     hotelName: '',
-    departureDate: '',
-    returnDate: '',
+    company: '',
     description: '',
   });
 
@@ -153,8 +152,7 @@ const CommandsPage = () => {
       firstName: '',
       lastName: '',
       hotelName: '',
-      departureDate: '',
-      returnDate: '',
+      company: '',
       description: '',
     });
     setEditingCommandId(null);
@@ -192,8 +190,7 @@ const CommandsPage = () => {
         data = {
           ...baseData,
           type: 'ticket',
-          departureDate: formData.departureDate,
-          returnDate: formData.returnDate || undefined,
+          company: formData.company,
         };
         break;
       case 'dossier':
@@ -266,8 +263,7 @@ const CommandsPage = () => {
     } else if (command.data.type === 'residence') {
       formUpdates.hotelName = command.data.hotelName || '';
     } else if (command.data.type === 'ticket') {
-      formUpdates.departureDate = command.data.departureDate || '';
-      formUpdates.returnDate = command.data.returnDate || '';
+      formUpdates.company = command.data.company || '';
     } else if (command.data.type === 'dossier') {
       formUpdates.description = command.data.description || '';
     }
@@ -350,8 +346,7 @@ const CommandsPage = () => {
       serviceType: service?.type || '',
       destination: command.destination || '',
       status: getStatusLabel(command.status),
-      departureDate: command.data.departureDate,
-      returnDate: command.data.returnDate,
+      company: command.data.company,
       supplier: supplier?.name,
       language: (window.localStorage.getItem('i18nextLng') || 'fr') as 'fr' | 'ar',
     });
@@ -416,23 +411,13 @@ const CommandsPage = () => {
                 placeholder={t('form.clientFullName')}
               />
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>{t('form.departureDate')}</Label>
-                <Input
-                  type="date"
-                  value={formData.departureDate}
-                  onChange={(e) => setFormData({ ...formData, departureDate: e.target.value })}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>{t('form.returnDate')}</Label>
-                <Input
-                  type="date"
-                  value={formData.returnDate}
-                  onChange={(e) => setFormData({ ...formData, returnDate: e.target.value })}
-                />
-              </div>
+            <div className="space-y-2">
+              <Label>{t('form.company')}</Label>
+              <Input
+                value={formData.company}
+                onChange={(e) => setFormData({ ...formData, company: e.target.value })}
+                placeholder={t('form.companyPlaceholder')}
+              />
             </div>
           </>
         );
@@ -618,8 +603,7 @@ const CommandsPage = () => {
                           firstName: '',
                           lastName: '',
                           hotelName: '',
-                          departureDate: '',
-                          returnDate: '',
+                          company: '',
                           description: '',
                         });
                         setEditingCommandId(null);
