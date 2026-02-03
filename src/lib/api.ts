@@ -849,6 +849,19 @@ class ApiClient {
   }[]> =>
     this.request('/analytics/services');
 
+  getEmployeeStats = (): Promise<{
+    totalCommands: number;
+    totalRevenue: number;
+    totalProfit: number;
+    pendingAmount: number;
+    byStatus: {
+      en_attente: number;
+      en_cours: number;
+      termine: number;
+    };
+  }> =>
+    this.request('/analytics/employee-stats');
+
   // ==================== SEARCH ====================
 
   search = (query: string, limit?: number): Promise<SearchResult[]> =>

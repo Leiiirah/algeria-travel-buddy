@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { format } from 'date-fns';
 import { fr, ar } from 'date-fns/locale';
-import { Plus, Wallet, CreditCard, Banknote, Trash2, Eye } from 'lucide-react';
+import { Plus, Wallet, CreditCard, Banknote, Trash2, Eye, FileText, TrendingUp, AlertCircle, ClipboardList } from 'lucide-react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -53,9 +53,11 @@ import {
   useCreateEmployeeTransaction,
   useDeleteEmployeeTransaction,
 } from '@/hooks/useEmployeeTransactions';
+import { useEmployeeStats } from '@/hooks/useAnalytics';
 import { EmployeeTransactionType } from '@/types';
 import { AdvancedFilter, FilterConfig } from '@/components/search/AdvancedFilter';
 import { useDebounce } from '@/hooks/useDebounce';
+import { StatsCard } from '@/components/dashboard/StatsCard';
 
 export default function EmployeeAccountingPage() {
   const { t, i18n } = useTranslation('employees');
@@ -64,6 +66,7 @@ export default function EmployeeAccountingPage() {
   const { data: transactions, isLoading: loadingTransactions, isError: isTransactionsError } = useEmployeeTransactions();
   const { data: balances, isLoading: loadingBalances } = useAllEmployeeBalances();
   const { data: users } = useUsers();
+  const { data: employeeStats, isLoading: loadingStats } = useEmployeeStats();
   const createTransaction = useCreateEmployeeTransaction();
   const deleteTransaction = useDeleteEmployeeTransaction();
 
@@ -83,7 +86,7 @@ export default function EmployeeAccountingPage() {
   const [filters, setFilters] = useState<Record<string, any>>({});
   const debouncedSearch = useDebounce(searchQuery, 300);
 
-  const isLoading = loadingTransactions || loadingBalances;
+  const isLoading = loadingTransactions || loadingBalances || loadingStats;
   const dateLocale = i18n.language === 'ar' ? ar : fr;
 
   // Calculate totals
@@ -359,6 +362,39 @@ export default function EmployeeAccountingPage() {
             </Dialog>
           )}
         </div>
+
+        {/* My Performance Section - For non-admin users */}
+        {!isAdmin && employeeStats && (
+          <div className="space-y-4">
+            <h2 className="text-lg font-semibold text-foreground">{t('accounting.myPerformance.title')}</h2>
+            <div className="grid gap-4 md:grid-cols-4">
+              <StatsCard
+                title={t('accounting.myPerformance.myCommands')}
+                value={employeeStats.totalCommands}
+                icon={ClipboardList}
+                variant="info"
+              />
+              <StatsCard
+                title={t('accounting.myPerformance.myRevenue')}
+                value={`${employeeStats.totalRevenue.toLocaleString(i18n.language === 'ar' ? 'ar-DZ' : 'fr-DZ')} DZD`}
+                icon={FileText}
+                variant="primary"
+              />
+              <StatsCard
+                title={t('accounting.myPerformance.myProfit')}
+                value={`${employeeStats.totalProfit.toLocaleString(i18n.language === 'ar' ? 'ar-DZ' : 'fr-DZ')} DZD`}
+                icon={TrendingUp}
+                variant="success"
+              />
+              <StatsCard
+                title={t('accounting.myPerformance.clientPending')}
+                value={`${employeeStats.pendingAmount.toLocaleString(i18n.language === 'ar' ? 'ar-DZ' : 'fr-DZ')} DZD`}
+                icon={AlertCircle}
+                variant="warning"
+              />
+            </div>
+          </div>
+        )}
 
         {/* Summary Cards */}
         <div className="grid gap-4 md:grid-cols-3">

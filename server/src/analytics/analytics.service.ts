@@ -139,4 +139,33 @@ export class AnalyticsService {
     commands.forEach(c => { const type = c.service?.type || 'unknown'; if (!stats[type]) stats[type] = { count: 0, revenue: 0 }; stats[type].count++; stats[type].revenue += Number(c.sellingPrice || 0); });
     return Object.entries(stats).map(([serviceType, data]) => ({ serviceType, ...data }));
   }
+
+  async getEmployeeCommandStats(userId: string) {
+    const commands = await this.commandsRepo.find({
+      where: { createdBy: userId },
+      relations: ['service'],
+    });
+
+    const totalRevenue = commands.reduce(
+      (sum, c) => sum + Number(c.sellingPrice || 0), 0
+    );
+    const totalProfit = commands.reduce(
+      (sum, c) => sum + (Number(c.sellingPrice || 0) - Number(c.buyingPrice || 0)), 0
+    );
+    const pendingAmount = commands.reduce(
+      (sum, c) => sum + Math.max(0, Number(c.sellingPrice || 0) - Number(c.amountPaid || 0)), 0
+    );
+
+    return {
+      totalCommands: commands.length,
+      totalRevenue,
+      totalProfit,
+      pendingAmount,
+      byStatus: {
+        en_attente: commands.filter(c => c.status === 'dossier_incomplet').length,
+        en_cours: commands.filter(c => c.status === 'en_traitement').length,
+        termine: commands.filter(c => c.status === 'retire').length,
+      },
+    };
+  }
 }
