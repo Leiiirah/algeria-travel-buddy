@@ -22,4 +22,9 @@ export class AnalyticsController {
 
   @Get('services')
   getServiceStats() { return this.analyticsService.getServiceStats(); }
+
+  @Get('employee-stats')
+  getEmployeeStats(@Request() req: any) {
+    return this.analyticsService.getEmployeeCommandStats(req.user.id);
+  }
 }

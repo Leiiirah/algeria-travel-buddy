@@ -53,6 +53,13 @@
   "accounting": {
     "title": "محاسبة الموظفين",
     "subtitle": "إدارة السلف والقروض والرواتب",
+    "myPerformance": {
+      "title": "أدائي",
+      "myCommands": "طلباتي",
+      "myRevenue": "إيراداتي",
+      "myProfit": "أرباحي",
+      "clientPending": "مستحقات العملاء"
+    },
     "tabs": {
       "balances": "حالة الموظفين",
       "history": "السجل"

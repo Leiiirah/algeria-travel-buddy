@@ -29,3 +29,10 @@ export const useServiceStats = () => {
     queryFn: () => api.getServiceStats(),
   });
 };
+
+export const useEmployeeStats = () => {
+  return useQuery({
+    queryKey: ['analytics', 'employee-stats'],
+    queryFn: () => api.getEmployeeStats(),
+  });
+};
