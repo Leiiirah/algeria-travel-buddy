@@ -37,7 +37,11 @@ jobs:
             npm install
             npm run build
             
-            # 5. Restart Backend
+            # 5. Run Database Migrations
+            echo "🗄️ Running Database Migrations..."
+            npm run migration:run
+            
+            # 6. Restart Backend
             echo "🔄 Restarting Server..."
             pm2 restart elhikma-backend
             
