@@ -31,7 +31,9 @@
     "profit": "الربح",
     "supplier": "المورد",
     "status": "الحالة",
-    "actions": "الإجراءات"
+    "actions": "الإجراءات",
+    "assignee": "المسؤول",
+    "by": "بواسطة"
   },
   "dialog": {
     "createTitle": "طلب جديد",
@@ -65,7 +67,10 @@
     "passportHelp": "تحميل جواز سفر العميل (PDF، JPG، PNG - الحد الأقصى 10 ميجابايت)",
     "viewPassport": "عرض جواز السفر",
     "downloadPassport": "تحميل جواز السفر",
-    "noPassport": "لا يوجد جواز سفر"
+    "noPassport": "لا يوجد جواز سفر",
+    "assignTo": "تعيين إلى",
+    "selectEmployee": "اختر موظفاً",
+    "unassigned": "غير معين"
   },
   "calculations": {
     "remaining": "المتبقي للدفع",

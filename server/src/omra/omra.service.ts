@@ -19,6 +19,7 @@ export interface OmraFilters {
   toDate?: string;
   page?: number;
   limit?: number;
+  createdBy?: string; // Filter by creator (for employee access control)
 }
 
 export interface PaginatedResponse<T> {
@@ -93,12 +94,13 @@ export class OmraService {
   // ==================== ORDERS ====================
 
   async findAllOrders(filters: OmraFilters = {}): Promise<PaginatedResponse<OmraOrder>> {
-    const { status, hotelId, search, fromDate, toDate, page = 1, limit = 20 } = filters;
+    const { status, hotelId, search, fromDate, toDate, page = 1, limit = 20, createdBy } = filters;
 
     const queryBuilder = this.ordersRepository
       .createQueryBuilder('order')
       .leftJoinAndSelect('order.hotel', 'hotel')
-      .leftJoinAndSelect('order.creator', 'creator');
+      .leftJoinAndSelect('order.creator', 'creator')
+      .leftJoinAndSelect('order.assignee', 'assignee');
 
     if (status) {
       queryBuilder.andWhere('order.status = :status', { status });
@@ -127,6 +129,14 @@ export class OmraService {
       });
     }
 
+    // Filter by creator OR assignedTo (for employee access control)
+    if (createdBy) {
+      queryBuilder.andWhere(
+        '(order.createdBy = :userId OR order.assignedTo = :userId)',
+        { userId: createdBy },
+      );
+    }
+
     const total = await queryBuilder.getCount();
     const skip = (page - 1) * limit;
 
@@ -148,7 +158,7 @@ export class OmraService {
   async findOrderById(id: string): Promise<OmraOrder> {
     const order = await this.ordersRepository.findOne({
       where: { id },
-      relations: ['hotel', 'creator'],
+      relations: ['hotel', 'creator', 'assignee'],
     });
     if (!order) {
       throw new NotFoundException(`Omra order with ID ${id} not found`);
@@ -184,12 +194,13 @@ export class OmraService {
   // ==================== VISAS ====================
 
   async findAllVisas(filters: OmraFilters = {}): Promise<PaginatedResponse<OmraVisa>> {
-    const { status, hotelId, search, fromDate, toDate, page = 1, limit = 20 } = filters;
+    const { status, hotelId, search, fromDate, toDate, page = 1, limit = 20, createdBy } = filters;
 
     const queryBuilder = this.visasRepository
       .createQueryBuilder('visa')
       .leftJoinAndSelect('visa.hotel', 'hotel')
-      .leftJoinAndSelect('visa.creator', 'creator');
+      .leftJoinAndSelect('visa.creator', 'creator')
+      .leftJoinAndSelect('visa.assignee', 'assignee');
 
     if (status) {
       queryBuilder.andWhere('visa.status = :status', { status });
@@ -218,6 +229,14 @@ export class OmraService {
       });
     }
 
+    // Filter by creator OR assignedTo (for employee access control)
+    if (createdBy) {
+      queryBuilder.andWhere(
+        '(visa.createdBy = :userId OR visa.assignedTo = :userId)',
+        { userId: createdBy },
+      );
+    }
+
     const total = await queryBuilder.getCount();
     const skip = (page - 1) * limit;
 
@@ -239,7 +258,7 @@ export class OmraService {
   async findVisaById(id: string): Promise<OmraVisa> {
     const visa = await this.visasRepository.findOne({
       where: { id },
-      relations: ['hotel', 'creator'],
+      relations: ['hotel', 'creator', 'assignee'],
     });
     if (!visa) {
       throw new NotFoundException(`Omra visa with ID ${id} not found`);

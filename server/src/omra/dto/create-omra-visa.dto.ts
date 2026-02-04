@@ -43,4 +43,8 @@ export class CreateOmraVisaDto {
   @IsString()
   @IsOptional()
   notes?: string;
+
+  @IsUUID()
+  @IsOptional()
+  assignedTo?: string;
 }

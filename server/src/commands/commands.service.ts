@@ -49,7 +49,8 @@ export class CommandsService {
       .createQueryBuilder('command')
       .leftJoinAndSelect('command.service', 'service')
       .leftJoinAndSelect('command.supplier', 'supplier')
-      .leftJoinAndSelect('command.creator', 'creator');
+      .leftJoinAndSelect('command.creator', 'creator')
+      .leftJoinAndSelect('command.assignee', 'assignee');
 
     if (status) {
       queryBuilder.andWhere('command.status = :status', { status });
@@ -82,9 +83,12 @@ export class CommandsService {
       });
     }
 
-    // Filter by creator (for employee access control)
+    // Filter by creator OR assignedTo (for employee access control)
     if (createdBy) {
-      queryBuilder.andWhere('command.createdBy = :createdBy', { createdBy });
+      queryBuilder.andWhere(
+        '(command.createdBy = :userId OR command.assignedTo = :userId)',
+        { userId: createdBy },
+      );
     }
 
     const total = await queryBuilder.getCount();
@@ -108,7 +112,7 @@ export class CommandsService {
   async findOne(id: string): Promise<Command> {
     const command = await this.commandsRepository.findOne({
       where: { id },
-      relations: ['service', 'supplier', 'creator'],
+      relations: ['service', 'supplier', 'creator', 'assignee'],
     });
     if (!command) {
       throw new NotFoundException(`Command with ID ${id} not found`);

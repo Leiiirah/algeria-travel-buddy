@@ -31,7 +31,9 @@
     "profit": "Bénéfice",
     "supplier": "Fournisseur",
     "status": "Statut",
-    "actions": "Actions"
+    "actions": "Actions",
+    "assignee": "Responsable",
+    "by": "par"
   },
   "dialog": {
     "createTitle": "Nouvelle commande",
@@ -65,7 +67,10 @@
     "passportHelp": "Télécharger le passeport du client (PDF, JPG, PNG - max 10 Mo)",
     "viewPassport": "Voir le passeport",
     "downloadPassport": "Télécharger le passeport",
-    "noPassport": "Aucun passeport"
+    "noPassport": "Aucun passeport",
+    "assignTo": "Attribuer à",
+    "selectEmployee": "Sélectionner un employé",
+    "unassigned": "Non attribué"
   },
   "calculations": {
     "remaining": "Reste à payer",

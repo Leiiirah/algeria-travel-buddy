@@ -57,6 +57,9 @@ export class Command {
   @Column({ nullable: true })
   passportUrl: string;
 
+  @Column({ nullable: true })
+  assignedTo: string;
+
   @Column()
   createdBy: string;
 
@@ -77,4 +80,8 @@ export class Command {
   @ManyToOne(() => User, { nullable: true })
   @JoinColumn({ name: 'createdBy' })
   creator: User;
+
+  @ManyToOne(() => User, { nullable: true })
+  @JoinColumn({ name: 'assignedTo' })
+  assignee: User;
 }

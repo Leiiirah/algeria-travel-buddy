@@ -21,7 +21,8 @@
   "recentCommands": {
     "title": "Commandes récentes",
     "subtitle": "Les 5 dernières commandes enregistrées",
-    "empty": "Aucune commande récente"
+    "empty": "Aucune commande récente",
+    "by": "par"
   },
   "weekDays": {
     "mon": "Lun",
