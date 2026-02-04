@@ -19,6 +19,7 @@ import AccountingPage from "./pages/AccountingPage";
 import EmployeeAccountingPage from "./pages/EmployeeAccountingPage";
 import ExpensesPage from "./pages/ExpensesPage";
 import ServiceTypesPage from "./pages/ServiceTypesPage";
+import InternalTasksPage from "./pages/InternalTasksPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient({
@@ -139,6 +140,14 @@ const AppRoutes = () => {
         element={
           <ProtectedRoute adminOnly>
             <ServiceTypesPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/missions-internes"
+        element={
+          <ProtectedRoute>
+            <InternalTasksPage />
           </ProtectedRoute>
         }
       />

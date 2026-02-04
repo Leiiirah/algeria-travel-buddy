@@ -16,6 +16,7 @@ import frValidation from './locales/fr/validation.json';
 import frServices from './locales/fr/services.json';
 import frServiceTypes from './locales/fr/serviceTypes.json';
 import frAccounting from './locales/fr/accounting.json';
+import frInternalTasks from './locales/fr/internalTasks.json';
 
 // Arabic translations
 import arCommon from './locales/ar/common.json';
@@ -31,6 +32,7 @@ import arValidation from './locales/ar/validation.json';
 import arServices from './locales/ar/services.json';
 import arServiceTypes from './locales/ar/serviceTypes.json';
 import arAccounting from './locales/ar/accounting.json';
+import arInternalTasks from './locales/ar/internalTasks.json';
 
 i18n
   .use(LanguageDetector)
@@ -51,6 +53,7 @@ i18n
         services: frServices,
         serviceTypes: frServiceTypes,
         accounting: frAccounting,
+        internalTasks: frInternalTasks,
       },
       ar: {
         common: arCommon,
@@ -66,11 +69,12 @@ i18n
         services: arServices,
         serviceTypes: arServiceTypes,
         accounting: arAccounting,
+        internalTasks: arInternalTasks,
       },
     },
     fallbackLng: 'fr',
     defaultNS: 'common',
-    ns: ['common', 'auth', 'dashboard', 'commands', 'suppliers', 'employees', 'omra', 'documents', 'expenses', 'validation', 'services', 'serviceTypes', 'accounting'],
+    ns: ['common', 'auth', 'dashboard', 'commands', 'suppliers', 'employees', 'omra', 'documents', 'expenses', 'validation', 'services', 'serviceTypes', 'accounting', 'internalTasks'],
     interpolation: {
       escapeValue: false,
     },

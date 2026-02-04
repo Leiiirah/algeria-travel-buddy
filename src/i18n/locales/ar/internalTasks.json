@@ -1,0 +1,71 @@
+{
+  "title": "المهام الداخلية",
+  "subtitle": "إدارة المهام الداخلية للوكالة",
+  "myTasks": "مهامي",
+  "allTasks": "جميع المهام",
+  "stats": {
+    "total": "إجمالي المهام",
+    "inProgress": "قيد التنفيذ",
+    "completed": "مكتملة"
+  },
+  "priority": {
+    "label": "الأولوية",
+    "urgent": "عاجل",
+    "normal": "عادي",
+    "critical": "حرج"
+  },
+  "status": {
+    "label": "الحالة",
+    "in_progress": "قيد التنفيذ",
+    "completed": "مكتمل"
+  },
+  "visibility": {
+    "label": "الوضوح",
+    "clear": "واضح",
+    "unreadable": "غير مقروء"
+  },
+  "form": {
+    "title": "العنوان",
+    "titlePlaceholder": "أدخل عنوان المهمة",
+    "description": "الوصف",
+    "descriptionPlaceholder": "وصف تفصيلي للمهمة...",
+    "priority": "الأولوية",
+    "assignTo": "تعيين إلى",
+    "selectEmployee": "اختر موظفاً",
+    "dueDate": "تاريخ الاستحقاق",
+    "visibility": "الوضوح"
+  },
+  "dialog": {
+    "createTitle": "مهمة جديدة",
+    "editTitle": "تعديل المهمة",
+    "deleteTitle": "حذف المهمة",
+    "deleteConfirm": "هل أنت متأكد من حذف هذه المهمة؟"
+  },
+  "actions": {
+    "newTask": "مهمة جديدة",
+    "markComplete": "تعيين كمكتمل",
+    "markInProgress": "تعيين كقيد التنفيذ"
+  },
+  "empty": {
+    "noTasks": "لا توجد مهام",
+    "noTasksDesc": "ستظهر المهام المعينة هنا",
+    "noTasksAdmin": "أنشئ مهمة جديدة للبدء"
+  },
+  "employeeStats": "إحصائيات حسب الموظف",
+  "assignedTo": "معيّن إلى",
+  "createdBy": "أنشأه",
+  "dueDate": "تاريخ الاستحقاق",
+  "createdAt": "تاريخ الإنشاء",
+  "noDueDate": "بدون تاريخ استحقاق",
+  "filters": {
+    "all": "الكل",
+    "inProgress": "قيد التنفيذ",
+    "completed": "مكتملة"
+  },
+  "toast": {
+    "created": "تم إنشاء المهمة بنجاح",
+    "updated": "تم تحديث المهمة",
+    "deleted": "تم حذف المهمة",
+    "error": "حدث خطأ"
+  }
+}

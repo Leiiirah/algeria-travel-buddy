@@ -11,7 +11,8 @@
     "accounting": "Comptabilité",
     "services": "Services",
     "serviceTypes": "Types de services",
-    "expenses": "Dépenses"
+    "expenses": "Dépenses",
+    "internalTasks": "Missions Internes"
   },
   "groups": {
     "main": "Principal",
