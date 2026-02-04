@@ -264,6 +264,11 @@ const DashboardPage = () => {
                         </div>
                       </div>
                       <div className="flex items-center gap-4">
+                        {command.assignee && (
+                          <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
+                            {t('recentCommands.by')} {command.assignee.firstName}
+                          </Badge>
+                        )}
                         <div className="text-right">
                           <p className="font-medium">{formatDZD(command.sellingPrice)}</p>
                           <div className="flex gap-2">

@@ -51,6 +51,7 @@ import { AdvancedFilter } from '@/components/search/AdvancedFilter';
 import { useCommands, useCommandStats, useCreateCommand, useUpdateCommand, useDeleteCommand } from '@/hooks/useCommands';
 import { useActiveServices } from '@/hooks/useServices';
 import { useSuppliers } from '@/hooks/useSuppliers';
+import { useActiveEmployees } from '@/hooks/useUsers';
 import { useDebounce } from '@/hooks/useDebounce';
 import { CommandsSkeleton } from '@/components/skeletons/CommandsSkeleton';
 import { ErrorState } from '@/components/ui/error-state';
@@ -88,6 +89,7 @@ const CommandsPage = () => {
     hotelName: '',
     company: '',
     description: '',
+    assignedTo: '',
   });
 
   const debouncedSearch = useDebounce(searchQuery, 500);
@@ -100,6 +102,7 @@ const CommandsPage = () => {
   const { data: statsData } = useCommandStats();
   const { data: services } = useActiveServices();
   const { data: suppliers } = useSuppliers();
+  const { data: employees } = useActiveEmployees();
   const createCommand = useCreateCommand();
   const updateCommand = useUpdateCommand();
   const deleteCommand = useDeleteCommand();
@@ -159,6 +162,7 @@ const CommandsPage = () => {
       hotelName: '',
       company: '',
       description: '',
+      assignedTo: '',
     });
     setEditingCommandId(null);
     setPassportFile(null);
@@ -218,6 +222,7 @@ const CommandsPage = () => {
       amountPaid: formData.amountPaid,
       buyingPrice: formData.buyingPrice,
       supplierId: formData.supplierId,
+      assignedTo: formData.assignedTo || undefined,
     };
 
     if (editingCommandId) {
@@ -290,6 +295,8 @@ const CommandsPage = () => {
     } else if (command.data.type === 'dossier') {
       formUpdates.description = command.data.description || '';
     }
+
+    formUpdates.assignedTo = command.assignedTo || '';
 
     setFormData(prev => ({ ...prev, ...formUpdates }));
     setIsDialogOpen(true);
@@ -690,6 +697,7 @@ const CommandsPage = () => {
                           hotelName: '',
                           company: '',
                           description: '',
+                          assignedTo: '',
                         });
                         setEditingCommandId(null);
                       }}>
@@ -822,6 +830,29 @@ const CommandsPage = () => {
                               </Select>
                             </div>
                           </div>
+
+                          {/* Assign To - Admin Only */}
+                          {user?.role === 'admin' && (
+                            <div className="space-y-2 mt-4">
+                              <Label>{t('form.assignTo')}</Label>
+                              <Select
+                                value={formData.assignedTo}
+                                onValueChange={(value) => setFormData({ ...formData, assignedTo: value })}
+                              >
+                                <SelectTrigger>
+                                  <SelectValue placeholder={t('form.selectEmployee')} />
+                                </SelectTrigger>
+                                <SelectContent className="bg-popover">
+                                  <SelectItem value="">{t('form.unassigned')}</SelectItem>
+                                  {employees?.map((emp) => (
+                                    <SelectItem key={emp.id} value={emp.id}>
+                                      {emp.firstName} {emp.lastName}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          )}
 
                           {/* Real-time calculations display */}
                           {(formData.sellingPrice > 0 || formData.buyingPrice > 0) && (

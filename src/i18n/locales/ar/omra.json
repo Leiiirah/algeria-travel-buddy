@@ -53,7 +53,8 @@
       "price": "السعر",
       "status": "الحالة",
       "actions": "الإجراءات",
-      "remaining": "المتبقي"
+      "remaining": "المتبقي",
+      "by": "بواسطة"
     },
     "dialog": {
       "createTitle": "طلب عمرة جديد",
@@ -79,7 +80,10 @@
       "noHotelAvailable": "لا توجد فنادق متاحة",
       "addHotel": "إضافة فندق",
       "selectHotel": "اختر فندقاً",
-      "hotelPlaceholder": "اسم الفندق"
+      "hotelPlaceholder": "اسم الفندق",
+      "assignTo": "تعيين إلى",
+      "selectEmployee": "اختر موظفاً",
+      "unassigned": "غير معين"
     },
     "confirm": {
       "delete": "هل أنت متأكد من حذف هذا الطلب؟"
@@ -102,7 +106,8 @@
       "price": "السعر",
       "status": "الحالة",
       "actions": "الإجراءات",
-      "remaining": "المتبقي"
+      "remaining": "المتبقي",
+      "by": "بواسطة"
     },
     "dialog": {
       "createTitle": "تأشيرة عمرة جديدة",
@@ -123,7 +128,10 @@
       "amountPaid": "الدفعة (د.ج)",
       "buyingPrice": "سعر الشراء (د.ج)",
       "notes": "ملاحظات",
-      "notesPlaceholder": "ملاحظات إضافية..."
+      "notesPlaceholder": "ملاحظات إضافية...",
+      "assignTo": "تعيين إلى",
+      "selectEmployee": "اختر موظفاً",
+      "unassigned": "غير معين"
     },
     "confirm": {
       "delete": "هل أنت متأكد من حذف هذه التأشيرة؟"

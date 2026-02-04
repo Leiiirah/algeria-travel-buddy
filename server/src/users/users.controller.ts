@@ -25,6 +25,11 @@ export class UsersController {
     return this.usersService.findAll();
   }
 
+  @Get('employees')
+  getActiveEmployees() {
+    return this.usersService.findActiveEmployees();
+  }
+
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.usersService.findOne(id);

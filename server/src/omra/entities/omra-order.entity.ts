@@ -75,6 +75,9 @@ export class OmraOrder {
   @Column({ type: 'text', nullable: true })
   notes: string;
 
+  @Column({ nullable: true })
+  assignedTo: string;
+
   @Column()
   createdBy: string;
 
@@ -91,4 +94,8 @@ export class OmraOrder {
   @ManyToOne(() => User, { nullable: true })
   @JoinColumn({ name: 'createdBy' })
   creator: User;
+
+  @ManyToOne(() => User, { nullable: true })
+  @JoinColumn({ name: 'assignedTo' })
+  assignee: User;
 }

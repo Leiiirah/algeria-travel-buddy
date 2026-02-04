@@ -44,6 +44,14 @@ export class UsersService implements OnModuleInit {
     });
   }
 
+  async findActiveEmployees(): Promise<User[]> {
+    return this.usersRepository.find({
+      where: { role: UserRole.EMPLOYEE, isActive: true },
+      select: ['id', 'firstName', 'lastName', 'email'],
+      order: { firstName: 'ASC' },
+    });
+  }
+
   async findOne(id: string): Promise<User> {
     const user = await this.usersRepository.findOne({ where: { id } });
     if (!user) {

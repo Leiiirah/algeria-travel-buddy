@@ -39,4 +39,8 @@ export class CreateCommandDto {
   @IsString()
   @IsOptional()
   passportUrl?: string;
+
+  @IsUUID()
+  @IsOptional()
+  assignedTo?: string;
 }

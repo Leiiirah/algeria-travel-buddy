@@ -53,4 +53,8 @@ export class CreateOmraOrderDto {
   @IsString()
   @IsOptional()
   notes?: string;
+
+  @IsUUID()
+  @IsOptional()
+  assignedTo?: string;
 }

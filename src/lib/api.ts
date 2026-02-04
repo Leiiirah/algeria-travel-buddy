@@ -99,6 +99,7 @@ export interface CreateCommandDto {
   sellingPrice: number;
   amountPaid: number;
   buyingPrice: number;
+  assignedTo?: string;
 }
 
 export interface UpdateCommandDto {
@@ -204,6 +205,7 @@ export interface CreateOmraOrderDto {
   amountPaid?: number;
   buyingPrice?: number;
   notes?: string;
+  assignedTo?: string;
 }
 
 export interface UpdateOmraOrderDto extends Partial<CreateOmraOrderDto> {
@@ -220,6 +222,7 @@ export interface CreateOmraVisaDto {
   amountPaid?: number;
   buyingPrice?: number;
   notes?: string;
+  assignedTo?: string;
 }
 
 export interface UpdateOmraVisaDto extends Partial<CreateOmraVisaDto> {
@@ -691,6 +694,9 @@ class ApiClient {
 
   deleteUser = (id: string): Promise<void> =>
     this.request(`/users/${id}`, { method: 'DELETE' });
+
+  getActiveEmployees = (): Promise<User[]> =>
+    this.request('/users/employees');
 
   // ==================== SERVICES ====================
 

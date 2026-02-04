@@ -48,6 +48,8 @@ import {
   useDeleteOmraOrder,
   useCreateOmraHotel,
 } from '@/hooks/useOmra';
+import { useActiveEmployees } from '@/hooks/useUsers';
+import { useAuth } from '@/contexts/AuthContext';
 import { AdvancedFilter } from '@/components/search/AdvancedFilter';
 import { useDebounce } from '@/hooks/useDebounce';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -64,6 +66,7 @@ const roomTypes: OmraRoomType[] = ['chambre_1', 'chambre_2', 'chambre_3', 'chamb
 export const OmraOrdersTab = () => {
   const { t } = useTranslation('omra');
   const { t: tCommon } = useTranslation('common');
+  const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
   const [filters, setFilters] = useState<OmraFilters>({});
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -82,6 +85,7 @@ export const OmraOrdersTab = () => {
     amountPaid: 0,
     buyingPrice: 0,
     notes: '',
+    assignedTo: '',
   });
 
   const debouncedSearch = useDebounce(searchQuery, 500);
@@ -91,6 +95,7 @@ export const OmraOrdersTab = () => {
     search: debouncedSearch || undefined,
   });
   const { data: hotels = [] } = useActiveOmraHotels();
+  const { data: employees } = useActiveEmployees();
   const createOrder = useCreateOmraOrder();
   const updateOrder = useUpdateOmraOrder();
   const updateStatus = useUpdateOmraOrderStatus();
@@ -126,6 +131,7 @@ export const OmraOrdersTab = () => {
       amountPaid: 0,
       buyingPrice: 0,
       notes: '',
+      assignedTo: '',
     });
     setEditingOrder(null);
   };
@@ -145,6 +151,7 @@ export const OmraOrdersTab = () => {
         amountPaid: Number(order.amountPaid),
         buyingPrice: Number(order.buyingPrice),
         notes: order.notes || '',
+        assignedTo: order.assignedTo || '',
       });
     } else {
       resetForm();
@@ -158,6 +165,7 @@ export const OmraOrdersTab = () => {
     const payload = {
       ...formData,
       hotelId: formData.hotelId || undefined,
+      assignedTo: formData.assignedTo || undefined,
     };
 
     if (editingOrder) {
@@ -275,6 +283,11 @@ export const OmraOrdersTab = () => {
                       <div>
                         <p className="font-medium">{order.clientName}</p>
                         <p className="text-sm text-muted-foreground">{order.phone}</p>
+                        {order.assignee && (
+                          <Badge variant="outline" className="text-xs mt-1 bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
+                            {t('orders.table.by')} {order.assignee.firstName}
+                          </Badge>
+                        )}
                       </div>
                     </TableCell>
                     <TableCell>
@@ -541,6 +554,29 @@ export const OmraOrdersTab = () => {
                 />
               </div>
             </div>
+
+            {/* Assign To - Admin Only */}
+            {user?.role === 'admin' && (
+              <div className="space-y-2">
+                <Label>{t('orders.form.assignTo')}</Label>
+                <Select
+                  value={formData.assignedTo}
+                  onValueChange={(value) => setFormData({ ...formData, assignedTo: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder={t('orders.form.selectEmployee')} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">{t('orders.form.unassigned')}</SelectItem>
+                    {employees?.map((emp) => (
+                      <SelectItem key={emp.id} value={emp.id}>
+                        {emp.firstName} {emp.lastName}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
 
             {/* Summary */}
             <div className="grid grid-cols-2 gap-4 p-4 bg-muted rounded-lg">

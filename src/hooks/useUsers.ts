@@ -9,6 +9,13 @@ export const useUsers = () => {
   });
 };
 
+export const useActiveEmployees = () => {
+  return useQuery({
+    queryKey: ['users', 'employees'],
+    queryFn: () => api.getActiveEmployees(),
+  });
+};
+
 export const useUser = (id: string) => {
   return useQuery({
     queryKey: ['users', id],

@@ -99,7 +99,10 @@ export interface Command {
   buyingPrice: number;           // Prix d'achat (coût fournisseur)
   supplierId: string;            // Fournisseur lié
   passportUrl?: string;          // Scanned passport file for visa commands
+  assignedTo?: string;           // Employee assigned to this command
+  assignee?: User;               // Populated assignee user
   createdBy: string;
+  creator?: User;                // Populated creator user
   createdAt: Date;
   updatedAt: Date;
 }
@@ -196,7 +199,10 @@ export interface OmraOrder {
   amountPaid: number;
   buyingPrice: number;
   notes?: string;
+  assignedTo?: string;
+  assignee?: User;
   createdBy: string;
+  creator?: User;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -214,7 +220,10 @@ export interface OmraVisa {
   amountPaid: number;
   buyingPrice: number;
   notes?: string;
+  assignedTo?: string;
+  assignee?: User;
   createdBy: string;
+  creator?: User;
   createdAt: Date;
   updatedAt: Date;
 }

@@ -47,6 +47,8 @@ import {
   useUpdateOmraVisaStatus,
   useDeleteOmraVisa,
 } from '@/hooks/useOmra';
+import { useActiveEmployees } from '@/hooks/useUsers';
+import { useAuth } from '@/contexts/AuthContext';
 import { AdvancedFilter } from '@/components/search/AdvancedFilter';
 import { useDebounce } from '@/hooks/useDebounce';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -61,6 +63,7 @@ const statusColors: Record<string, string> = {
 export const OmraVisasTab = () => {
   const { t } = useTranslation('omra');
   const { t: tCommon } = useTranslation('common');
+  const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
   const [filters, setFilters] = useState<OmraFilters>({});
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -75,6 +78,7 @@ export const OmraVisasTab = () => {
     amountPaid: 0,
     buyingPrice: 0,
     notes: '',
+    assignedTo: '',
   });
 
   const debouncedSearch = useDebounce(searchQuery, 500);
@@ -84,6 +88,7 @@ export const OmraVisasTab = () => {
     search: debouncedSearch || undefined,
   });
   const { data: hotels = [] } = useActiveOmraHotels();
+  const { data: employees } = useActiveEmployees();
   const createVisa = useCreateOmraVisa();
   const updateVisa = useUpdateOmraVisa();
   const updateStatus = useUpdateOmraVisaStatus();
@@ -102,6 +107,7 @@ export const OmraVisasTab = () => {
       amountPaid: 0,
       buyingPrice: 0,
       notes: '',
+      assignedTo: '',
     });
     setEditingVisa(null);
   };
@@ -119,6 +125,7 @@ export const OmraVisasTab = () => {
         amountPaid: Number(visa.amountPaid),
         buyingPrice: Number(visa.buyingPrice),
         notes: visa.notes || '',
+        assignedTo: visa.assignedTo || '',
       });
     } else {
       resetForm();
@@ -132,6 +139,7 @@ export const OmraVisasTab = () => {
     const payload = {
       ...formData,
       hotelId: formData.hotelId || undefined,
+      assignedTo: formData.assignedTo || undefined,
     };
 
     if (editingVisa) {
@@ -249,6 +257,11 @@ export const OmraVisasTab = () => {
                       <div>
                         <p className="font-medium">{visa.clientName}</p>
                         <p className="text-sm text-muted-foreground">{visa.phone}</p>
+                        {visa.assignee && (
+                          <Badge variant="outline" className="text-xs mt-1 bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
+                            {t('visas.table.by')} {visa.assignee.firstName}
+                          </Badge>
+                        )}
                       </div>
                     </TableCell>
                     <TableCell>{formatDate(visa.visaDate)}</TableCell>
@@ -438,6 +451,29 @@ export const OmraVisasTab = () => {
                 </p>
               </div>
             </div>
+
+            {/* Assign To - Admin Only */}
+            {user?.role === 'admin' && (
+              <div className="space-y-2">
+                <Label>{t('visas.form.assignTo')}</Label>
+                <Select
+                  value={formData.assignedTo}
+                  onValueChange={(value) => setFormData({ ...formData, assignedTo: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder={t('visas.form.selectEmployee')} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">{t('visas.form.unassigned')}</SelectItem>
+                    {employees?.map((emp) => (
+                      <SelectItem key={emp.id} value={emp.id}>
+                        {emp.firstName} {emp.lastName}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
 
             {/* Notes */}
             <div className="space-y-2">

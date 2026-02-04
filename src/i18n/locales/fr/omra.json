@@ -53,7 +53,8 @@
       "price": "Prix",
       "status": "Statut",
       "actions": "Actions",
-      "remaining": "Reste"
+      "remaining": "Reste",
+      "by": "par"
     },
     "dialog": {
       "createTitle": "Nouvelle commande Omra",
@@ -79,7 +80,10 @@
       "noHotelAvailable": "Aucun hôtel disponible",
       "addHotel": "Ajouter un hôtel",
       "selectHotel": "Sélectionner un hôtel",
-      "hotelPlaceholder": "Nom de l'hôtel"
+      "hotelPlaceholder": "Nom de l'hôtel",
+      "assignTo": "Attribuer à",
+      "selectEmployee": "Sélectionner un employé",
+      "unassigned": "Non attribué"
     },
     "confirm": {
       "delete": "Êtes-vous sûr de vouloir supprimer cette commande ?"
@@ -102,7 +106,8 @@
       "price": "Prix",
       "status": "Statut",
       "actions": "Actions",
-      "remaining": "Reste"
+      "remaining": "Reste",
+      "by": "par"
     },
     "dialog": {
       "createTitle": "Nouveau visa Omra",
@@ -123,7 +128,10 @@
       "amountPaid": "Versement (DA)",
       "buyingPrice": "Prix d'achat (DA)",
       "notes": "Notes",
-      "notesPlaceholder": "Notes supplémentaires..."
+      "notesPlaceholder": "Notes supplémentaires...",
+      "assignTo": "Attribuer à",
+      "selectEmployee": "Sélectionner un employé",
+      "unassigned": "Non attribué"
     },
     "confirm": {
       "delete": "Êtes-vous sûr de vouloir supprimer ce visa ?"
