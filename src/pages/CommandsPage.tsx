@@ -831,8 +831,8 @@ const CommandsPage = () => {
                             </div>
                           </div>
 
-                          {/* Assign To - Admin Only */}
-                          {user?.role === 'admin' && (
+                          {/* Assign To - Admin Only for VISA services */}
+                          {user?.role === 'admin' && selectedService && getServiceType(selectedService) === 'visa' && (
                             <div className="space-y-2 mt-4">
                               <Label>{t('form.assignTo')}</Label>
                               <Select
