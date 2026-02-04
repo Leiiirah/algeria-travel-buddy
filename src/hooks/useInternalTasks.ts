@@ -10,10 +10,11 @@ export function useInternalTasks() {
   });
 }
 
-export function useInternalTaskStats() {
+export function useInternalTaskStats(enabled: boolean = true) {
   return useQuery({
     queryKey: ['internal-tasks', 'stats'],
     queryFn: () => api.getInternalTaskStats(),
+    enabled,
   });
 }
 
