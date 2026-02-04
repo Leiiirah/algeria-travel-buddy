@@ -560,14 +560,14 @@ export const OmraOrdersTab = () => {
               <div className="space-y-2">
                 <Label>{t('orders.form.assignTo')}</Label>
                 <Select
-                  value={formData.assignedTo}
-                  onValueChange={(value) => setFormData({ ...formData, assignedTo: value })}
+                  value={formData.assignedTo || '__unassigned__'}
+                  onValueChange={(value) => setFormData({ ...formData, assignedTo: value === '__unassigned__' ? '' : value })}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder={t('orders.form.selectEmployee')} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">{t('orders.form.unassigned')}</SelectItem>
+                    <SelectItem value="__unassigned__">{t('orders.form.unassigned')}</SelectItem>
                     {employees?.map((emp) => (
                       <SelectItem key={emp.id} value={emp.id}>
                         {emp.firstName} {emp.lastName}
