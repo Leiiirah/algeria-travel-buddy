@@ -1,115 +1,58 @@
 
 
-# Fix: Empty SelectItem Value Error
+# Fix: Limit "Assign To" Feature to VISA Commands Only
 
 ## Problem
 
-The application is crashing with a blank page when trying to add a new command (Omra Orders, Omra Visas, or regular Commands) due to this error:
+The "Assign To" employee assignment feature is currently available for all service types in the Commands page (VISA, Billets, Residence, Dossiers, etc.). According to your requirement, this feature should **only** be available for:
 
-```
-Error: A <Select.Item /> must have a value prop that is not an empty string.
-```
-
-This is because Radix UI's Select component reserves the empty string (`""`) for clearing the selection and showing the placeholder. You cannot use `value=""` for a SelectItem.
-
-## Root Cause
-
-The recently implemented "Assign To" dropdown feature uses `<SelectItem value="">` for the "Unassigned" option in four locations:
-
-1. `src/pages/CommandsPage.tsx` (line 846)
-2. `src/components/omra/OmraOrdersTab.tsx` (line 570)
-3. `src/components/omra/OmraVisasTab.tsx` (line 467)
-4. `src/components/suppliers/SupplierReceiptsTab.tsx` (line 270)
+1. **VISA commands** (in the Commands page)
+2. **OMRA orders and visas** (already correctly implemented in OmraOrdersTab and OmraVisasTab)
 
 ## Solution
 
-Replace the empty string value with a special placeholder value `"__unassigned__"` (or similar), and handle this value appropriately:
+Modify the condition for displaying the "Assign To" dropdown in `CommandsPage.tsx` to check if the selected service type is 'visa' before rendering the assignment dropdown.
 
-1. In the form state management, convert `"__unassigned__"` to `undefined` when submitting
-2. When loading/editing data, convert `undefined`/`null` back to `"__unassigned__"` for display
+### Current Code (Line 834-855 in CommandsPage.tsx)
 
-### Changes Required
-
-**File: `src/pages/CommandsPage.tsx`**
-
-Change the SelectItem and onValueChange handler:
 ```typescript
-// Line 840 - Update onValueChange to convert placeholder to undefined
-onValueChange={(value) => setFormData({ 
-  ...formData, 
-  assignedTo: value === '__unassigned__' ? '' : value 
-})}
-
-// Line 846 - Change empty value to placeholder
-<SelectItem value="__unassigned__">{t('form.unassigned')}</SelectItem>
-
-// Line 839 - Update value to show placeholder when empty
-value={formData.assignedTo || '__unassigned__'}
+{/* Assign To - Admin Only */}
+{user?.role === 'admin' && (
+  <div className="space-y-2 mt-4">
+    <Label>{t('form.assignTo')}</Label>
+    <Select...>
 ```
 
-**File: `src/components/omra/OmraOrdersTab.tsx`**
+### New Code
 
-Same pattern:
 ```typescript
-// Line 564 - Update onValueChange
-onValueChange={(value) => setFormData({ 
-  ...formData, 
-  assignedTo: value === '__unassigned__' ? '' : value 
-})}
-
-// Line 563 - Update value
-value={formData.assignedTo || '__unassigned__'}
-
-// Line 570 - Change empty value to placeholder
-<SelectItem value="__unassigned__">{t('orders.form.unassigned')}</SelectItem>
-```
-
-**File: `src/components/omra/OmraVisasTab.tsx`**
-
-Same pattern:
-```typescript
-// Line 461 - Update onValueChange
-onValueChange={(value) => setFormData({ 
-  ...formData, 
-  assignedTo: value === '__unassigned__' ? '' : value 
-})}
-
-// Line 460 - Update value
-value={formData.assignedTo || '__unassigned__'}
-
-// Line 467 - Change empty value to placeholder
-<SelectItem value="__unassigned__">{t('visas.form.unassigned')}</SelectItem>
-```
-
-**File: `src/components/suppliers/SupplierReceiptsTab.tsx`**
-
-Same pattern for the order select:
-```typescript
-// Line 263 - Update value
-value={formData.orderId || '__none__'}
-
-// Line 270 - Change empty value to placeholder
-<SelectItem value="__none__">Aucune commande</SelectItem>
-
-// Update handleOrderSelect to handle the placeholder value
+{/* Assign To - Admin Only for VISA services */}
+{user?.role === 'admin' && selectedService && getServiceType(selectedService) === 'visa' && (
+  <div className="space-y-2 mt-4">
+    <Label>{t('form.assignTo')}</Label>
+    <Select...>
 ```
 
 ## Technical Details
 
 | Aspect | Details |
 |--------|---------|
-| Files Modified | 4 |
-| Lines Changed | ~12 per file |
-| Risk Level | Low |
-| Breaking Changes | None - API payloads remain unchanged |
+| Files Modified | 1 (`src/pages/CommandsPage.tsx`) |
+| Lines Changed | 1 line condition update |
+| Risk Level | Very Low |
+| Breaking Changes | None |
 
-The form submission logic already handles empty strings correctly by converting them to `undefined` before sending to the API, so only the UI-level Select component needs to be fixed.
+## Behavior After Fix
 
-## Alternative Approach
+| Service Type | "Assign To" Dropdown Visible (Admin) |
+|--------------|--------------------------------------|
+| VISA | ✅ Yes |
+| Billets (Tickets) | ❌ No |
+| Residence | ❌ No |
+| Dossiers | ❌ No |
+| Other services | ❌ No |
 
-Instead of using a special placeholder value, we could also:
-- Remove the "Unassigned" option entirely and rely on the placeholder
-- Use `undefined` handling differently with controlled vs uncontrolled components
+## Note
 
-However, the placeholder value approach is the cleanest solution that maintains the current UX where users can explicitly select "Unassigned" to clear an assignment.
+The OMRA module (`OmraOrdersTab.tsx` and `OmraVisasTab.tsx`) already has the "Assign To" feature correctly implemented and will remain unchanged, as OMRA orders and visas should support employee assignment.
 
