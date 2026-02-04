@@ -1,4 +1,4 @@
-import { User, Service, Supplier, Command, Payment, SupplierTransaction, Document, OmraHotel, OmraOrder, OmraVisa, OmraRoomType, OmraStatus, EmployeeTransaction, EmployeeBalance, EmployeeTransactionType, Expense, ExpenseStats, ExpenseCategory, PaymentMethod, SupplierOrder, SupplierOrderStatus, SupplierReceipt, SupplierInvoice, SupplierInvoiceStatus, ServiceTypeEntity, InternalTask, TaskStats, TaskPriority, TaskStatus, TaskVisibility } from '@/types';
+import { User, Service, Supplier, Command, Payment, SupplierTransaction, Document, OmraHotel, OmraOrder, OmraVisa, OmraRoomType, OmraStatus, EmployeeTransaction, EmployeeBalance, EmployeeTransactionType, Expense, ExpenseStats, ExpenseCategory, PaymentMethod, SupplierOrder, SupplierOrderStatus, SupplierReceipt, SupplierInvoice, SupplierInvoiceStatus, ServiceTypeEntity, InternalTask, TaskStats, TaskPriority, TaskStatus, TaskVisibility, ClientInvoice, ClientInvoiceStats, ClientInvoiceType, ClientInvoiceStatus } from '@/types';
 
 // API base URL - includes /api prefix to match nginx proxy configuration
 const API_URL = (import.meta.env.VITE_API_URL || 'http://69.62.127.134:8080/api')
@@ -371,6 +371,47 @@ export interface InternalTaskFilters {
   assignedTo?: string;
 }
 
+// ==================== CLIENT INVOICES DTOs ====================
+
+export interface CreateClientInvoiceDto {
+  type: ClientInvoiceType;
+  commandId?: string;
+  clientName: string;
+  clientPhone?: string;
+  clientEmail?: string;
+  serviceName: string;
+  serviceType?: string;
+  destination?: string;
+  totalAmount: number;
+  paidAmount?: number;
+  invoiceDate?: string;
+  dueDate?: string;
+  notes?: string;
+}
+
+export interface UpdateClientInvoiceDto {
+  type?: ClientInvoiceType;
+  status?: ClientInvoiceStatus;
+  clientName?: string;
+  clientPhone?: string;
+  clientEmail?: string;
+  serviceName?: string;
+  serviceType?: string;
+  destination?: string;
+  totalAmount?: number;
+  paidAmount?: number;
+  invoiceDate?: string;
+  dueDate?: string;
+  notes?: string;
+}
+
+export interface ClientInvoiceFilters {
+  type?: ClientInvoiceType;
+  status?: ClientInvoiceStatus;
+  search?: string;
+  fromDate?: string;
+  toDate?: string;
+}
 
 export interface OmraStats {
   orders: {
@@ -1245,6 +1286,51 @@ class ApiClient {
 
   deleteInternalTask = (id: string): Promise<void> =>
     this.request(`/internal-tasks/${id}`, { method: 'DELETE' });
+
+  // ==================== CLIENT INVOICES ====================
+
+  getClientInvoices = (filters?: ClientInvoiceFilters): Promise<ClientInvoice[]> => {
+    const params = new URLSearchParams();
+    if (filters) {
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value !== undefined && value !== '') {
+          params.append(key, String(value));
+        }
+      });
+    }
+    const query = params.toString();
+    return this.request(`/client-invoices${query ? `?${query}` : ''}`);
+  };
+
+  getClientInvoice = (id: string): Promise<ClientInvoice> =>
+    this.request(`/client-invoices/${id}`);
+
+  getClientInvoiceStats = (): Promise<ClientInvoiceStats> =>
+    this.request('/client-invoices/stats');
+
+  getClientInvoicesByCommand = (commandId: string): Promise<ClientInvoice[]> =>
+    this.request(`/client-invoices/command/${commandId}`);
+
+  createClientInvoice = (data: CreateClientInvoiceDto): Promise<ClientInvoice> =>
+    this.request('/client-invoices', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+
+  createClientInvoiceFromCommand = (commandId: string, type: ClientInvoiceType): Promise<ClientInvoice> =>
+    this.request(`/client-invoices/from-command/${commandId}`, {
+      method: 'POST',
+      body: JSON.stringify({ type }),
+    });
+
+  updateClientInvoice = (id: string, data: UpdateClientInvoiceDto): Promise<ClientInvoice> =>
+    this.request(`/client-invoices/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    });
+
+  deleteClientInvoice = (id: string): Promise<void> =>
+    this.request(`/client-invoices/${id}`, { method: 'DELETE' });
 }
 
 export const api = new ApiClient();

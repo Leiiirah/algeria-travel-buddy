@@ -14,6 +14,7 @@ import {
   Users2,
   Receipt,
   ClipboardCheck,
+  FileText,
 } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
 import { Button } from '@/components/ui/button';
@@ -61,6 +62,11 @@ export function AppSidebar() {
       titleKey: 'navigation.internalTasks',
       url: '/missions-internes',
       icon: ClipboardCheck,
+    },
+    {
+      titleKey: 'navigation.invoices',
+      url: '/factures',
+      icon: FileText,
     },
     {
       titleKey: 'navigation.documents',
