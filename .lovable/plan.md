@@ -1,52 +1,63 @@
 
-# Fix: Internal Tasks 404 Error
+# Fix: Prevent Stats API Call for Employee Users
 
-## Problem Identified
+## Problem
 
-The Internal Tasks module is returning 404 errors because of a **duplicate route prefix**.
+When logged in as an employee, the Internal Tasks page is making an API request to `/api/internal-tasks/stats` which returns a 403 Forbidden error. This is expected backend behavior since the endpoint is restricted to admin users only, but the **frontend should not make this request** for non-admin users.
 
-### Root Cause
+## Root Cause
 
-| File | Current | Should Be |
-|------|---------|-----------|
-| `main.ts` | `app.setGlobalPrefix('api')` | Global prefix adds `/api` to all routes |
-| `internal-tasks.controller.ts` | `@Controller('api/internal-tasks')` | Creates `/api/api/internal-tasks` |
+In `src/hooks/useInternalTasks.ts`, the `useInternalTaskStats` hook has no role-based guard:
 
-**Actual route being served**: `http://69.62.127.134:8080/api/api/internal-tasks`
-**Expected route**: `http://69.62.127.134:8080/api/internal-tasks`
-
-### Evidence
-
-Looking at other controllers in the project:
-- `commands.controller.ts`: `@Controller('commands')` → becomes `/api/commands`
-- `users.controller.ts`: `@Controller('users')` → becomes `/api/users`
-
----
+```typescript
+export function useInternalTaskStats() {
+  return useQuery({
+    queryKey: ['internal-tasks', 'stats'],
+    queryFn: () => api.getInternalTaskStats(),
+    // No 'enabled' condition to check if user is admin
+  });
+}
+```
 
 ## Solution
 
-Change the controller decorator from `'api/internal-tasks'` to `'internal-tasks'`:
+Modify the `useInternalTaskStats` hook to accept an `enabled` parameter and only fetch stats when the user is an admin. The consuming component already knows whether the user is an admin via `useAuth()`.
 
-### File: `server/src/internal-tasks/internal-tasks.controller.ts`
+### Changes Required
 
-```text
-// Line 21 - BEFORE:
-@Controller('api/internal-tasks')
+**File: `src/hooks/useInternalTasks.ts`**
 
-// Line 21 - AFTER:
-@Controller('internal-tasks')
+Update the `useInternalTaskStats` function to conditionally enable the query:
+
+```typescript
+export function useInternalTaskStats(enabled: boolean = true) {
+  return useQuery({
+    queryKey: ['internal-tasks', 'stats'],
+    queryFn: () => api.getInternalTaskStats(),
+    enabled, // Only fetch when enabled is true
+  });
+}
 ```
 
----
+**File: `src/pages/InternalTasksPage.tsx`**
 
-## Implementation Steps
+Pass the `isAdmin` flag to the hook:
 
-1. Update the controller route prefix (1 line change)
-2. Redeploy the backend via GitHub Actions
-3. The migration will run automatically as configured
+```typescript
+// Line 93 - BEFORE:
+const { data: stats, isLoading: statsLoading } = useInternalTaskStats();
 
----
+// AFTER:
+const { data: stats, isLoading: statsLoading } = useInternalTaskStats(isAdmin);
+```
 
 ## Technical Details
 
-No other changes required. The global prefix in `main.ts` will automatically prepend `/api` to all controller routes, making the final endpoint `/api/internal-tasks` as expected.
+| Aspect | Details |
+|--------|---------|
+| Files Modified | 2 (hook + page) |
+| Lines Changed | ~4 |
+| Risk Level | Low |
+| Breaking Changes | None |
+
+The `enabled` option in React Query prevents the query from running when set to `false`. This is the standard pattern for conditional data fetching based on user permissions.
