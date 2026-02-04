@@ -836,14 +836,14 @@ const CommandsPage = () => {
                             <div className="space-y-2 mt-4">
                               <Label>{t('form.assignTo')}</Label>
                               <Select
-                                value={formData.assignedTo}
-                                onValueChange={(value) => setFormData({ ...formData, assignedTo: value })}
+                                value={formData.assignedTo || '__unassigned__'}
+                                onValueChange={(value) => setFormData({ ...formData, assignedTo: value === '__unassigned__' ? '' : value })}
                               >
                                 <SelectTrigger>
                                   <SelectValue placeholder={t('form.selectEmployee')} />
                                 </SelectTrigger>
                                 <SelectContent className="bg-popover">
-                                  <SelectItem value="">{t('form.unassigned')}</SelectItem>
+                                  <SelectItem value="__unassigned__">{t('form.unassigned')}</SelectItem>
                                   {employees?.map((emp) => (
                                     <SelectItem key={emp.id} value={emp.id}>
                                       {emp.firstName} {emp.lastName}

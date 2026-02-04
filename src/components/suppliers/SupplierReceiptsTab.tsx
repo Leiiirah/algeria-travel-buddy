@@ -260,14 +260,14 @@ export function SupplierReceiptsTab({ suppliers }: SupplierReceiptsTabProps) {
               <div className="grid gap-2">
                 <Label>Lier à une commande (optionnel)</Label>
                 <Select
-                  value={formData.orderId}
-                  onValueChange={handleOrderSelect}
+                  value={formData.orderId || '__none__'}
+                  onValueChange={(value) => value === '__none__' ? setFormData({ ...formData, orderId: '' }) : handleOrderSelect(value)}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Sélectionner une commande" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Aucune commande</SelectItem>
+                    <SelectItem value="__none__">Aucune commande</SelectItem>
                     {pendingOrders.map((order) => (
                       <SelectItem key={order.id} value={order.id}>
                         {order.orderNumber} - {order.description} ({order.quantity - order.deliveredQuantity} restants)

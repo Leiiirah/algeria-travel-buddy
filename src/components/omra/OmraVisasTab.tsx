@@ -457,14 +457,14 @@ export const OmraVisasTab = () => {
               <div className="space-y-2">
                 <Label>{t('visas.form.assignTo')}</Label>
                 <Select
-                  value={formData.assignedTo}
-                  onValueChange={(value) => setFormData({ ...formData, assignedTo: value })}
+                  value={formData.assignedTo || '__unassigned__'}
+                  onValueChange={(value) => setFormData({ ...formData, assignedTo: value === '__unassigned__' ? '' : value })}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder={t('visas.form.selectEmployee')} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">{t('visas.form.unassigned')}</SelectItem>
+                    <SelectItem value="__unassigned__">{t('visas.form.unassigned')}</SelectItem>
                     {employees?.map((emp) => (
                       <SelectItem key={emp.id} value={emp.id}>
                         {emp.firstName} {emp.lastName}
