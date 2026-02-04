@@ -11,7 +11,8 @@
     "accounting": "المحاسبة",
     "services": "الخدمات",
     "serviceTypes": "أنواع الخدمات",
-    "expenses": "المصروفات"
+    "expenses": "المصروفات",
+    "internalTasks": "المهام الداخلية"
   },
   "groups": {
     "main": "الرئيسية",

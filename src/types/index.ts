@@ -376,3 +376,54 @@ export const supplierInvoiceStatusLabels: Record<SupplierInvoiceStatus, string> 
   partiel: 'Partiellement payé',
   paye: 'Payé',
 };
+
+// ==================== INTERNAL TASKS TYPES ====================
+
+export type TaskPriority = 'urgent' | 'normal' | 'critical';
+export type TaskStatus = 'in_progress' | 'completed';
+export type TaskVisibility = 'clear' | 'unreadable';
+
+export interface InternalTask {
+  id: string;
+  title: string;
+  description?: string;
+  priority: TaskPriority;
+  status: TaskStatus;
+  visibility: TaskVisibility;
+  assignedTo: string;
+  assignee?: User;
+  createdBy: string;
+  creator?: User;
+  dueDate?: Date;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface TaskStats {
+  total: number;
+  inProgress: number;
+  completed: number;
+  byEmployee: {
+    employeeId: string;
+    firstName: string;
+    lastName: string;
+    inProgress: number;
+    completed: number;
+  }[];
+}
+
+export const taskPriorityLabels: Record<TaskPriority, string> = {
+  urgent: 'Urgent',
+  normal: 'Normal',
+  critical: 'Critique',
+};
+
+export const taskStatusLabels: Record<TaskStatus, string> = {
+  in_progress: 'En cours',
+  completed: 'Terminé',
+};
+
+export const taskVisibilityLabels: Record<TaskVisibility, string> = {
+  clear: 'Clair',
+  unreadable: 'Illisible',
+};

@@ -21,3 +21,4 @@ export { ServicesSkeleton } from './ServicesSkeleton';
 export { DocumentsSkeleton } from './DocumentsSkeleton';
 export { SupplierAccountingSkeleton } from './SupplierAccountingSkeleton';
 export { ExpensesSkeleton } from './ExpensesSkeleton';
+export { InternalTasksSkeleton } from './InternalTasksSkeleton';

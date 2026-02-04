@@ -1,4 +1,4 @@
-import { User, Service, Supplier, Command, Payment, SupplierTransaction, Document, OmraHotel, OmraOrder, OmraVisa, OmraRoomType, OmraStatus, EmployeeTransaction, EmployeeBalance, EmployeeTransactionType, Expense, ExpenseStats, ExpenseCategory, PaymentMethod, SupplierOrder, SupplierOrderStatus, SupplierReceipt, SupplierInvoice, SupplierInvoiceStatus, ServiceTypeEntity } from '@/types';
+import { User, Service, Supplier, Command, Payment, SupplierTransaction, Document, OmraHotel, OmraOrder, OmraVisa, OmraRoomType, OmraStatus, EmployeeTransaction, EmployeeBalance, EmployeeTransactionType, Expense, ExpenseStats, ExpenseCategory, PaymentMethod, SupplierOrder, SupplierOrderStatus, SupplierReceipt, SupplierInvoice, SupplierInvoiceStatus, ServiceTypeEntity, InternalTask, TaskStats, TaskPriority, TaskStatus, TaskVisibility } from '@/types';
 
 // API base URL - includes /api prefix to match nginx proxy configuration
 const API_URL = (import.meta.env.VITE_API_URL || 'http://69.62.127.134:8080/api')
@@ -342,6 +342,33 @@ export interface SupplierInvoiceStats {
   unpaidCount: number;
   overdueCount: number;
   totalDue: number;
+}
+
+// ==================== INTERNAL TASKS DTOs ====================
+
+export interface CreateInternalTaskDto {
+  title: string;
+  description?: string;
+  priority?: TaskPriority;
+  visibility?: TaskVisibility;
+  assignedTo: string;
+  dueDate?: string;
+}
+
+export interface UpdateInternalTaskDto {
+  title?: string;
+  description?: string;
+  priority?: TaskPriority;
+  status?: TaskStatus;
+  visibility?: TaskVisibility;
+  assignedTo?: string;
+  dueDate?: string;
+}
+
+export interface InternalTaskFilters {
+  status?: TaskStatus;
+  priority?: TaskPriority;
+  assignedTo?: string;
 }
 
 
@@ -1192,6 +1219,32 @@ class ApiClient {
 
   deleteSupplierInvoice = (id: string): Promise<void> =>
     this.request(`/supplier-invoices/${id}`, { method: 'DELETE' });
+
+  // ==================== INTERNAL TASKS ====================
+
+  getInternalTasks = (): Promise<InternalTask[]> =>
+    this.request('/internal-tasks');
+
+  getInternalTaskStats = (): Promise<TaskStats> =>
+    this.request('/internal-tasks/stats');
+
+  getInternalTask = (id: string): Promise<InternalTask> =>
+    this.request(`/internal-tasks/${id}`);
+
+  createInternalTask = (data: CreateInternalTaskDto): Promise<InternalTask> =>
+    this.request('/internal-tasks', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+
+  updateInternalTask = (id: string, data: UpdateInternalTaskDto): Promise<InternalTask> =>
+    this.request(`/internal-tasks/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    });
+
+  deleteInternalTask = (id: string): Promise<void> =>
+    this.request(`/internal-tasks/${id}`, { method: 'DELETE' });
 }
 
 export const api = new ApiClient();

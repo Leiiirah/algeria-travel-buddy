@@ -13,6 +13,7 @@ import {
   Palmtree,
   Users2,
   Receipt,
+  ClipboardCheck,
 } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
 import { Button } from '@/components/ui/button';
@@ -55,6 +56,11 @@ export function AppSidebar() {
       titleKey: 'navigation.omra',
       url: '/omra',
       icon: Palmtree,
+    },
+    {
+      titleKey: 'navigation.internalTasks',
+      url: '/missions-internes',
+      icon: ClipboardCheck,
     },
     {
       titleKey: 'navigation.documents',

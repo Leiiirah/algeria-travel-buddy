@@ -21,6 +21,7 @@ import { SupplierOrdersModule } from './supplier-orders/supplier-orders.module';
 import { SupplierReceiptsModule } from './supplier-receipts/supplier-receipts.module';
 import { SupplierInvoicesModule } from './supplier-invoices/supplier-invoices.module';
 import { ServiceTypesModule } from './service-types/service-types.module';
+import { InternalTasksModule } from './internal-tasks/internal-tasks.module';
 
 
 @Module({
@@ -68,6 +69,7 @@ import { ServiceTypesModule } from './service-types/service-types.module';
     SupplierReceiptsModule,
     SupplierInvoicesModule,
     ServiceTypesModule,
+    InternalTasksModule,
   ],
   providers: [
     {

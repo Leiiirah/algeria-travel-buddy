@@ -1,0 +1,71 @@
+{
+  "title": "Missions Internes",
+  "subtitle": "Gestion des tâches internes de l'agence",
+  "myTasks": "Mes Tâches",
+  "allTasks": "Toutes les Tâches",
+  "stats": {
+    "total": "Total des tâches",
+    "inProgress": "En cours",
+    "completed": "Terminées"
+  },
+  "priority": {
+    "label": "Priorité",
+    "urgent": "Urgent",
+    "normal": "Normal",
+    "critical": "Critique"
+  },
+  "status": {
+    "label": "Statut",
+    "in_progress": "En cours",
+    "completed": "Terminé"
+  },
+  "visibility": {
+    "label": "Visibilité",
+    "clear": "Clair",
+    "unreadable": "Illisible"
+  },
+  "form": {
+    "title": "Titre",
+    "titlePlaceholder": "Entrez le titre de la tâche",
+    "description": "Description",
+    "descriptionPlaceholder": "Description détaillée de la tâche...",
+    "priority": "Priorité",
+    "assignTo": "Assigner à",
+    "selectEmployee": "Sélectionner un employé",
+    "dueDate": "Date limite",
+    "visibility": "Visibilité"
+  },
+  "dialog": {
+    "createTitle": "Nouvelle tâche",
+    "editTitle": "Modifier la tâche",
+    "deleteTitle": "Supprimer la tâche",
+    "deleteConfirm": "Êtes-vous sûr de vouloir supprimer cette tâche ?"
+  },
+  "actions": {
+    "newTask": "Nouvelle tâche",
+    "markComplete": "Marquer terminé",
+    "markInProgress": "Marquer en cours"
+  },
+  "empty": {
+    "noTasks": "Aucune tâche",
+    "noTasksDesc": "Les tâches assignées apparaîtront ici",
+    "noTasksAdmin": "Créez une nouvelle tâche pour commencer"
+  },
+  "employeeStats": "Statistiques par employé",
+  "assignedTo": "Assigné à",
+  "createdBy": "Créé par",
+  "dueDate": "Date limite",
+  "createdAt": "Créé le",
+  "noDueDate": "Pas de date limite",
+  "filters": {
+    "all": "Toutes",
+    "inProgress": "En cours",
+    "completed": "Terminées"
+  },
+  "toast": {
+    "created": "Tâche créée avec succès",
+    "updated": "Tâche mise à jour",
+    "deleted": "Tâche supprimée",
+    "error": "Une erreur est survenue"
+  }
+}
