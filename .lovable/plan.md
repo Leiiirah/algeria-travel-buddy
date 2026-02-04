@@ -1,222 +1,431 @@
 
 
-# Plan: Admin View for Employee Activity (Commands & Sales)
+# Plan: Internal Task Management Module
 
 ## Overview
 
-Add functionality for admins to view detailed activity for any employee, including:
-- All commands/sales they created
-- Performance summary (revenue, profit, pending amounts)
-- Full transaction history
-
-This mirrors the "My Commands" section that employees see for themselves, but allows admins to view any employee's data.
+This plan outlines the implementation of a new "Internal Task Management" (Missions Internes) module for the El Hikma travel agency platform. This module will allow admins to assign internal tasks to employees and track their progress, separate from client commands.
 
 ---
 
-## Current State Analysis
+## 1. Database Design
 
-| Feature | Employee View | Admin View |
-|---------|---------------|------------|
-| Performance Stats | Yes (My Performance) | No |
-| Commands History | Yes (My Commands table) | No |
-| Transactions (avance/credit/salaire) | Yes (via detail dialog) | Yes (via detail dialog) |
+### Entity: `internal_tasks`
 
----
+| Column | Type | Description |
+|--------|------|-------------|
+| `id` | UUID | Primary key |
+| `title` | VARCHAR(255) | Task title (required) |
+| `description` | TEXT | Detailed description (optional) |
+| `priority` | ENUM | `urgent` (orange), `normal` (green), `critical` (red) |
+| `status` | ENUM | `in_progress`, `completed` |
+| `visibility` | ENUM | `clear`, `unreadable` - documentation clarity |
+| `assignedTo` | UUID (FK) | Reference to users table (employee) |
+| `createdBy` | UUID (FK) | Admin who created the task |
+| `dueDate` | DATE | Optional deadline |
+| `createdAt` | TIMESTAMP | Auto-generated |
+| `updatedAt` | TIMESTAMP | Auto-updated |
 
-## Solution
+### TypeORM Enums
 
-Enhance the existing employee detail dialog to include:
-1. **Performance Summary Cards** - Commands count, revenue, profit, pending
-2. **Tabs for viewing data**:
-   - **Sales Tab** - All commands created by the employee (like "My Commands")
-   - **Transactions Tab** - Existing transactions view (advances, credits, salaries)
-
----
-
-## Backend Changes
-
-### 1. New Endpoint: Get Commands by Employee ID (Admin Only)
-
-**File**: `server/src/commands/commands.controller.ts`
-
-Add a new endpoint that returns all commands created by a specific employee:
-
-```typescript
-@Get('by-employee/:employeeId')
-@Roles('admin')
-findByEmployee(@Param('employeeId') employeeId: string) {
-  return this.commandsService.findAll({ createdBy: employeeId, limit: 1000 });
-}
-```
-
-### 2. New Endpoint: Get Employee Performance Stats (Admin Only)
-
-**File**: `server/src/analytics/analytics.controller.ts`
-
-Add endpoint to get specific employee stats:
-
-```typescript
-@Get('employee-stats/:id')
-@Roles('admin')
-getEmployeeStatsById(@Param('id') id: string) {
-  return this.analyticsService.getEmployeeCommandStats(id);
-}
+```text
+TaskPriority: 'urgent' | 'normal' | 'critical'
+TaskStatus: 'in_progress' | 'completed'
+TaskVisibility: 'clear' | 'unreadable'
 ```
 
 ---
 
-## Frontend Changes
+## 2. Backend Implementation (NestJS)
 
-### 1. API Client Updates
+### File Structure
 
-**File**: `src/lib/api.ts`
-
-Add new methods:
-```typescript
-// Get commands by specific employee (admin only)
-getCommandsByEmployee = (employeeId: string): Promise<PaginatedResponse<Command>> =>
-  this.request(`/commands/by-employee/${employeeId}`);
-
-// Get specific employee stats (admin only)
-getEmployeeStatsById = (employeeId: string): Promise<EmployeeStats> =>
-  this.request(`/analytics/employee-stats/${employeeId}`);
+```text
+server/src/internal-tasks/
+  |-- dto/
+  |     |-- create-internal-task.dto.ts
+  |     |-- update-internal-task.dto.ts
+  |-- entities/
+  |     |-- internal-task.entity.ts
+  |-- internal-tasks.controller.ts
+  |-- internal-tasks.module.ts
+  |-- internal-tasks.service.ts
 ```
 
-### 2. New Hooks
+### Endpoints
 
-**File**: `src/hooks/useEmployeeTransactions.ts`
+| Method | Route | Access | Description |
+|--------|-------|--------|-------------|
+| GET | `/internal-tasks` | All | Get tasks (filtered by role) |
+| GET | `/internal-tasks/stats` | Admin | Get task statistics by employee |
+| GET | `/internal-tasks/:id` | All | Get single task |
+| POST | `/internal-tasks` | Admin | Create new task |
+| PATCH | `/internal-tasks/:id` | All | Update task (admin: all fields, employee: status only) |
+| DELETE | `/internal-tasks/:id` | Admin | Delete task |
 
-Add new hooks:
-```typescript
-export function useEmployeeCommands(employeeId: string) {
-  return useQuery({
-    queryKey: ['employee-commands', employeeId],
-    queryFn: () => api.getCommandsByEmployee(employeeId),
-    enabled: !!employeeId,
-  });
+### Role-Based Access Control
+
+- **Admin**: Full CRUD, can see all tasks and stats
+- **Employee**: Can only see tasks assigned to them, can only update status
+
+### Controller Logic
+
+```text
+// GET /internal-tasks
+// If user is admin: return all tasks
+// If user is employee: filter by assignedTo = user.id
+
+// PATCH /internal-tasks/:id  
+// If user is employee: only allow status field update
+// If user is admin: allow all field updates
+```
+
+---
+
+## 3. Database Migration
+
+A new TypeORM migration file will be created to:
+1. Create the `task_priority` enum
+2. Create the `task_status` enum  
+3. Create the `task_visibility` enum
+4. Create the `internal_tasks` table with proper foreign keys
+
+---
+
+## 4. Frontend Implementation (React)
+
+### File Structure
+
+```text
+src/
+  |-- pages/
+  |     |-- InternalTasksPage.tsx
+  |-- hooks/
+  |     |-- useInternalTasks.ts
+  |-- components/
+  |     |-- skeletons/
+  |           |-- InternalTasksSkeleton.tsx
+  |-- i18n/locales/
+        |-- fr/
+        |     |-- internalTasks.json
+        |-- ar/
+              |-- internalTasks.json
+```
+
+### Page Component: `InternalTasksPage.tsx`
+
+**Admin View ("Command Center"):**
+- Stats cards showing:
+  - Total active tasks
+  - Tasks in progress
+  - Completed tasks
+- Employee breakdown section with counters per employee
+- Full task table with all tasks
+- Create/Edit/Delete task dialogs
+- Priority filter and search
+
+**Employee View ("My Tasks"):**
+- Simple header with personal stats
+- Clean horizontal task bars (as per sketch)
+- Status toggle (In Progress / Completed)
+- Color-coded priority indicators
+- No create/delete buttons
+
+### Task Card UI Design
+
+```text
++------------------------------------------------------------------+
+| [PRIORITY COLOR BAR] Task Title                                   |
+|   Description preview...                                         |
+|   Created: Jan 15, 2024  |  Due: Jan 20, 2024                   |
+|   [Status Toggle: In Progress / Completed]   [Visibility Badge]  |
++------------------------------------------------------------------+
+```
+
+Priority colors:
+- Urgent: `bg-orange-500` / `border-l-orange-500`
+- Normal: `bg-green-500` / `border-l-green-500`
+- Critical: `bg-red-500` / `border-l-red-500`
+
+---
+
+## 5. API Integration
+
+### Types (src/types/index.ts)
+
+```text
+// New types to add:
+TaskPriority = 'urgent' | 'normal' | 'critical'
+TaskStatus = 'in_progress' | 'completed'
+TaskVisibility = 'clear' | 'unreadable'
+
+interface InternalTask {
+  id: string;
+  title: string;
+  description?: string;
+  priority: TaskPriority;
+  status: TaskStatus;
+  visibility: TaskVisibility;
+  assignedTo: string;
+  assignee?: User;
+  createdBy: string;
+  creator?: User;
+  dueDate?: Date;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
-export function useEmployeeStatsById(employeeId: string) {
-  return useQuery({
-    queryKey: ['employee-stats', employeeId],
-    queryFn: () => api.getEmployeeStatsById(employeeId),
-    enabled: !!employeeId,
-  });
+interface TaskStats {
+  total: number;
+  inProgress: number;
+  completed: number;
+  byEmployee: {
+    employeeId: string;
+    firstName: string;
+    lastName: string;
+    inProgress: number;
+    completed: number;
+  }[];
 }
 ```
 
-### 3. Enhanced Employee Detail Dialog
+### API Methods (src/lib/api.ts)
 
-**File**: `src/pages/EmployeeAccountingPage.tsx`
+```text
+// DTOs
+CreateInternalTaskDto { title, description?, priority, assignedTo, dueDate?, visibility? }
+UpdateInternalTaskDto { title?, description?, priority?, status?, visibility?, dueDate? }
 
-Transform the existing employee detail dialog into a comprehensive activity view:
-
-```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│ Sarah Meziane                                                          [X] │
-├─────────────────────────────────────────────────────────────────────────────┤
-│                                                                             │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐        │
-│  │ Commandes   │  │ CA Total    │  │ Bénéfice    │  │ Impayés     │        │
-│  │    45       │  │ 850,000 DZD │  │ 125,000 DZD │  │  45,000 DZD │        │
-│  └─────────────┘  └─────────────┘  └─────────────┘  └─────────────┘        │
-│                                                                             │
-│  ┌──────────────────────────────────────────────────────────────────────┐  │
-│  │  [Ventes]        [Transactions]                                      │  │
-│  ├──────────────────────────────────────────────────────────────────────┤  │
-│  │                                                                      │  │
-│  │  Date        Client           Service   Prix     Payé     Reste     │  │
-│  │  ─────────────────────────────────────────────────────────────────  │  │
-│  │  15 Jan      Ahmed Mansouri   Visa FR   85,000   25,000   60,000   │  │
-│  │  14 Jan      Fatima Khelifi   Ticket    45,000   45,000        0   │  │
-│  │  13 Jan      Mohamed Ali      Visa ES   75,000   30,000   45,000   │  │
-│  │  ...                                                                │  │
-│  └──────────────────────────────────────────────────────────────────────┘  │
-│                                                                             │
-└─────────────────────────────────────────────────────────────────────────────┘
+// Methods
+getInternalTasks(filters?: TaskFilters): Promise<InternalTask[]>
+getInternalTaskStats(): Promise<TaskStats>
+getInternalTask(id: string): Promise<InternalTask>
+createInternalTask(data: CreateInternalTaskDto): Promise<InternalTask>
+updateInternalTask(id: string, data: UpdateInternalTaskDto): Promise<InternalTask>
+deleteInternalTask(id: string): Promise<void>
 ```
 
-**Key Changes:**
-- Add performance summary cards at the top
-- Add tabs: "Ventes" (Sales/Commands) and "Transactions" (existing functionality)
-- Sales tab shows commands table similar to "My Commands" but for selected employee
-- Keep existing transactions view in second tab
+### React Query Hook (src/hooks/useInternalTasks.ts)
 
-### 4. Translation Updates
+```text
+useInternalTasks(filters?)
+useInternalTaskStats()
+useCreateInternalTask()
+useUpdateInternalTask()
+useDeleteInternalTask()
+```
 
-**Files**: `src/i18n/locales/fr/employees.json`, `src/i18n/locales/ar/employees.json`
+---
 
-Add new translation keys:
-```json
-{
-  "accounting": {
-    "employeeDetails": {
-      "title": "Activité de l'employé",
-      "tabs": {
-        "sales": "Ventes",
-        "transactions": "Transactions"
-      },
-      "stats": {
-        "commands": "Commandes",
-        "revenue": "Chiffre d'Affaires",
-        "profit": "Bénéfice",
-        "pending": "Impayés Clients"
-      },
-      "noSales": "Aucune vente enregistrée"
-    }
+## 6. Navigation & Routing
+
+### App.tsx Updates
+
+Add new route:
+```text
+<Route
+  path="/missions-internes"
+  element={
+    <ProtectedRoute>
+      <InternalTasksPage />
+    </ProtectedRoute>
   }
+/>
+```
+
+Note: Route is accessible to all authenticated users (both admin and employee)
+
+### Sidebar Updates (AppSidebar.tsx)
+
+Add to `mainMenuItems`:
+```text
+{
+  titleKey: 'navigation.internalTasks',
+  url: '/missions-internes',
+  icon: ClipboardCheck  // from lucide-react
 }
 ```
 
 ---
 
-## Implementation Details
+## 7. Translations (i18n)
 
-### Dialog State Management
+### French (fr/internalTasks.json)
 
-```typescript
-// New state for employee details dialog
-const [selectedEmployeeId, setSelectedEmployeeId] = useState<string | null>(null);
-const [activeTab, setActiveTab] = useState<'sales' | 'transactions'>('sales');
-
-// Fetch data when employee is selected
-const { data: employeeCommands, isLoading: loadingCommands } = useEmployeeCommands(selectedEmployeeId || '');
-const { data: employeeStats, isLoading: loadingStats } = useEmployeeStatsById(selectedEmployeeId || '');
+```text
+{
+  "title": "Missions Internes",
+  "subtitle": "Gestion des tâches internes de l'agence",
+  "myTasks": "Mes Tâches",
+  "allTasks": "Toutes les Tâches",
+  "stats": {
+    "total": "Total des tâches",
+    "inProgress": "En cours",
+    "completed": "Terminées"
+  },
+  "priority": {
+    "urgent": "Urgent",
+    "normal": "Normal",
+    "critical": "Critique"
+  },
+  "status": {
+    "in_progress": "En cours",
+    "completed": "Terminé"
+  },
+  "visibility": {
+    "clear": "Clair",
+    "unreadable": "Illisible"
+  },
+  "form": {
+    "title": "Titre",
+    "description": "Description",
+    "priority": "Priorité",
+    "assignTo": "Assigner à",
+    "dueDate": "Date limite",
+    "visibility": "Visibilité"
+  },
+  "dialog": {
+    "createTitle": "Nouvelle tâche",
+    "editTitle": "Modifier la tâche"
+  },
+  "actions": {
+    "newTask": "Nouvelle tâche",
+    "markComplete": "Marquer terminé",
+    "markInProgress": "Marquer en cours"
+  },
+  "empty": {
+    "noTasks": "Aucune tâche",
+    "noTasksDesc": "Les tâches assignées apparaîtront ici"
+  },
+  "employeeStats": "Statistiques par employé"
+}
 ```
 
-### Commands Table Component
+### Arabic (ar/internalTasks.json)
 
-Reuse the same table structure from "My Commands" section:
-- Date, Client, Service, Selling Price, Amount Paid, Remaining, Profit, Status
-- Proper formatting with locale-aware numbers
-- Status badges
+```text
+{
+  "title": "المهام الداخلية",
+  "subtitle": "إدارة المهام الداخلية للوكالة",
+  "myTasks": "مهامي",
+  "allTasks": "جميع المهام",
+  "stats": {
+    "total": "إجمالي المهام",
+    "inProgress": "قيد التنفيذ",
+    "completed": "مكتملة"
+  },
+  "priority": {
+    "urgent": "عاجل",
+    "normal": "عادي",
+    "critical": "حرج"
+  },
+  "status": {
+    "in_progress": "قيد التنفيذ",
+    "completed": "مكتمل"
+  },
+  "visibility": {
+    "clear": "واضح",
+    "unreadable": "غير مقروء"
+  },
+  "form": {
+    "title": "العنوان",
+    "description": "الوصف",
+    "priority": "الأولوية",
+    "assignTo": "تعيين إلى",
+    "dueDate": "تاريخ الاستحقاق",
+    "visibility": "الوضوح"
+  },
+  "dialog": {
+    "createTitle": "مهمة جديدة",
+    "editTitle": "تعديل المهمة"
+  },
+  "actions": {
+    "newTask": "مهمة جديدة",
+    "markComplete": "تعيين كمكتمل",
+    "markInProgress": "تعيين كقيد التنفيذ"
+  },
+  "empty": {
+    "noTasks": "لا توجد مهام",
+    "noTasksDesc": "ستظهر المهام المعينة هنا"
+  },
+  "employeeStats": "إحصائيات حسب الموظف"
+}
+```
+
+### Common translations update (fr/common.json & ar/common.json)
+
+Add to navigation section:
+```text
+"internalTasks": "Missions Internes"  // French
+"internalTasks": "المهام الداخلية"    // Arabic
+```
 
 ---
 
-## Files to Modify
+## 8. Implementation Order
 
-| File | Changes |
-|------|---------|
-| `server/src/commands/commands.controller.ts` | Add `@Get('by-employee/:employeeId')` endpoint |
-| `server/src/analytics/analytics.controller.ts` | Add `@Get('employee-stats/:id')` endpoint |
-| `src/lib/api.ts` | Add `getCommandsByEmployee` and `getEmployeeStatsById` methods |
-| `src/hooks/useEmployeeTransactions.ts` | Add `useEmployeeCommands` and `useEmployeeStatsById` hooks |
-| `src/pages/EmployeeAccountingPage.tsx` | Enhance employee detail dialog with tabs, stats, and sales table |
-| `src/i18n/locales/fr/employees.json` | Add new translation keys |
-| `src/i18n/locales/ar/employees.json` | Add Arabic translations |
+1. **Backend First:**
+   - Create entity file with enums
+   - Create DTOs
+   - Create service with all methods
+   - Create controller with role guards
+   - Create module and register in app.module
+   - Generate and run migration
+
+2. **Frontend Types & API:**
+   - Add types to src/types/index.ts
+   - Add API methods to src/lib/api.ts
+   - Create useInternalTasks hook
+
+3. **UI Components:**
+   - Create skeleton component
+   - Create main page with dual views (admin/employee)
+   - Add translations
+
+4. **Navigation:**
+   - Update AppSidebar.tsx
+   - Update App.tsx with route
+
+5. **Testing:**
+   - Verify admin can create/assign/delete tasks
+   - Verify employee can only see own tasks
+   - Verify employee can only update status
+   - Verify priority colors display correctly
+   - Test RTL Arabic layout
 
 ---
 
-## Summary
+## 9. Security Considerations
 
-| Category | Count |
-|----------|-------|
-| Backend endpoints | 2 new |
-| API methods | 2 new |
-| React hooks | 2 new |
-| Pages modified | 1 |
-| Translation files | 2 |
-| **Total** | 7 files |
+- Backend validates user role before allowing create/delete operations
+- Backend filters tasks by `assignedTo` for non-admin users
+- Employee PATCH requests are sanitized to only allow `status` field updates
+- All endpoints protected by JWT authentication
+- Strict data isolation maintained (employees cannot see other employees' tasks)
 
-This enhancement gives admins complete visibility into employee sales activity, matching the self-service view employees have while maintaining proper role-based access control.
+---
+
+## 10. Files to Create/Modify
+
+### New Files (12)
+1. `server/src/internal-tasks/entities/internal-task.entity.ts`
+2. `server/src/internal-tasks/dto/create-internal-task.dto.ts`
+3. `server/src/internal-tasks/dto/update-internal-task.dto.ts`
+4. `server/src/internal-tasks/internal-tasks.service.ts`
+5. `server/src/internal-tasks/internal-tasks.controller.ts`
+6. `server/src/internal-tasks/internal-tasks.module.ts`
+7. `server/src/database/migrations/TIMESTAMP-AddInternalTasks.ts`
+8. `src/pages/InternalTasksPage.tsx`
+9. `src/hooks/useInternalTasks.ts`
+10. `src/components/skeletons/InternalTasksSkeleton.tsx`
+11. `src/i18n/locales/fr/internalTasks.json`
+12. `src/i18n/locales/ar/internalTasks.json`
+
+### Files to Modify (6)
+1. `server/src/app.module.ts` - Import InternalTasksModule
+2. `src/types/index.ts` - Add task types
+3. `src/lib/api.ts` - Add API methods
+4. `src/App.tsx` - Add route
+5. `src/components/layout/AppSidebar.tsx` - Add navigation item
+6. `src/i18n/index.ts` - Import new translation namespace
 
