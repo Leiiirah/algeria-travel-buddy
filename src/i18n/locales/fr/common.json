@@ -12,7 +12,8 @@
     "services": "Services",
     "serviceTypes": "Types de services",
     "expenses": "Dépenses",
-    "internalTasks": "Missions Internes"
+    "internalTasks": "Missions Internes",
+    "invoices": "Factures"
   },
   "groups": {
     "main": "Principal",

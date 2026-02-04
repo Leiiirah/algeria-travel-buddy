@@ -20,6 +20,7 @@ import EmployeeAccountingPage from "./pages/EmployeeAccountingPage";
 import ExpensesPage from "./pages/ExpensesPage";
 import ServiceTypesPage from "./pages/ServiceTypesPage";
 import InternalTasksPage from "./pages/InternalTasksPage";
+import InvoicesPage from "./pages/InvoicesPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient({
@@ -148,6 +149,14 @@ const AppRoutes = () => {
         element={
           <ProtectedRoute>
             <InternalTasksPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/factures"
+        element={
+          <ProtectedRoute>
+            <InvoicesPage />
           </ProtectedRoute>
         }
       />

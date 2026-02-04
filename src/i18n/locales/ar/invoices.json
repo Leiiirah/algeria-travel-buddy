@@ -1,0 +1,84 @@
+{
+  "title": "فواتير العملاء",
+  "add": "إضافة فاتورة",
+  "edit": "تعديل الفاتورة",
+  "history": "السجل",
+  "type": {
+    "label": "نوع الفاتورة",
+    "proforma": "فاتورة مبدئية",
+    "finale": "فاتورة نهائية"
+  },
+  "status": {
+    "label": "الحالة",
+    "brouillon": "مسودة",
+    "envoyee": "مرسلة",
+    "payee": "مدفوعة",
+    "annulee": "ملغاة"
+  },
+  "form": {
+    "invoiceType": "نوع الفاتورة",
+    "invoiceNumber": "رقم الفاتورة",
+    "clientName": "اسم العميل",
+    "clientPhone": "الهاتف",
+    "clientEmail": "البريد الإلكتروني",
+    "serviceName": "الخدمة",
+    "serviceType": "نوع الخدمة",
+    "destination": "الوجهة",
+    "totalAmount": "المبلغ الإجمالي",
+    "paidAmount": "المبلغ المدفوع",
+    "remaining": "المتبقي",
+    "invoiceDate": "تاريخ الفاتورة",
+    "dueDate": "تاريخ الاستحقاق",
+    "notes": "ملاحظات"
+  },
+  "stats": {
+    "total": "إجمالي الفواتير",
+    "pending": "قيد الانتظار",
+    "paid": "المدفوعة",
+    "totalAmount": "المبلغ الإجمالي",
+    "totalPaid": "إجمالي المدفوع",
+    "totalRemaining": "المتبقي للدفع"
+  },
+  "actions": {
+    "download": "تحميل PDF",
+    "generateFromCommand": "إنشاء من الطلب",
+    "selectType": "اختر النوع",
+    "generate": "إنشاء"
+  },
+  "filters": {
+    "allTypes": "جميع الأنواع",
+    "allStatus": "جميع الحالات",
+    "searchPlaceholder": "البحث بالعميل، رقم الفاتورة..."
+  },
+  "table": {
+    "invoiceNumber": "رقم الفاتورة",
+    "type": "النوع",
+    "client": "العميل",
+    "service": "الخدمة",
+    "amount": "المبلغ",
+    "paid": "المدفوع",
+    "remaining": "المتبقي",
+    "date": "التاريخ",
+    "status": "الحالة",
+    "actions": "الإجراءات"
+  },
+  "empty": {
+    "title": "لا توجد فواتير",
+    "description": "قم بإنشاء أول فاتورة للعميل"
+  },
+  "messages": {
+    "created": "تم إنشاء الفاتورة بنجاح",
+    "updated": "تم تحديث الفاتورة",
+    "deleted": "تم حذف الفاتورة",
+    "error": "حدث خطأ"
+  },
+  "deleteConfirm": {
+    "title": "حذف الفاتورة",
+    "description": "هل أنت متأكد من حذف هذه الفاتورة؟ لا يمكن التراجع عن هذا الإجراء."
+  },
+  "pdf": {
+    "proformaTitle": "فاتورة مبدئية",
+    "finaleTitle": "فاتورة",
+    "proformaNotice": "هذا عرض سعر وليس فاتورة رسمية"
+  }
+}

@@ -1,0 +1,84 @@
+{
+  "title": "Factures Clients",
+  "add": "Ajouter Facture",
+  "edit": "Modifier Facture",
+  "history": "Historique",
+  "type": {
+    "label": "Type de facture",
+    "proforma": "Proforma",
+    "finale": "Finale"
+  },
+  "status": {
+    "label": "Statut",
+    "brouillon": "Brouillon",
+    "envoyee": "Envoyée",
+    "payee": "Payée",
+    "annulee": "Annulée"
+  },
+  "form": {
+    "invoiceType": "Type de facture",
+    "invoiceNumber": "N° Facture",
+    "clientName": "Nom du client",
+    "clientPhone": "Téléphone",
+    "clientEmail": "Email",
+    "serviceName": "Service",
+    "serviceType": "Type de service",
+    "destination": "Destination",
+    "totalAmount": "Montant total",
+    "paidAmount": "Montant payé",
+    "remaining": "Reste à payer",
+    "invoiceDate": "Date de facture",
+    "dueDate": "Date d'échéance",
+    "notes": "Notes"
+  },
+  "stats": {
+    "total": "Total Factures",
+    "pending": "En attente",
+    "paid": "Payées",
+    "totalAmount": "Montant Total",
+    "totalPaid": "Total Payé",
+    "totalRemaining": "Reste à Payer"
+  },
+  "actions": {
+    "download": "Télécharger PDF",
+    "generateFromCommand": "Générer depuis commande",
+    "selectType": "Sélectionner le type",
+    "generate": "Générer"
+  },
+  "filters": {
+    "allTypes": "Tous les types",
+    "allStatus": "Tous les statuts",
+    "searchPlaceholder": "Rechercher par client, N° facture..."
+  },
+  "table": {
+    "invoiceNumber": "N° Facture",
+    "type": "Type",
+    "client": "Client",
+    "service": "Service",
+    "amount": "Montant",
+    "paid": "Payé",
+    "remaining": "Reste",
+    "date": "Date",
+    "status": "Statut",
+    "actions": "Actions"
+  },
+  "empty": {
+    "title": "Aucune facture",
+    "description": "Créez votre première facture client"
+  },
+  "messages": {
+    "created": "Facture créée avec succès",
+    "updated": "Facture mise à jour",
+    "deleted": "Facture supprimée",
+    "error": "Une erreur est survenue"
+  },
+  "deleteConfirm": {
+    "title": "Supprimer la facture",
+    "description": "Êtes-vous sûr de vouloir supprimer cette facture ? Cette action est irréversible."
+  },
+  "pdf": {
+    "proformaTitle": "FACTURE PROFORMA",
+    "finaleTitle": "FACTURE",
+    "proformaNotice": "Ceci est un devis, pas une facture officielle"
+  }
+}

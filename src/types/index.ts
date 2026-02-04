@@ -427,3 +427,54 @@ export const taskVisibilityLabels: Record<TaskVisibility, string> = {
   clear: 'Clair',
   unreadable: 'Illisible',
 };
+
+// ==================== CLIENT INVOICES TYPES ====================
+
+export type ClientInvoiceType = 'proforma' | 'finale';
+export type ClientInvoiceStatus = 'brouillon' | 'envoyee' | 'payee' | 'annulee';
+
+export interface ClientInvoice {
+  id: string;
+  invoiceNumber: string;
+  type: ClientInvoiceType;
+  status: ClientInvoiceStatus;
+  commandId?: string;
+  command?: Command;
+  clientName: string;
+  clientPhone?: string;
+  clientEmail?: string;
+  serviceName: string;
+  serviceType?: string;
+  destination?: string;
+  totalAmount: number;
+  paidAmount: number;
+  invoiceDate: Date;
+  dueDate?: Date;
+  notes?: string;
+  createdBy: string;
+  creator?: User;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface ClientInvoiceStats {
+  total: number;
+  pending: number;
+  paid: number;
+  cancelled: number;
+  totalAmount: number;
+  totalPaid: number;
+  totalRemaining: number;
+}
+
+export const clientInvoiceTypeLabels: Record<ClientInvoiceType, string> = {
+  proforma: 'Proforma',
+  finale: 'Finale',
+};
+
+export const clientInvoiceStatusLabels: Record<ClientInvoiceStatus, string> = {
+  brouillon: 'Brouillon',
+  envoyee: 'Envoyée',
+  payee: 'Payée',
+  annulee: 'Annulée',
+};

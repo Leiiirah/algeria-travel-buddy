@@ -12,7 +12,8 @@
     "services": "الخدمات",
     "serviceTypes": "أنواع الخدمات",
     "expenses": "المصروفات",
-    "internalTasks": "المهام الداخلية"
+    "internalTasks": "المهام الداخلية",
+    "invoices": "الفواتير"
   },
   "groups": {
     "main": "الرئيسية",
