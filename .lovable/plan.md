@@ -1,387 +1,534 @@
 
-# Invoicing (Facturation) Module Implementation Plan
+
+# Command Assignment & Attribution System Implementation Plan
 
 ## Overview
 
-This plan implements a dedicated client invoicing module for the El Hikma travel agency platform. The module allows employees to generate, manage, and track **Proforma** and **Final** invoices for clients, with full data isolation between employees and global visibility for administrators.
+This plan implements an Admin-to-Employee command assignment system for the El Hikma travel agency platform. Administrators will be able to assign Visa and Omra commands to specific employees at creation time, with clear visual attribution badges showing who is responsible for each command.
 
 ---
 
 ## Architecture Summary
 
 ```text
-┌─────────────────────────────────────────────────────────────────────────┐
-│                           BACKEND (NestJS)                              │
-├─────────────────────────────────────────────────────────────────────────┤
-│  Database Migration     → Create 'client_invoices' table with enums    │
-│  Entity                 → ClientInvoice with type/status enums         │
-│  DTOs                   → Create/Update/Filter DTOs                    │
-│  Service                → CRUD + stats + data isolation logic          │
-│  Controller             → RESTful endpoints with role guards           │
-│  Module                 → Register in AppModule                         │
-├─────────────────────────────────────────────────────────────────────────┤
-│                          FRONTEND (React)                               │
-├─────────────────────────────────────────────────────────────────────────┤
-│  Types                  → ClientInvoice type definitions               │
-│  API Client             → API methods for invoices                     │
-│  React Query Hooks      → useClientInvoices, mutations                 │
-│  Page                   → InvoicesPage.tsx                             │
-│  Sidebar                → Add "Factures" navigation item               │
-│  Routes                 → /factures route (accessible to all users)    │
-│  PDF Generator          → Enhanced for proforma/finale types           │
-│  Translations           → French & Arabic translations                 │
-│  Skeleton               → Loading state component                      │
-└─────────────────────────────────────────────────────────────────────────┘
++-------------------------------------------------------------------------+
+|                         DATABASE CHANGES                                |
++-------------------------------------------------------------------------+
+|  commands table         -> Add 'assignedTo' UUID column (nullable FK)  |
+|  omra_orders table      -> Add 'assignedTo' UUID column (nullable FK)  |
+|  omra_visas table       -> Add 'assignedTo' UUID column (nullable FK)  |
++-------------------------------------------------------------------------+
+|                        BACKEND CHANGES                                  |
++-------------------------------------------------------------------------+
+|  Migration              -> Add assignedTo columns with FK constraints   |
+|  Entities               -> Update Command, OmraOrder, OmraVisa entities |
+|  DTOs                   -> Add assignedTo to Create/Update DTOs         |
+|  Services               -> Update access control (createdBy OR assignedTo) |
+|  Users Controller       -> Add GET /users/employees endpoint            |
++-------------------------------------------------------------------------+
+|                       FRONTEND CHANGES                                  |
++-------------------------------------------------------------------------+
+|  Types                  -> Add assignedTo/assignee to interfaces        |
+|  API Client             -> Add getActiveEmployees method                |
+|  useActiveEmployees     -> New hook to fetch employee list              |
+|  Command Forms          -> Add "Assign To" dropdown (admin-only)        |
+|  Omra Forms             -> Add "Assign To" dropdown (admin-only)        |
+|  Dashboard              -> Add assignee badges to recent commands       |
+|  Tables                 -> Show "by [name]" attribution in rows         |
+|  Translations           -> Add assignment keys (FR/AR)                  |
++-------------------------------------------------------------------------+
 ```
 
 ---
 
-## Database Schema
+## Database Schema Changes
 
-### New Table: `client_invoices`
+### Migration: Add `assignedTo` Column
 
-| Column | Type | Description |
-|--------|------|-------------|
-| `id` | UUID (PK) | Primary key |
-| `invoiceNumber` | VARCHAR(50) | Auto-generated reference (e.g., PRO-20260204-001, FAC-20260204-001) |
-| `type` | ENUM | `proforma` or `finale` |
-| `status` | ENUM | `brouillon`, `envoyee`, `payee`, `annulee` |
-| `commandId` | UUID (nullable, FK) | Optional link to Commands table |
-| `clientName` | VARCHAR(255) | Client full name |
-| `clientPhone` | VARCHAR(50) | Client phone number |
-| `clientEmail` | VARCHAR(255) | Optional email |
-| `serviceName` | VARCHAR(255) | Service description |
-| `serviceType` | VARCHAR(50) | Type of service (visa, ticket, etc.) |
-| `destination` | VARCHAR(255) | Travel destination |
-| `totalAmount` | DECIMAL(10,2) | Invoice total (DZD) |
-| `paidAmount` | DECIMAL(10,2) | Amount already paid |
-| `invoiceDate` | DATE | Invoice issue date |
-| `dueDate` | DATE | Payment due date (optional) |
-| `notes` | TEXT | Additional notes |
-| `createdBy` | UUID (FK) | Employee who created the invoice |
-| `createdAt` | TIMESTAMP | Creation timestamp |
-| `updatedAt` | TIMESTAMP | Last update timestamp |
+| Table | Column | Type | Description |
+|-------|--------|------|-------------|
+| `commands` | `assignedTo` | UUID (nullable) | FK to users.id - Employee responsible |
+| `omra_orders` | `assignedTo` | UUID (nullable) | FK to users.id - Employee responsible |
+| `omra_visas` | `assignedTo` | UUID (nullable) | FK to users.id - Employee responsible |
 
-### Enums
-- `client_invoice_type_enum`: `proforma`, `finale`
-- `client_invoice_status_enum`: `brouillon`, `envoyee`, `payee`, `annulee`
+### Migration SQL
+
+```sql
+-- Add assignedTo to commands
+ALTER TABLE commands ADD COLUMN "assignedTo" UUID;
+ALTER TABLE commands ADD CONSTRAINT "FK_commands_assignedTo" 
+  FOREIGN KEY ("assignedTo") REFERENCES users(id) ON DELETE SET NULL;
+CREATE INDEX "IDX_commands_assignedTo" ON commands("assignedTo");
+
+-- Add assignedTo to omra_orders  
+ALTER TABLE omra_orders ADD COLUMN "assignedTo" UUID;
+ALTER TABLE omra_orders ADD CONSTRAINT "FK_omra_orders_assignedTo"
+  FOREIGN KEY ("assignedTo") REFERENCES users(id) ON DELETE SET NULL;
+CREATE INDEX "IDX_omra_orders_assignedTo" ON omra_orders("assignedTo");
+
+-- Add assignedTo to omra_visas
+ALTER TABLE omra_visas ADD COLUMN "assignedTo" UUID;
+ALTER TABLE omra_visas ADD CONSTRAINT "FK_omra_visas_assignedTo"
+  FOREIGN KEY ("assignedTo") REFERENCES users(id) ON DELETE SET NULL;
+CREATE INDEX "IDX_omra_visas_assignedTo" ON omra_visas("assignedTo");
+```
 
 ---
 
 ## Backend Implementation
 
-### 1. Migration File
-**File:** `server/src/database/migrations/1770300000000-AddClientInvoices.ts`
+### 1. New Migration File
 
-Creates the `client_invoices` table with enums, foreign keys to `commands` and `users`, and performance indexes.
+**File:** `server/src/database/migrations/1770400000000-AddAssignedToFields.ts`
 
-### 2. Entity
-**File:** `server/src/client-invoices/entities/client-invoice.entity.ts`
+TypeORM migration to add `assignedTo` columns to all three tables with foreign key constraints and indexes.
 
-TypeORM entity with:
-- Enum types for `type` and `status`
-- ManyToOne relations to `User` (creator) and `Command` (optional)
-- Decimal fields for financial amounts
+### 2. Entity Updates
 
-### 3. DTOs
-**Files:**
-- `server/src/client-invoices/dto/create-client-invoice.dto.ts`
-- `server/src/client-invoices/dto/update-client-invoice.dto.ts`
+**Command Entity** (`server/src/commands/entities/command.entity.ts`):
+Add new column and relation:
+```typescript
+@Column({ nullable: true })
+assignedTo: string;
 
-Validation decorators for all fields with class-validator.
+@ManyToOne(() => User, { nullable: true })
+@JoinColumn({ name: 'assignedTo' })
+assignee: User;
+```
 
-### 4. Service
-**File:** `server/src/client-invoices/client-invoices.service.ts`
+**OmraOrder Entity** (`server/src/omra/entities/omra-order.entity.ts`):
+Same pattern - add `assignedTo` column and `assignee` relation.
 
-Key methods:
-- `findAll(user)`: Returns all invoices for admin, only own invoices for employees
-- `findOne(id, user)`: With ownership check
-- `create(dto, userId)`: Auto-generates invoice number based on type
-- `update(id, dto, user)`: Ownership validation for employees
-- `remove(id)`: Admin-only deletion
-- `getStats(user)`: Role-aware statistics
-- `findByCommand(commandId, user)`: Get invoices linked to a command
+**OmraVisa Entity** (`server/src/omra/entities/omra-visa.entity.ts`):
+Same pattern - add `assignedTo` column and `assignee` relation.
 
-### 5. Controller
-**File:** `server/src/client-invoices/client-invoices.controller.ts`
+### 3. DTO Updates
 
-Endpoints:
-- `GET /client-invoices` - List with filters
-- `GET /client-invoices/stats` - Dashboard statistics
-- `GET /client-invoices/:id` - Single invoice
-- `GET /client-invoices/command/:commandId` - Invoices by command
-- `POST /client-invoices` - Create new invoice
-- `POST /client-invoices/from-command/:commandId` - Create from command data
-- `PATCH /client-invoices/:id` - Update invoice
-- `DELETE /client-invoices/:id` - Delete (admin only)
+**CreateCommandDto** (`server/src/commands/dto/create-command.dto.ts`):
+```typescript
+@IsUUID()
+@IsOptional()
+assignedTo?: string;
+```
 
-### 6. Module
-**File:** `server/src/client-invoices/client-invoices.module.ts`
+**CreateOmraOrderDto** (`server/src/omra/dto/create-omra-order.dto.ts`):
+```typescript
+@IsUUID()
+@IsOptional()
+assignedTo?: string;
+```
 
-Registers entity, controller, service, and imports User/Command entities for relations.
+**CreateOmraVisaDto** (`server/src/omra/dto/create-omra-visa.dto.ts`):
+```typescript
+@IsUUID()
+@IsOptional()
+assignedTo?: string;
+```
 
-### 7. App Module Update
-**File:** `server/src/app.module.ts`
+### 4. Service Logic Updates
 
-Import `ClientInvoicesModule`.
+**CommandsService** (`server/src/commands/commands.service.ts`):
+Update query builder to include `assignee` relation and modify access control:
+```typescript
+// Add to query builder
+.leftJoinAndSelect('command.assignee', 'assignee')
+
+// Update employee filtering logic
+if (createdBy) {
+  // Employee sees commands where they created it OR it's assigned to them
+  queryBuilder.andWhere(
+    '(command.createdBy = :userId OR command.assignedTo = :userId)',
+    { userId: createdBy }
+  );
+}
+```
+
+**OmraService** (`server/src/omra/omra.service.ts`):
+Apply same pattern for orders and visas:
+- Add `assignee` relation to query builders
+- Update filtering to include `OR assignedTo = :userId`
+
+### 5. New Employees Endpoint
+
+**UsersController** (`server/src/users/users.controller.ts`):
+```typescript
+@Get('employees')
+@UseGuards(JwtAuthGuard)
+async getActiveEmployees(): Promise<User[]> {
+  return this.usersService.findActiveEmployees();
+}
+```
+
+**UsersService** (`server/src/users/users.service.ts`):
+```typescript
+async findActiveEmployees(): Promise<User[]> {
+  return this.usersRepository.find({
+    where: { role: UserRole.EMPLOYEE, isActive: true },
+    select: ['id', 'firstName', 'lastName', 'email'],
+    order: { firstName: 'ASC' },
+  });
+}
+```
 
 ---
 
 ## Frontend Implementation
 
-### 1. Types
-**File:** `src/types/index.ts` (additions)
+### 1. Types Update
 
+**File:** `src/types/index.ts`
+
+Add to Command interface:
 ```typescript
-export type ClientInvoiceType = 'proforma' | 'finale';
-export type ClientInvoiceStatus = 'brouillon' | 'envoyee' | 'payee' | 'annulee';
-
-export interface ClientInvoice {
-  id: string;
-  invoiceNumber: string;
-  type: ClientInvoiceType;
-  status: ClientInvoiceStatus;
-  commandId?: string;
-  command?: Command;
-  clientName: string;
-  clientPhone?: string;
-  clientEmail?: string;
-  serviceName: string;
-  serviceType?: string;
-  destination?: string;
-  totalAmount: number;
-  paidAmount: number;
-  invoiceDate: Date;
-  dueDate?: Date;
-  notes?: string;
-  createdBy: string;
-  creator?: User;
-  createdAt: Date;
-  updatedAt: Date;
+export interface Command {
+  // ... existing fields
+  assignedTo?: string;
+  assignee?: User;
 }
 ```
 
-### 2. API Client
-**File:** `src/lib/api.ts` (additions)
-
-New DTOs and methods:
-- `CreateClientInvoiceDto`, `UpdateClientInvoiceDto`, `ClientInvoiceFilters`
-- `getClientInvoices(filters?)`, `getClientInvoice(id)`, `getClientInvoiceStats()`
-- `createClientInvoice(dto)`, `createClientInvoiceFromCommand(commandId, type)`
-- `updateClientInvoice(id, dto)`, `deleteClientInvoice(id)`
-
-### 3. React Query Hooks
-**File:** `src/hooks/useClientInvoices.ts`
-
-Hooks with toast notifications:
-- `useClientInvoices(filters?)` - List invoices
-- `useClientInvoice(id)` - Single invoice
-- `useClientInvoiceStats(enabled?)` - Statistics (admin-conditional)
-- `useCreateClientInvoice()` - Create mutation
-- `useCreateClientInvoiceFromCommand()` - Create from command
-- `useUpdateClientInvoice()` - Update mutation
-- `useDeleteClientInvoice()` - Delete mutation
-
-### 4. Invoices Page
-**File:** `src/pages/InvoicesPage.tsx`
-
-Full-featured page with:
-- Stats cards (total invoices, pending, paid amounts)
-- Filter bar (type, status, date range, search)
-- Invoices table with color-coded statuses
-- Create/Edit dialog with form validation
-- Quick "Generate from Command" flow
-- PDF download action
-- Delete confirmation (admin only)
-- Bilingual support (FR/AR)
-
-### 5. Enhanced Invoice Generator
-**File:** `src/utils/invoiceGenerator.ts` (modifications)
-
-Add:
-- `invoiceType: 'proforma' | 'finale'` parameter
-- Different header titles: "FACTURE PROFORMA" vs "FACTURE"
-- Proforma watermark/notice: "Ceci est un devis, pas une facture officielle"
-- Conditional footer based on type
-
-### 6. Sidebar Navigation
-**File:** `src/components/layout/AppSidebar.tsx`
-
-Add to `mainMenuItems`:
+Add to OmraOrder interface:
 ```typescript
-{
-  titleKey: 'navigation.invoices',
-  url: '/factures',
-  icon: Receipt, // or FileText
+export interface OmraOrder {
+  // ... existing fields
+  assignedTo?: string;
+  assignee?: User;
 }
 ```
 
-### 7. Route Registration
-**File:** `src/App.tsx`
-
-Add protected route:
+Add to OmraVisa interface:
 ```typescript
-<Route
-  path="/factures"
-  element={
-    <ProtectedRoute>
-      <InvoicesPage />
-    </ProtectedRoute>
-  }
-/>
+export interface OmraVisa {
+  // ... existing fields
+  assignedTo?: string;
+  assignee?: User;
+}
 ```
 
-### 8. Skeleton Component
-**File:** `src/components/skeletons/InvoicesSkeleton.tsx`
+### 2. API Client Update
 
-Loading state with stats cards and table skeleton.
+**File:** `src/lib/api.ts`
 
-### 9. Translation Files
+Add to DTOs:
+```typescript
+export interface CreateCommandDto {
+  // ... existing fields
+  assignedTo?: string;
+}
 
-**French (`src/i18n/locales/fr/invoices.json`):**
+export interface CreateOmraOrderDto {
+  // ... existing fields
+  assignedTo?: string;
+}
+
+export interface CreateOmraVisaDto {
+  // ... existing fields
+  assignedTo?: string;
+}
+```
+
+Add new method:
+```typescript
+getActiveEmployees = (): Promise<User[]> =>
+  this.request('/users/employees');
+```
+
+### 3. New Hook
+
+**File:** `src/hooks/useUsers.ts`
+
+Add new hook:
+```typescript
+export const useActiveEmployees = () => {
+  return useQuery({
+    queryKey: ['users', 'employees'],
+    queryFn: () => api.getActiveEmployees(),
+  });
+};
+```
+
+### 4. CommandsPage Form Enhancement
+
+**File:** `src/pages/CommandsPage.tsx`
+
+Add "Assign To" dropdown (visible only to admins):
+- Import `useActiveEmployees` hook
+- Add `assignedTo` to form state
+- Render dropdown conditionally:
+```typescript
+{user?.role === 'admin' && (
+  <div className="space-y-2">
+    <Label>{t('form.assignTo')}</Label>
+    <Select
+      value={formData.assignedTo || ''}
+      onValueChange={(value) => setFormData({ ...formData, assignedTo: value || undefined })}
+    >
+      <SelectTrigger>
+        <SelectValue placeholder={t('form.selectEmployee')} />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value="">{t('form.unassigned')}</SelectItem>
+        {employees?.map((emp) => (
+          <SelectItem key={emp.id} value={emp.id}>
+            {emp.firstName} {emp.lastName}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  </div>
+)}
+```
+
+Add attribution badge in table rows:
+```typescript
+{command.assignee && (
+  <Badge variant="outline" className="text-xs ml-2 bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
+    {t('table.by')} {command.assignee.firstName}
+  </Badge>
+)}
+```
+
+### 5. OmraOrdersTab Form Enhancement
+
+**File:** `src/components/omra/OmraOrdersTab.tsx`
+
+Same pattern as Commands:
+- Import `useActiveEmployees` and `useAuth`
+- Add `assignedTo` to form state
+- Render "Assign To" dropdown for admins
+- Show attribution badge in table
+
+### 6. OmraVisasTab Form Enhancement
+
+**File:** `src/components/omra/OmraVisasTab.tsx`
+
+Same pattern as Orders and Commands.
+
+### 7. Dashboard Attribution Badges
+
+**File:** `src/pages/DashboardPage.tsx`
+
+Add assignee badge to recent commands list:
+```typescript
+{command.assignee && (
+  <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
+    {t('recentCommands.by')} {command.assignee.firstName}
+  </Badge>
+)}
+```
+
+### 8. Translation Updates
+
+**French (`src/i18n/locales/fr/commands.json`):**
 ```json
 {
-  "title": "Factures Clients",
-  "add": "Ajouter Facture",
-  "history": "Historique",
-  "type": {
-    "proforma": "Proforma",
-    "finale": "Finale"
-  },
-  "status": {
-    "brouillon": "Brouillon",
-    "envoyee": "Envoyée",
-    "payee": "Payée",
-    "annulee": "Annulée"
-  },
   "form": {
-    "invoiceType": "Type de facture",
-    "clientName": "Nom du client",
-    "totalAmount": "Montant total",
-    "paidAmount": "Montant payé",
-    "remaining": "Reste à payer"
+    "assignTo": "Attribuer à",
+    "selectEmployee": "Sélectionner un employé",
+    "unassigned": "Non attribué"
   },
-  "stats": {
-    "total": "Total Factures",
-    "pending": "En attente",
-    "paid": "Payées",
-    "totalRevenue": "Revenu Total"
-  },
-  "actions": {
-    "download": "Télécharger PDF",
-    "generateFromCommand": "Générer depuis commande"
+  "table": {
+    "by": "par",
+    "assignee": "Responsable"
   }
 }
 ```
 
-**Arabic (`src/i18n/locales/ar/invoices.json`):**
+**Arabic (`src/i18n/locales/ar/commands.json`):**
 ```json
 {
-  "title": "فواتير العملاء",
-  "add": "إضافة فاتورة",
-  "history": "السجل",
-  "type": {
-    "proforma": "فاتورة مبدئية",
-    "finale": "فاتورة نهائية"
+  "form": {
+    "assignTo": "تعيين إلى",
+    "selectEmployee": "اختر موظفاً",
+    "unassigned": "غير معين"
   },
-  "status": {
-    "brouillon": "مسودة",
-    "envoyee": "مرسلة",
-    "payee": "مدفوعة",
-    "annulee": "ملغاة"
+  "table": {
+    "by": "بواسطة",
+    "assignee": "المسؤول"
   }
 }
 ```
 
-**Common translations update:**
-Add `"invoices": "Factures"` to navigation in both FR and AR files.
+**French (`src/i18n/locales/fr/omra.json`):**
+```json
+{
+  "orders": {
+    "form": {
+      "assignTo": "Attribuer à",
+      "selectEmployee": "Sélectionner un employé",
+      "unassigned": "Non attribué"
+    },
+    "table": {
+      "by": "par"
+    }
+  },
+  "visas": {
+    "form": {
+      "assignTo": "Attribuer à",
+      "selectEmployee": "Sélectionner un employé",
+      "unassigned": "Non attribué"
+    },
+    "table": {
+      "by": "par"
+    }
+  }
+}
+```
 
-### 10. Commands Page Integration
-**File:** `src/pages/CommandsPage.tsx` (modifications)
+**Arabic (`src/i18n/locales/ar/omra.json`):**
+```json
+{
+  "orders": {
+    "form": {
+      "assignTo": "تعيين إلى",
+      "selectEmployee": "اختر موظفاً",
+      "unassigned": "غير معين"
+    },
+    "table": {
+      "by": "بواسطة"
+    }
+  },
+  "visas": {
+    "form": {
+      "assignTo": "تعيين إلى",
+      "selectEmployee": "اختر موظفاً",
+      "unassigned": "غير معين"
+    },
+    "table": {
+      "by": "بواسطة"
+    }
+  }
+}
+```
 
-Add "Generate Invoice" action to command dropdown menu:
-- Opens dialog to select invoice type (Proforma/Finale)
-- Creates invoice pre-filled with command data
-- Redirects to invoice detail or stays on page with success toast
+**French (`src/i18n/locales/fr/dashboard.json`):**
+```json
+{
+  "recentCommands": {
+    "by": "par"
+  }
+}
+```
+
+**Arabic (`src/i18n/locales/ar/dashboard.json`):**
+```json
+{
+  "recentCommands": {
+    "by": "بواسطة"
+  }
+}
+```
 
 ---
 
 ## Data Isolation & Access Control
 
+### Current Behavior
+| Entity | Employee View |
+|--------|---------------|
+| Commands | Only their own (createdBy) |
+| Omra Orders | Only their own (createdBy) |
+| Omra Visas | Only their own (createdBy) |
+
+### New Behavior
+| Entity | Employee View |
+|--------|---------------|
+| Commands | Created by them OR assigned to them |
+| Omra Orders | Created by them OR assigned to them |
+| Omra Visas | Created by them OR assigned to them |
+
+### Assignment Rules
 | Action | Admin | Employee |
 |--------|-------|----------|
-| View all invoices | ✅ | ❌ (own only) |
-| Create invoice | ✅ | ✅ |
-| Edit any invoice | ✅ | ❌ |
-| Edit own invoice | ✅ | ✅ |
-| Delete invoice | ✅ | ❌ |
-| View stats (global) | ✅ | ❌ |
-| View stats (personal) | ✅ | ✅ |
+| See "Assign To" dropdown | Yes | No |
+| Assign to any employee | Yes | N/A |
+| See assigned commands | All | Only theirs |
+| Edit assigned commands | All | Only theirs |
 
 ---
 
 ## UI/UX Design
 
-### Color Scheme (matching client sketch)
-- **Add Invoice button**: Green (`bg-green-600`)
-- **History tab/button**: Light green (`bg-green-100`)
-- **Proforma badge**: Blue (`bg-blue-100 text-blue-800`)
-- **Finale badge**: Purple (`bg-purple-100 text-purple-800`)
-- **Status badges**: Yellow (pending), Green (paid), Red (cancelled)
+### Assignment Dropdown Styling
+- Positioned in the form after client/service selection
+- Uses existing Shadcn Select component
+- Admin-only visibility (conditional rendering)
+- Placeholder: "Sélectionner un employé" / "اختر موظفاً"
+- First option: "Non attribué" / "غير معين" (empty value)
 
-### Invoice Table Columns
-1. N° Facture (invoiceNumber)
-2. Type (proforma/finale badge)
-3. Client
-4. Service
-5. Montant
-6. Payé
-7. Reste (color-coded: red if > 0, green if 0)
-8. Date
-9. Statut
-10. Actions (view, edit, download PDF, delete)
+### Attribution Badge Design
+- Small outline badge with light blue background
+- Format: "par [FirstName]" / "بواسطة [FirstName]"
+- Positioned next to client name or status in tables
+- Consistent styling across all views
+
+### Dashboard Integration
+- Badge appears in "Recent Commands" section
+- Shows assignee for each command with clear visual distinction
+- Maintains existing card layout
 
 ---
 
 ## Files to Create/Modify
 
-### New Files (14)
-1. `server/src/database/migrations/1770300000000-AddClientInvoices.ts`
-2. `server/src/client-invoices/client-invoices.module.ts`
-3. `server/src/client-invoices/client-invoices.controller.ts`
-4. `server/src/client-invoices/client-invoices.service.ts`
-5. `server/src/client-invoices/entities/client-invoice.entity.ts`
-6. `server/src/client-invoices/dto/create-client-invoice.dto.ts`
-7. `server/src/client-invoices/dto/update-client-invoice.dto.ts`
-8. `src/hooks/useClientInvoices.ts`
-9. `src/pages/InvoicesPage.tsx`
-10. `src/components/skeletons/InvoicesSkeleton.tsx`
-11. `src/i18n/locales/fr/invoices.json`
-12. `src/i18n/locales/ar/invoices.json`
+### New Files (1)
+1. `server/src/database/migrations/1770400000000-AddAssignedToFields.ts`
 
-### Modified Files (7)
-1. `server/src/app.module.ts` - Import ClientInvoicesModule
-2. `src/types/index.ts` - Add ClientInvoice types
-3. `src/lib/api.ts` - Add API methods
-4. `src/App.tsx` - Add /factures route
-5. `src/components/layout/AppSidebar.tsx` - Add navigation item
-6. `src/utils/invoiceGenerator.ts` - Enhance for dual types
-7. `src/i18n/index.ts` - Register invoices namespace
-8. `src/i18n/locales/fr/common.json` - Add navigation.invoices
-9. `src/i18n/locales/ar/common.json` - Add navigation.invoices
+### Modified Backend Files (8)
+1. `server/src/commands/entities/command.entity.ts`
+2. `server/src/commands/dto/create-command.dto.ts`
+3. `server/src/commands/commands.service.ts`
+4. `server/src/omra/entities/omra-order.entity.ts`
+5. `server/src/omra/entities/omra-visa.entity.ts`
+6. `server/src/omra/dto/create-omra-order.dto.ts`
+7. `server/src/omra/dto/create-omra-visa.dto.ts`
+8. `server/src/omra/omra.service.ts`
+9. `server/src/users/users.controller.ts`
+10. `server/src/users/users.service.ts`
+
+### Modified Frontend Files (11)
+1. `src/types/index.ts`
+2. `src/lib/api.ts`
+3. `src/hooks/useUsers.ts`
+4. `src/pages/CommandsPage.tsx`
+5. `src/components/omra/OmraOrdersTab.tsx`
+6. `src/components/omra/OmraVisasTab.tsx`
+7. `src/pages/DashboardPage.tsx`
+8. `src/i18n/locales/fr/commands.json`
+9. `src/i18n/locales/ar/commands.json`
+10. `src/i18n/locales/fr/omra.json`
+11. `src/i18n/locales/ar/omra.json`
+12. `src/i18n/locales/fr/dashboard.json`
+13. `src/i18n/locales/ar/dashboard.json`
 
 ---
 
 ## Implementation Order
 
-1. **Backend First**
-   - Migration → Entity → DTOs → Service → Controller → Module → App integration
-   
-2. **Frontend Core**
-   - Types → API Client → Hooks → Page → Skeleton
-   
-3. **Integration**
-   - Sidebar → Routes → Translations → PDF Generator enhancements
+1. **Database First**
+   - Create migration for `assignedTo` columns
+   - Update entities with new fields and relations
 
-4. **Polish**
-   - Commands page integration → Testing → RTL layout verification
+2. **Backend Services**
+   - Add employees endpoint to users module
+   - Update DTOs with `assignedTo` validation
+   - Modify service methods to include `assignee` relation
+   - Update access control logic (OR-based filtering)
+
+3. **Frontend Core**
+   - Update types with `assignedTo`/`assignee`
+   - Add API method for employees
+   - Add `useActiveEmployees` hook
+
+4. **UI Integration**
+   - Add assignment dropdowns to all forms
+   - Add attribution badges to tables
+   - Update dashboard with badges
+   - Update translations (FR/AR)
+
+5. **Testing**
+   - Verify admin can assign commands
+   - Verify employee sees assigned commands in their dashboard
+   - Test dashboard badge display
+   - Verify bilingual support (FR/AR) and RTL layout
+
