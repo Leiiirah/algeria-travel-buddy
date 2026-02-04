@@ -18,7 +18,7 @@ import { CreateInternalTaskDto } from './dto/create-internal-task.dto';
 import { UpdateInternalTaskDto } from './dto/update-internal-task.dto';
 import { InternalTask } from './entities/internal-task.entity';
 
-@Controller('api/internal-tasks')
+@Controller('internal-tasks')
 @UseGuards(JwtAuthGuard)
 export class InternalTasksController {
   constructor(private readonly tasksService: InternalTasksService) {}
