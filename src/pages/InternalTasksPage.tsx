@@ -90,7 +90,7 @@ export default function InternalTasksPage() {
   const dateLocale = i18n.language === 'ar' ? ar : fr;
 
   const { data: tasks, isLoading: tasksLoading } = useInternalTasks();
-  const { data: stats, isLoading: statsLoading } = useInternalTaskStats();
+  const { data: stats, isLoading: statsLoading } = useInternalTaskStats(isAdmin);
   const { data: users } = useUsers();
   const createTask = useCreateInternalTask();
   const updateTask = useUpdateInternalTask();
