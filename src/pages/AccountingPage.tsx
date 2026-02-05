@@ -63,11 +63,14 @@ import { useServices } from '@/hooks/useServices';
 import { AccountingSkeleton } from '@/components/skeletons/AccountingSkeleton';
 import { ErrorState } from '@/components/ui/error-state';
 import { EmptyState } from '@/components/ui/empty-state';
+import { useAuth } from '@/contexts/AuthContext';
+import EmployeeCaisseTable from '@/components/accounting/EmployeeCaisseTable';
 
 const AccountingPage = () => {
   const { t, i18n } = useTranslation('accounting');
   const { t: tCommon } = useTranslation('common');
   const navigate = useNavigate();
+  const { isAdmin } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
   const [filters, setFilters] = useState<PaymentFilters>({});
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -215,6 +218,9 @@ const AccountingPage = () => {
           <TabsTrigger value="payments">{t('tabs.payments')}</TabsTrigger>
           <TabsTrigger value="unpaid">{t('tabs.unpaid')}</TabsTrigger>
           <TabsTrigger value="reports">{t('tabs.reports')}</TabsTrigger>
+          {isAdmin && (
+            <TabsTrigger value="caisses">{t('tabs.caisses')}</TabsTrigger>
+          )}
         </TabsList>
 
         <TabsContent value="payments" className="mt-4">
@@ -514,6 +520,12 @@ const AccountingPage = () => {
             </CardContent>
           </Card>
         </TabsContent>
+
+        {isAdmin && (
+          <TabsContent value="caisses" className="mt-4">
+            <EmployeeCaisseTable />
+          </TabsContent>
+        )}
       </Tabs>
     </DashboardLayout>
   );

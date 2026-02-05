@@ -13,7 +13,8 @@
   "tabs": {
     "payments": "Paiements",
     "unpaid": "Impayés",
-    "reports": "Rapports"
+    "reports": "Rapports",
+    "caisses": "Caisses"
   },
   "payments": {
     "title": "Historique des paiements",
@@ -82,5 +83,24 @@
   "actions": {
     "newPayment": "Enregistrer un paiement",
     "saving": "Enregistrement..."
+  },
+  "caisses": {
+    "title": "Caisse par employé",
+    "subtitle": "Répartition financière par employé assigné",
+    "table": {
+      "employee": "Employé",
+      "caisse": "Caisse",
+      "impayes": "Impayés",
+      "benefices": "Bénéfices",
+      "commands": "Dossiers"
+    },
+    "global": {
+      "title": "Total Agence",
+      "description": "Somme de toutes les caisses employés"
+    },
+    "empty": {
+      "title": "Aucune donnée",
+      "description": "Aucune commande assignée aux employés"
+    }
   }
 }

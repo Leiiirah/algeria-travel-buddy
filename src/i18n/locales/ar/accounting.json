@@ -13,7 +13,8 @@
   "tabs": {
     "payments": "المدفوعات",
     "unpaid": "غير مدفوعة",
-    "reports": "التقارير"
+    "reports": "التقارير",
+    "caisses": "الصناديق"
   },
   "payments": {
     "title": "سجل المدفوعات",
@@ -82,5 +83,24 @@
   "actions": {
     "newPayment": "تسجيل دفعة",
     "saving": "جاري الحفظ..."
+  },
+  "caisses": {
+    "title": "صندوق كل موظف",
+    "subtitle": "التوزيع المالي حسب الموظف المعين",
+    "table": {
+      "employee": "الموظف",
+      "caisse": "الصندوق",
+      "impayes": "غير المدفوع",
+      "benefices": "الأرباح",
+      "commands": "الملفات"
+    },
+    "global": {
+      "title": "إجمالي الوكالة",
+      "description": "مجموع صناديق جميع الموظفين"
+    },
+    "empty": {
+      "title": "لا توجد بيانات",
+      "description": "لا توجد طلبات معينة للموظفين"
+    }
   }
 }

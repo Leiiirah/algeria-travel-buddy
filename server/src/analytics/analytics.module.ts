@@ -6,9 +6,12 @@ import { Command } from '../commands/entities/command.entity';
 import { Payment } from '../payments/entities/payment.entity';
 import { Supplier } from '../suppliers/entities/supplier.entity';
 import { SupplierTransaction } from '../supplier-transactions/entities/supplier-transaction.entity';
+import { OmraOrder } from '../omra/entities/omra-order.entity';
+import { OmraVisa } from '../omra/entities/omra-visa.entity';
+import { User } from '../users/entities/user.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Command, Payment, Supplier, SupplierTransaction])],
+  imports: [TypeOrmModule.forFeature([Command, Payment, Supplier, SupplierTransaction, OmraOrder, OmraVisa, User])],
   controllers: [AnalyticsController],
   providers: [AnalyticsService],
 })

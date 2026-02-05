@@ -1,4 +1,4 @@
-import { Controller, Get, Query, UseGuards, Request, Param } from '@nestjs/common';
+import { Controller, Get, Query, UseGuards, Request, Param, ForbiddenException } from '@nestjs/common';
 import { AnalyticsService } from './analytics.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
@@ -35,5 +35,14 @@ export class AnalyticsController {
       return this.analyticsService.getEmployeeCommandStats(req.user.id);
     }
     return this.analyticsService.getEmployeeCommandStats(id);
+  }
+
+  @Get('employee-caisses')
+  getEmployeeCaisseStats(@Request() req: any) {
+    // Admin only endpoint
+    if (req.user.role !== 'admin') {
+      throw new ForbiddenException('Admin access required');
+    }
+    return this.analyticsService.getEmployeeCaisseStats();
   }
 }

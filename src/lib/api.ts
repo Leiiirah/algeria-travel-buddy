@@ -1015,6 +1015,26 @@ class ApiClient {
   getCommandsByEmployee = (employeeId: string): Promise<PaginatedResponse<Command>> =>
     this.request(`/commands/by-employee/${employeeId}`);
 
+  // Employee caisse stats (admin only)
+  getEmployeeCaisseStats = (): Promise<{
+    employees: {
+      employeeId: string;
+      firstName: string;
+      lastName: string;
+      totalCaisse: number;
+      totalImpayes: number;
+      totalBenefices: number;
+      commandCount: number;
+    }[];
+    global: {
+      totalCaisse: number;
+      totalImpayes: number;
+      totalBenefices: number;
+      totalCommands: number;
+    };
+  }> =>
+    this.request('/analytics/employee-caisses');
+
   // ==================== SEARCH ====================
 
   search = (query: string, limit?: number): Promise<SearchResult[]> =>
