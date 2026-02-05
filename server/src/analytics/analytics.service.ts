@@ -5,6 +5,9 @@ import { Command } from '../commands/entities/command.entity';
 import { Payment } from '../payments/entities/payment.entity';
 import { Supplier } from '../suppliers/entities/supplier.entity';
 import { SupplierTransaction } from '../supplier-transactions/entities/supplier-transaction.entity';
+import { OmraOrder } from '../omra/entities/omra-order.entity';
+import { OmraVisa } from '../omra/entities/omra-visa.entity';
+import { User } from '../users/entities/user.entity';
 
 @Injectable()
 export class AnalyticsService {
@@ -13,6 +16,9 @@ export class AnalyticsService {
     @InjectRepository(Payment) private paymentsRepo: Repository<Payment>,
     @InjectRepository(Supplier) private suppliersRepo: Repository<Supplier>,
     @InjectRepository(SupplierTransaction) private transactionsRepo: Repository<SupplierTransaction>,
+    @InjectRepository(OmraOrder) private omraOrdersRepo: Repository<OmraOrder>,
+    @InjectRepository(OmraVisa) private omraVisasRepo: Repository<OmraVisa>,
+    @InjectRepository(User) private usersRepo: Repository<User>,
   ) { }
 
   async getDashboardStats(userId?: string, isAdmin?: boolean) {
@@ -166,6 +172,71 @@ export class AnalyticsService {
         en_cours: commands.filter(c => c.status === 'en_traitement').length,
         termine: commands.filter(c => c.status === 'retire').length,
       },
+    };
+  }
+
+  async getEmployeeCaisseStats() {
+    // Fetch all active employees
+    const employees = await this.usersRepo.find({ where: { isActive: true } });
+    
+    // Fetch all data sources with assignedTo
+    const [commands, omraOrders, omraVisas] = await Promise.all([
+      this.commandsRepo.find(),
+      this.omraOrdersRepo.find(),
+      this.omraVisasRepo.find(),
+    ]);
+
+    // Calculate stats per employee
+    const employeeStats = employees.map(employee => {
+      // Filter items assigned to this employee
+      const assignedCommands = commands.filter(c => c.assignedTo === employee.id);
+      const assignedOmraOrders = omraOrders.filter(o => o.assignedTo === employee.id);
+      const assignedOmraVisas = omraVisas.filter(v => v.assignedTo === employee.id);
+
+      // Calculate totals from all sources
+      const commandCaisse = assignedCommands.reduce((sum, c) => sum + Number(c.amountPaid || 0), 0);
+      const omraOrderCaisse = assignedOmraOrders.reduce((sum, o) => sum + Number(o.amountPaid || 0), 0);
+      const omraVisaCaisse = assignedOmraVisas.reduce((sum, v) => sum + Number(v.amountPaid || 0), 0);
+
+      const commandImpayes = assignedCommands.reduce((sum, c) => 
+        sum + Math.max(0, Number(c.sellingPrice || 0) - Number(c.amountPaid || 0)), 0);
+      const omraOrderImpayes = assignedOmraOrders.reduce((sum, o) => 
+        sum + Math.max(0, Number(o.sellingPrice || 0) - Number(o.amountPaid || 0)), 0);
+      const omraVisaImpayes = assignedOmraVisas.reduce((sum, v) => 
+        sum + Math.max(0, Number(v.sellingPrice || 0) - Number(v.amountPaid || 0)), 0);
+
+      const commandBenefices = assignedCommands.reduce((sum, c) => 
+        sum + (Number(c.sellingPrice || 0) - Number(c.buyingPrice || 0)), 0);
+      const omraOrderBenefices = assignedOmraOrders.reduce((sum, o) => 
+        sum + (Number(o.sellingPrice || 0) - Number(o.buyingPrice || 0)), 0);
+      const omraVisaBenefices = assignedOmraVisas.reduce((sum, v) => 
+        sum + (Number(v.sellingPrice || 0) - Number(v.buyingPrice || 0)), 0);
+
+      return {
+        employeeId: employee.id,
+        firstName: employee.firstName,
+        lastName: employee.lastName,
+        totalCaisse: commandCaisse + omraOrderCaisse + omraVisaCaisse,
+        totalImpayes: commandImpayes + omraOrderImpayes + omraVisaImpayes,
+        totalBenefices: commandBenefices + omraOrderBenefices + omraVisaBenefices,
+        commandCount: assignedCommands.length + assignedOmraOrders.length + assignedOmraVisas.length,
+      };
+    });
+
+    // Filter out employees with no assigned items
+    const activeEmployeeStats = employeeStats.filter(e => e.commandCount > 0);
+
+    // Calculate global totals
+    const global = {
+      totalCaisse: activeEmployeeStats.reduce((sum, e) => sum + e.totalCaisse, 0),
+      totalImpayes: activeEmployeeStats.reduce((sum, e) => sum + e.totalImpayes, 0),
+      totalBenefices: activeEmployeeStats.reduce((sum, e) => sum + e.totalBenefices, 0),
+      totalCommands: activeEmployeeStats.reduce((sum, e) => sum + e.commandCount, 0),
+    };
+
+    return {
+      employees: activeEmployeeStats,
+      global,
     };
   }
 }

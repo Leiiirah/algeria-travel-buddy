@@ -36,3 +36,10 @@ export const useEmployeeStats = () => {
     queryFn: () => api.getEmployeeStats(),
   });
 };
+
+export const useEmployeeCaisseStats = () => {
+  return useQuery({
+    queryKey: ['analytics', 'employee-caisses'],
+    queryFn: () => api.getEmployeeCaisseStats(),
+  });
+};
