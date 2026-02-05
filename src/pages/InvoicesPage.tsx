@@ -67,6 +67,7 @@ import {
 import { generateClientInvoicePdf } from '@/utils/invoiceGenerator';
 import { ClientInvoice, ClientInvoiceType, ClientInvoiceStatus } from '@/types';
 import { CreateClientInvoiceDto, UpdateClientInvoiceDto, ClientInvoiceFilters } from '@/lib/api';
+import { TRAVEL_CLASSES, PAYMENT_METHODS } from '@/constants/agency';
 
 export default function InvoicesPage() {
   const { t, i18n } = useTranslation(['invoices', 'common']);
@@ -89,6 +90,9 @@ export default function InvoicesPage() {
     serviceName: '',
     totalAmount: 0,
     paidAmount: 0,
+    ticketPrice: 0,
+    agencyFees: 0,
+    validityHours: 48,
   });
 
   // Queries and mutations
@@ -119,6 +123,9 @@ export default function InvoicesPage() {
       serviceName: '',
       totalAmount: 0,
       paidAmount: 0,
+      ticketPrice: 0,
+      agencyFees: 0,
+      validityHours: 48,
     });
     setIsFormOpen(true);
   };
@@ -130,11 +137,21 @@ export default function InvoicesPage() {
       clientName: invoice.clientName,
       clientPhone: invoice.clientPhone || undefined,
       clientEmail: invoice.clientEmail || undefined,
+      clientPassport: invoice.clientPassport || undefined,
       serviceName: invoice.serviceName,
       serviceType: invoice.serviceType || undefined,
       destination: invoice.destination || undefined,
+      companyName: invoice.companyName || undefined,
+      departureDate: invoice.departureDate ? format(new Date(invoice.departureDate), 'yyyy-MM-dd') : undefined,
+      returnDate: invoice.returnDate ? format(new Date(invoice.returnDate), 'yyyy-MM-dd') : undefined,
+      travelClass: invoice.travelClass || undefined,
+      pnr: invoice.pnr || undefined,
+      ticketPrice: invoice.ticketPrice || 0,
+      agencyFees: invoice.agencyFees || 0,
       totalAmount: invoice.totalAmount,
       paidAmount: invoice.paidAmount,
+      paymentMethod: invoice.paymentMethod || undefined,
+      validityHours: invoice.validityHours || 48,
       notes: invoice.notes || undefined,
     });
     setIsFormOpen(true);
@@ -166,6 +183,7 @@ export default function InvoicesPage() {
       invoiceType: invoice.type,
       clientName: invoice.clientName,
       clientPhone: invoice.clientPhone || '',
+      clientPassport: invoice.clientPassport || '',
       invoiceDate: format(new Date(invoice.invoiceDate), 'dd/MM/yyyy'),
       totalAmount: invoice.totalAmount,
       paidAmount: invoice.paidAmount,
@@ -173,6 +191,15 @@ export default function InvoicesPage() {
       serviceName: invoice.serviceName,
       serviceType: invoice.serviceType || '',
       destination: invoice.destination || '',
+      companyName: invoice.companyName || '',
+      departureDate: invoice.departureDate ? format(new Date(invoice.departureDate), 'dd/MM/yyyy') : '',
+      returnDate: invoice.returnDate ? format(new Date(invoice.returnDate), 'dd/MM/yyyy') : '',
+      travelClass: invoice.travelClass || '',
+      pnr: invoice.pnr || '',
+      ticketPrice: invoice.ticketPrice || 0,
+      agencyFees: invoice.agencyFees || 0,
+      paymentMethod: invoice.paymentMethod || '',
+      validityHours: invoice.validityHours || 48,
       status: invoice.status,
       language: i18n.language as 'fr' | 'ar',
     });
@@ -468,10 +495,11 @@ export default function InvoicesPage() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>{t('form.clientPhone')}</Label>
+                  <Label>{t('form.clientPassport')}</Label>
                   <Input
-                    value={formData.clientPhone || ''}
-                    onChange={(e) => setFormData((prev) => ({ ...prev, clientPhone: e.target.value }))}
+                    value={formData.clientPassport || ''}
+                    onChange={(e) => setFormData((prev) => ({ ...prev, clientPassport: e.target.value }))}
+                    placeholder="P12345678"
                   />
                 </div>
               </div>
@@ -483,6 +511,7 @@ export default function InvoicesPage() {
                     value={formData.serviceName || ''}
                     onChange={(e) => setFormData((prev) => ({ ...prev, serviceName: e.target.value }))}
                     required
+                    placeholder={i18n.language === 'ar' ? 'تذكرة طيران' : "Billet d'avion"}
                   />
                 </div>
                 <div className="space-y-2">
@@ -490,6 +519,126 @@ export default function InvoicesPage() {
                   <Input
                     value={formData.destination || ''}
                     onChange={(e) => setFormData((prev) => ({ ...prev, destination: e.target.value }))}
+                    placeholder="ALG-IST"
+                  />
+                </div>
+              </div>
+
+              {/* Travel Details Section */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>{t('form.companyName')}</Label>
+                  <Input
+                    value={formData.companyName || ''}
+                    onChange={(e) => setFormData((prev) => ({ ...prev, companyName: e.target.value }))}
+                    placeholder="Turkish Airlines"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>{t('form.travelClass')}</Label>
+                  <Select
+                    value={formData.travelClass || ''}
+                    onValueChange={(value) => setFormData((prev) => ({ ...prev, travelClass: value }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder={t('form.travelClass')} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {TRAVEL_CLASSES.map((cls) => (
+                        <SelectItem key={cls.value} value={cls.value}>
+                          {i18n.language === 'ar' ? cls.labelAr : cls.labelFr}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>{t('form.departureDate')}</Label>
+                  <Input
+                    type="date"
+                    value={formData.departureDate || ''}
+                    onChange={(e) => setFormData((prev) => ({ ...prev, departureDate: e.target.value }))}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>{t('form.returnDate')}</Label>
+                  <Input
+                    type="date"
+                    value={formData.returnDate || ''}
+                    onChange={(e) => setFormData((prev) => ({ ...prev, returnDate: e.target.value }))}
+                  />
+                </div>
+              </div>
+
+              {/* PNR for final invoices only */}
+              {formData.type === 'finale' && (
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>{t('form.pnr')}</Label>
+                    <Input
+                      value={formData.pnr || ''}
+                      onChange={(e) => setFormData((prev) => ({ ...prev, pnr: e.target.value.toUpperCase() }))}
+                      placeholder="AB4K9Q"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>{t('form.paymentMethod')}</Label>
+                    <Select
+                      value={formData.paymentMethod || ''}
+                      onValueChange={(value) => setFormData((prev) => ({ ...prev, paymentMethod: value }))}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder={t('form.paymentMethod')} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {PAYMENT_METHODS.map((pm) => (
+                          <SelectItem key={pm.value} value={pm.value}>
+                            {i18n.language === 'ar' ? pm.labelAr : pm.labelFr}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              )}
+
+              {/* Financial Details */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>{t('form.ticketPrice')}</Label>
+                  <Input
+                    type="number"
+                    min={0}
+                    value={formData.ticketPrice || 0}
+                    onChange={(e) => {
+                      const ticketPrice = Number(e.target.value);
+                      const agencyFees = formData.agencyFees || 0;
+                      setFormData((prev) => ({
+                        ...prev,
+                        ticketPrice,
+                        totalAmount: ticketPrice + agencyFees,
+                      }));
+                    }}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>{t('form.agencyFees')}</Label>
+                  <Input
+                    type="number"
+                    min={0}
+                    value={formData.agencyFees || 0}
+                    onChange={(e) => {
+                      const agencyFees = Number(e.target.value);
+                      const ticketPrice = formData.ticketPrice || 0;
+                      setFormData((prev) => ({
+                        ...prev,
+                        agencyFees,
+                        totalAmount: ticketPrice + agencyFees,
+                      }));
+                    }}
                   />
                 </div>
               </div>
@@ -524,6 +673,21 @@ export default function InvoicesPage() {
                   />
                 </div>
               </div>
+
+              {/* Validity hours for proforma */}
+              {formData.type === 'proforma' && (
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>{t('form.validityHours')}</Label>
+                    <Input
+                      type="number"
+                      min={1}
+                      value={formData.validityHours || 48}
+                      onChange={(e) => setFormData((prev) => ({ ...prev, validityHours: Number(e.target.value) }))}
+                    />
+                  </div>
+                </div>
+              )}
 
               <div className="space-y-2">
                 <Label>{t('form.notes')}</Label>

@@ -75,6 +75,37 @@ export class ClientInvoice {
   @Column({ type: 'text', nullable: true })
   notes: string | null;
 
+  // New professional invoice fields
+  @Column({ type: 'varchar', length: 50, nullable: true })
+  clientPassport: string | null;
+
+  @Column({ type: 'varchar', length: 100, nullable: true })
+  companyName: string | null;
+
+  @Column({ type: 'date', nullable: true })
+  departureDate: Date | null;
+
+  @Column({ type: 'date', nullable: true })
+  returnDate: Date | null;
+
+  @Column({ type: 'varchar', length: 20, nullable: true })
+  pnr: string | null;
+
+  @Column({ type: 'varchar', length: 50, nullable: true })
+  travelClass: string | null;
+
+  @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true })
+  ticketPrice: number | null;
+
+  @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true })
+  agencyFees: number | null;
+
+  @Column({ type: 'varchar', length: 50, nullable: true })
+  paymentMethod: string | null;
+
+  @Column({ type: 'int', default: 48 })
+  validityHours: number;
+
   @Column({ type: 'uuid' })
   createdBy: string;
 

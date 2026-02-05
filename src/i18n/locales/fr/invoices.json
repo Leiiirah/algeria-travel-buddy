@@ -21,15 +21,25 @@
     "clientName": "Nom du client",
     "clientPhone": "Téléphone",
     "clientEmail": "Email",
+    "clientPassport": "N° Passeport",
     "serviceName": "Service",
     "serviceType": "Type de service",
     "destination": "Destination",
+    "companyName": "Compagnie",
+    "departureDate": "Date de départ",
+    "returnDate": "Date de retour",
+    "travelClass": "Classe",
+    "pnr": "PNR",
+    "ticketPrice": "Prix billet",
+    "agencyFees": "Frais agence",
     "totalAmount": "Montant total",
     "paidAmount": "Montant payé",
     "remaining": "Reste à payer",
     "invoiceDate": "Date de facture",
     "dueDate": "Date d'échéance",
-    "notes": "Notes"
+    "notes": "Notes",
+    "paymentMethod": "Mode de paiement",
+    "validityHours": "Validité (heures)"
   },
   "stats": {
     "total": "Total Factures",
@@ -79,6 +89,28 @@
   "pdf": {
     "proformaTitle": "FACTURE PROFORMA",
     "finaleTitle": "FACTURE",
-    "proformaNotice": "Ceci est un devis, pas une facture officielle"
+    "proformaNotice": "Ceci est une facture proforma, non valable pour la comptabilité",
+    "conditions": "Conditions",
+    "conditionPayment": "Paiement avant émission du billet",
+    "conditionValidity": "Validité de l'offre",
+    "hours": "heures",
+    "stampSignature": "Cachet et Signature",
+    "ticketIssued": "Billet émis et non remboursable",
+    "itinerary": "Itinéraire",
+    "service": "Prestation",
+    "totalHT": "Total HT",
+    "tva": "TVA (0%)",
+    "totalTTC": "Total TTC"
+  },
+  "travelClass": {
+    "economique": "Économique",
+    "affaires": "Affaires",
+    "premiere": "Première"
+  },
+  "paymentMethod": {
+    "especes": "Espèces",
+    "virement": "Virement",
+    "cheque": "Chèque",
+    "carte": "Carte bancaire"
   }
 }

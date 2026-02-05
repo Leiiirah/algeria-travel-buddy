@@ -465,6 +465,17 @@ export interface ClientInvoice {
   invoiceDate: Date;
   dueDate?: Date;
   notes?: string;
+  // New professional invoice fields
+  clientPassport?: string;
+  companyName?: string;
+  departureDate?: Date;
+  returnDate?: Date;
+  pnr?: string;
+  travelClass?: string;
+  ticketPrice?: number;
+  agencyFees?: number;
+  paymentMethod?: string;
+  validityHours?: number;
   createdBy: string;
   creator?: User;
   createdAt: Date;

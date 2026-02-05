@@ -390,6 +390,16 @@ export interface CreateClientInvoiceDto {
   invoiceDate?: string;
   dueDate?: string;
   notes?: string;
+  clientPassport?: string;
+  companyName?: string;
+  departureDate?: string;
+  returnDate?: string;
+  pnr?: string;
+  travelClass?: string;
+  ticketPrice?: number;
+  agencyFees?: number;
+  paymentMethod?: string;
+  validityHours?: number;
 }
 
 export interface UpdateClientInvoiceDto {
@@ -406,6 +416,16 @@ export interface UpdateClientInvoiceDto {
   invoiceDate?: string;
   dueDate?: string;
   notes?: string;
+  clientPassport?: string;
+  companyName?: string;
+  departureDate?: string;
+  returnDate?: string;
+  pnr?: string;
+  travelClass?: string;
+  ticketPrice?: number;
+  agencyFees?: number;
+  paymentMethod?: string;
+  validityHours?: number;
 }
 
 export interface ClientInvoiceFilters {

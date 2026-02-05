@@ -69,4 +69,47 @@ export class UpdateClientInvoiceDto {
   @IsOptional()
   @IsString()
   notes?: string;
+
+  @IsOptional()
+  @IsString()
+  clientPassport?: string;
+
+  @IsOptional()
+  @IsString()
+  companyName?: string;
+
+  @IsOptional()
+  @IsDateString()
+  departureDate?: string;
+
+  @IsOptional()
+  @IsDateString()
+  returnDate?: string;
+
+  @IsOptional()
+  @IsString()
+  pnr?: string;
+
+  @IsOptional()
+  @IsString()
+  travelClass?: string;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  ticketPrice?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  agencyFees?: number;
+
+  @IsOptional()
+  @IsString()
+  paymentMethod?: string;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(1)
+  validityHours?: number;
 }
