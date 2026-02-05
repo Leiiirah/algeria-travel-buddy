@@ -1,73 +1,193 @@
 
 
-# Fix: Add Client Full Name Field for "Billet Bateau" Service Type
+# Financial Management View: Employee Cash Register (Caisse par employé)
 
-## Problem
+## Overview
 
-When creating a new command and selecting "Billet Bateau" (boat ticket) service, no client name field is displayed. This happens because the service uses a custom service type code (e.g., `billet_bateau`) that doesn't match any of the hardcoded cases in the `renderServiceSpecificFields()` function, which only handles: `visa`, `residence`, `ticket`, and `dossier`.
+This feature adds a new "Caisse par employé" (Employee Cash Register) tab within the existing Accounting Page that provides administrators with a detailed breakdown of revenue, unpaid balances, and profits categorized by assigned employee.
 
-## Root Cause
+## Data Sources
 
-In `src/pages/CommandsPage.tsx`, the `renderServiceSpecificFields()` function (lines 427-542) uses a `switch` statement to determine which fields to render based on the service type. Any service type that doesn't match the four hardcoded cases falls through to `default: return null`, rendering no fields at all.
+The feature will aggregate financial data from three sources where `assignedTo` is set:
+1. **Commands** (`commands` table) - Visa commands with `assignedTo` field
+2. **Omra Orders** (`omra_orders` table) - with `assignedTo` field
+3. **Omra Visas** (`omra_visas` table) - with `assignedTo` field
 
+## Architecture
+
+```text
++---------------------+     +------------------------+     +------------------+
+| AccountingPage.tsx  | --> | useEmployeeCaisseStats | --> | API: /analytics/ |
+| (New Tab: Caisses)  |     | (New Hook)             |     | employee-caisses |
++---------------------+     +------------------------+     +------------------+
+                                                                   |
+                                                                   v
+                                                        +------------------+
+                                                        | AnalyticsService |
+                                                        | (Backend)        |
+                                                        +------------------+
+```
+
+## Implementation Details
+
+### 1. Backend: New Analytics Endpoint
+
+**File:** `server/src/analytics/analytics.service.ts`
+
+Add a new method `getEmployeeCaisseStats()` that:
+- Injects the `OmraOrder` and `OmraVisa` repositories (requires updating the module)
+- Fetches all active employees
+- For each employee, aggregates:
+  - **Caisse (Amount Paid)**: Sum of `amountPaid` from assigned commands + omra_orders + omra_visas
+  - **Impayés (Unpaid)**: Sum of (`sellingPrice` - `amountPaid`) from assigned items
+  - **Bénéfices (Profit)**: Sum of (`sellingPrice` - `buyingPrice`) from assigned items
+- Returns global totals and per-employee breakdown
+
+**File:** `server/src/analytics/analytics.module.ts`
+
+Update to import `OmraOrder` and `OmraVisa` entities.
+
+**File:** `server/src/analytics/analytics.controller.ts`
+
+Add new endpoint: `GET /analytics/employee-caisses`
+
+### 2. Frontend: API and Hook
+
+**File:** `src/lib/api.ts`
+
+Add new API method:
 ```typescript
-// Current logic
-const renderServiceSpecificFields = () => {
-  const serviceType = getServiceType(selectedService);
-  
-  switch (serviceType) {
-    case 'visa': ...
-    case 'residence': ...
-    case 'ticket': ...
-    case 'dossier': ...
-    default: return null; // Billet Bateau falls here!
-  }
+getEmployeeCaisseStats = (): Promise<EmployeeCaisseStats> =>
+  this.request('/analytics/employee-caisses');
+```
+
+**File:** `src/hooks/useAnalytics.ts`
+
+Add new hook:
+```typescript
+export const useEmployeeCaisseStats = () => {
+  return useQuery({
+    queryKey: ['analytics', 'employee-caisses'],
+    queryFn: () => api.getEmployeeCaisseStats(),
+  });
 };
 ```
 
-## Solution
+### 3. Type Definitions
 
-Modify the `default` case to render a generic "Client Full Name" field for any unhandled service types. This ensures that all services, including custom ones like "Billet Bateau", will at minimum display a client name field.
-
-### Changes Required
-
-**File: `src/pages/CommandsPage.tsx`**
-
-Update the `default` case in `renderServiceSpecificFields()` (around line 540):
+**File:** `src/lib/api.ts` (or `src/types/index.ts`)
 
 ```typescript
-default:
-  // Generic fallback for any other service types
-  return (
-    <div className="space-y-2">
-      <Label>{t('form.clientFullName')}</Label>
-      <Input
-        value={formData.clientFullName}
-        onChange={(e) => setFormData({ ...formData, clientFullName: e.target.value })}
-        placeholder={t('form.clientFullName')}
-      />
-    </div>
-  );
-```
+export interface EmployeeCaisse {
+  employeeId: string;
+  firstName: string;
+  lastName: string;
+  totalCaisse: number;      // Total amount paid (collected)
+  totalImpayes: number;     // Total unpaid balance
+  totalBenefices: number;   // Total profit
+  commandCount: number;     // Number of assigned commands
+}
 
-Also update the data payload construction for these generic types (around line 213):
-
-```typescript
-default:
-  // Generic fallback - just include clientFullName
-  data = {
-    ...baseData,
-    type: serviceType,
+export interface EmployeeCaisseStats {
+  employees: EmployeeCaisse[];
+  global: {
+    totalCaisse: number;
+    totalImpayes: number;
+    totalBenefices: number;
+    totalCommands: number;
   };
-  break;
+}
 ```
 
-And update the `handleEditCommand` function to handle generic types (around line 297):
+### 4. UI: New Tab in AccountingPage
 
+**File:** `src/pages/AccountingPage.tsx`
+
+Add a fourth tab "Caisses" to the existing Tabs component:
 ```typescript
-// After existing type checks, add fallback to load clientFullName
-if (!['visa', 'residence', 'ticket', 'dossier'].includes(command.data.type)) {
-  formUpdates.clientFullName = command.data.clientFullName || '';
+<TabsTrigger value="caisses">{t('tabs.caisses')}</TabsTrigger>
+```
+
+Add new TabsContent:
+```typescript
+<TabsContent value="caisses" className="mt-4">
+  <EmployeeCaisseTable />
+</TabsContent>
+```
+
+### 5. UI Component: EmployeeCaisseTable
+
+**File:** `src/components/accounting/EmployeeCaisseTable.tsx` (new file)
+
+A clean table component with:
+- **Header Row**: Employee | Caisse | Impayés | Bénéfices
+- **Employee Rows**: One row per active employee with color-coded badges
+- **Global Summary Row**: Highlighted row at the bottom with totals
+- Color coding:
+  - Caisse (paid): Green text
+  - Impayés (unpaid): Red/Warning text
+  - Bénéfices (profit): Blue/Info text
+- Employee avatar with initials + full name
+
+### 6. Translations
+
+**File:** `src/i18n/locales/fr/accounting.json`
+
+Add:
+```json
+{
+  "tabs": {
+    "caisses": "Caisses"
+  },
+  "caisses": {
+    "title": "Caisse par employé",
+    "subtitle": "Répartition financière par employé assigné",
+    "table": {
+      "employee": "Employé",
+      "caisse": "Caisse",
+      "impayes": "Impayés",
+      "benefices": "Bénéfices",
+      "commands": "Dossiers"
+    },
+    "global": {
+      "title": "Total Agence",
+      "description": "Somme de toutes les caisses employés"
+    },
+    "empty": {
+      "title": "Aucune donnée",
+      "description": "Aucune commande assignée aux employés"
+    }
+  }
+}
+```
+
+**File:** `src/i18n/locales/ar/accounting.json`
+
+Add Arabic translations:
+```json
+{
+  "tabs": {
+    "caisses": "الصناديق"
+  },
+  "caisses": {
+    "title": "صندوق كل موظف",
+    "subtitle": "التوزيع المالي حسب الموظف المعين",
+    "table": {
+      "employee": "الموظف",
+      "caisse": "الصندوق",
+      "impayes": "غير المدفوع",
+      "benefices": "الأرباح",
+      "commands": "الملفات"
+    },
+    "global": {
+      "title": "إجمالي الوكالة",
+      "description": "مجموع صناديق جميع الموظفين"
+    },
+    "empty": {
+      "title": "لا توجد بيانات",
+      "description": "لا توجد طلبات معينة للموظفين"
+    }
+  }
 }
 ```
 
@@ -75,19 +195,24 @@ if (!['visa', 'residence', 'ticket', 'dossier'].includes(command.data.type)) {
 
 | Aspect | Details |
 |--------|---------|
-| Files Modified | 1 (`src/pages/CommandsPage.tsx`) |
-| Lines Changed | ~15 lines |
-| Risk Level | Low |
-| Breaking Changes | None - existing types continue to work |
+| Files Created | 1 (EmployeeCaisseTable.tsx) |
+| Files Modified | 6 (analytics.service.ts, analytics.module.ts, analytics.controller.ts, api.ts, useAnalytics.ts, AccountingPage.tsx) + 2 translation files |
+| API Endpoints | 1 new: GET /analytics/employee-caisses |
+| Admin Only | Yes - tab only visible/accessible to admins |
+| RTL Support | Yes - follows existing patterns |
 
-## Behavior After Fix
+## Visual Design
 
-| Service Type Code | Fields Displayed |
-|-------------------|------------------|
-| `visa` | First Name, Last Name, Passport Upload |
-| `residence` | Client Full Name, Hotel Name |
-| `ticket` | Client Full Name, Company |
-| `dossier` | Client Full Name, Description |
-| `billet_bateau` (NEW) | Client Full Name |
-| Any other custom type | Client Full Name |
+The table will use existing Shadcn/UI components with:
+- `Table`, `TableHeader`, `TableBody`, `TableRow`, `TableCell` components
+- Employee avatar using the same pattern as sidebar (initials in colored circle)
+- `Badge` components for employee names with subtle background colors
+- `formatDZD()` utility for currency formatting
+- Highlighted global summary row using `bg-muted` or similar styling
+
+## Access Control
+
+This feature is admin-only. The tab will:
+1. Only appear in the Tabs list for admin users
+2. The API endpoint will verify admin role before returning data
 
