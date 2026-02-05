@@ -66,4 +66,52 @@ export class CreateClientInvoiceDto {
   @IsOptional()
   @IsString()
   notes?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  clientPassport?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  companyName?: string;
+
+  @IsOptional()
+  @IsDateString()
+  departureDate?: string;
+
+  @IsOptional()
+  @IsDateString()
+  returnDate?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(20)
+  pnr?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  travelClass?: string;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  ticketPrice?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  agencyFees?: number;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  paymentMethod?: string;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(1)
+  validityHours?: number;
 }

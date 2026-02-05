@@ -21,15 +21,25 @@
     "clientName": "اسم العميل",
     "clientPhone": "الهاتف",
     "clientEmail": "البريد الإلكتروني",
+    "clientPassport": "رقم جواز السفر",
     "serviceName": "الخدمة",
     "serviceType": "نوع الخدمة",
     "destination": "الوجهة",
+    "companyName": "الشركة",
+    "departureDate": "تاريخ المغادرة",
+    "returnDate": "تاريخ العودة",
+    "travelClass": "الدرجة",
+    "pnr": "رقم الحجز (PNR)",
+    "ticketPrice": "سعر التذكرة",
+    "agencyFees": "رسوم الوكالة",
     "totalAmount": "المبلغ الإجمالي",
     "paidAmount": "المبلغ المدفوع",
     "remaining": "المتبقي",
     "invoiceDate": "تاريخ الفاتورة",
     "dueDate": "تاريخ الاستحقاق",
-    "notes": "ملاحظات"
+    "notes": "ملاحظات",
+    "paymentMethod": "طريقة الدفع",
+    "validityHours": "الصلاحية (ساعات)"
   },
   "stats": {
     "total": "إجمالي الفواتير",
@@ -79,6 +89,28 @@
   "pdf": {
     "proformaTitle": "فاتورة مبدئية",
     "finaleTitle": "فاتورة",
-    "proformaNotice": "هذا عرض سعر وليس فاتورة رسمية"
+    "proformaNotice": "هذه فاتورة مبدئية، غير صالحة للمحاسبة",
+    "conditions": "الشروط",
+    "conditionPayment": "الدفع قبل إصدار التذكرة",
+    "conditionValidity": "صلاحية العرض",
+    "hours": "ساعة",
+    "stampSignature": "الختم والتوقيع",
+    "ticketIssued": "تذكرة صادرة وغير قابلة للاسترداد",
+    "itinerary": "المسار",
+    "service": "الخدمة",
+    "totalHT": "المجموع قبل الضريبة",
+    "tva": "ضريبة القيمة المضافة (0%)",
+    "totalTTC": "المجموع الكلي"
+  },
+  "travelClass": {
+    "economique": "اقتصادية",
+    "affaires": "رجال أعمال",
+    "premiere": "الدرجة الأولى"
+  },
+  "paymentMethod": {
+    "especes": "نقدي",
+    "virement": "تحويل بنكي",
+    "cheque": "شيك",
+    "carte": "بطاقة بنكية"
   }
 }
