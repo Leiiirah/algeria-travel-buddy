@@ -1,18 +1,12 @@
  // Agency information for official documents
  export const AGENCY_INFO = {
    name: 'Al Hikma Voyages',
-   nameAr: 'الحكمة لسياحة و الأسفار',
    legalName: 'EL HIKMA TOURISME ET VOYAGE',
    address: 'Blida – Algérie',
-   addressAr: '02، طريق القليعة، زعبانة، 09001، البليدة، الجزائر',
-   phone: '020475949',
-   mobile: '0770236424',
+   phone: '025 XX XX XX',
    email: 'info@alhikma.dz',
-   rc: '12ب0807686-09/00',
-   nif: '001209080768687',
-   articleFiscal: '00120908076',
-   nis: '001209010019858',
-   licenseNumber: '1500',
+   rc: '09/00-1234567',
+   nif: '001234567890123',
  };
  
  // Travel class options
