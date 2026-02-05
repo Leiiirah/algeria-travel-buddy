@@ -1,36 +1,74 @@
 
 
-# Fix: Limit "Assign To" Feature to VISA Commands Only
+# Fix: Add Client Full Name Field for "Billet Bateau" Service Type
 
 ## Problem
 
-The "Assign To" employee assignment feature is currently available for all service types in the Commands page (VISA, Billets, Residence, Dossiers, etc.). According to your requirement, this feature should **only** be available for:
+When creating a new command and selecting "Billet Bateau" (boat ticket) service, no client name field is displayed. This happens because the service uses a custom service type code (e.g., `billet_bateau`) that doesn't match any of the hardcoded cases in the `renderServiceSpecificFields()` function, which only handles: `visa`, `residence`, `ticket`, and `dossier`.
 
-1. **VISA commands** (in the Commands page)
-2. **OMRA orders and visas** (already correctly implemented in OmraOrdersTab and OmraVisasTab)
+## Root Cause
+
+In `src/pages/CommandsPage.tsx`, the `renderServiceSpecificFields()` function (lines 427-542) uses a `switch` statement to determine which fields to render based on the service type. Any service type that doesn't match the four hardcoded cases falls through to `default: return null`, rendering no fields at all.
+
+```typescript
+// Current logic
+const renderServiceSpecificFields = () => {
+  const serviceType = getServiceType(selectedService);
+  
+  switch (serviceType) {
+    case 'visa': ...
+    case 'residence': ...
+    case 'ticket': ...
+    case 'dossier': ...
+    default: return null; // Billet Bateau falls here!
+  }
+};
+```
 
 ## Solution
 
-Modify the condition for displaying the "Assign To" dropdown in `CommandsPage.tsx` to check if the selected service type is 'visa' before rendering the assignment dropdown.
+Modify the `default` case to render a generic "Client Full Name" field for any unhandled service types. This ensures that all services, including custom ones like "Billet Bateau", will at minimum display a client name field.
 
-### Current Code (Line 834-855 in CommandsPage.tsx)
+### Changes Required
+
+**File: `src/pages/CommandsPage.tsx`**
+
+Update the `default` case in `renderServiceSpecificFields()` (around line 540):
 
 ```typescript
-{/* Assign To - Admin Only */}
-{user?.role === 'admin' && (
-  <div className="space-y-2 mt-4">
-    <Label>{t('form.assignTo')}</Label>
-    <Select...>
+default:
+  // Generic fallback for any other service types
+  return (
+    <div className="space-y-2">
+      <Label>{t('form.clientFullName')}</Label>
+      <Input
+        value={formData.clientFullName}
+        onChange={(e) => setFormData({ ...formData, clientFullName: e.target.value })}
+        placeholder={t('form.clientFullName')}
+      />
+    </div>
+  );
 ```
 
-### New Code
+Also update the data payload construction for these generic types (around line 213):
 
 ```typescript
-{/* Assign To - Admin Only for VISA services */}
-{user?.role === 'admin' && selectedService && getServiceType(selectedService) === 'visa' && (
-  <div className="space-y-2 mt-4">
-    <Label>{t('form.assignTo')}</Label>
-    <Select...>
+default:
+  // Generic fallback - just include clientFullName
+  data = {
+    ...baseData,
+    type: serviceType,
+  };
+  break;
+```
+
+And update the `handleEditCommand` function to handle generic types (around line 297):
+
+```typescript
+// After existing type checks, add fallback to load clientFullName
+if (!['visa', 'residence', 'ticket', 'dossier'].includes(command.data.type)) {
+  formUpdates.clientFullName = command.data.clientFullName || '';
+}
 ```
 
 ## Technical Details
@@ -38,21 +76,18 @@ Modify the condition for displaying the "Assign To" dropdown in `CommandsPage.ts
 | Aspect | Details |
 |--------|---------|
 | Files Modified | 1 (`src/pages/CommandsPage.tsx`) |
-| Lines Changed | 1 line condition update |
-| Risk Level | Very Low |
-| Breaking Changes | None |
+| Lines Changed | ~15 lines |
+| Risk Level | Low |
+| Breaking Changes | None - existing types continue to work |
 
 ## Behavior After Fix
 
-| Service Type | "Assign To" Dropdown Visible (Admin) |
-|--------------|--------------------------------------|
-| VISA | ✅ Yes |
-| Billets (Tickets) | ❌ No |
-| Residence | ❌ No |
-| Dossiers | ❌ No |
-| Other services | ❌ No |
-
-## Note
-
-The OMRA module (`OmraOrdersTab.tsx` and `OmraVisasTab.tsx`) already has the "Assign To" feature correctly implemented and will remain unchanged, as OMRA orders and visas should support employee assignment.
+| Service Type Code | Fields Displayed |
+|-------------------|------------------|
+| `visa` | First Name, Last Name, Passport Upload |
+| `residence` | Client Full Name, Hotel Name |
+| `ticket` | Client Full Name, Company |
+| `dossier` | Client Full Name, Description |
+| `billet_bateau` (NEW) | Client Full Name |
+| Any other custom type | Client Full Name |
 
