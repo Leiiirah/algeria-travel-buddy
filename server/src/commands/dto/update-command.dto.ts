@@ -44,4 +44,8 @@ export class UpdateCommandDto {
   @IsString()
   @IsOptional()
   passportUrl?: string;
+
+  @IsUUID()
+  @IsOptional()
+  assignedTo?: string;
 }
