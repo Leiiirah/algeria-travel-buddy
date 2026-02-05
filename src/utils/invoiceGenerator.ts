@@ -1,6 +1,52 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { AGENCY_INFO } from '@/constants/agency';
+ 
+ // ==================== ARABIC FOOTER ====================
+ 
+ function addArabicFooter(doc: jsPDF): void {
+   const pageWidth = doc.internal.pageSize.width;
+   const pageHeight = doc.internal.pageSize.height;
+   
+   // Footer starts ~50mm from bottom
+   const footerY = pageHeight - 55;
+   const footerHeight = 45;
+   
+   // Light beige/cream background
+   doc.setFillColor(245, 240, 230); // #F5F0E6
+   doc.setDrawColor(201, 184, 150); // #C9B896 border
+   doc.setLineWidth(0.5);
+   doc.roundedRect(10, footerY, pageWidth - 20, footerHeight, 3, 3, 'FD');
+   
+   // Company name in gold/brown - using Tajawal-style display
+   doc.setFontSize(14);
+   doc.setFont('helvetica', 'bold');
+   doc.setTextColor(139, 115, 85); // Darker gold for better visibility
+   doc.text(AGENCY_INFO.nameAr, pageWidth / 2, footerY + 10, { align: 'center' });
+   
+   // Address
+   doc.setFontSize(9);
+   doc.setFont('helvetica', 'normal');
+   doc.setTextColor(80, 70, 60);
+   doc.text(AGENCY_INFO.addressAr, pageWidth / 2, footerY + 18, { align: 'center' });
+   
+   // Legal info line 1: RC, NIF, Article Fiscal
+   doc.setFontSize(8);
+   const legalLine1 = `رقم السجل التجاري: ${AGENCY_INFO.rc} | رقم التعريف الجبائي: ${AGENCY_INFO.nif} | رقم المادة الجبائية: ${AGENCY_INFO.articleFiscal}`;
+   doc.text(legalLine1, pageWidth / 2, footerY + 26, { align: 'center' });
+   
+   // Legal info line 2: NIS, License
+   const legalLine2 = `رقم التعريف الإحصائي: ${AGENCY_INFO.nis} | رقم رخصة الوكالة: ${AGENCY_INFO.licenseNumber}`;
+   doc.text(legalLine2, pageWidth / 2, footerY + 33, { align: 'center' });
+   
+   // Contact line
+   doc.setFontSize(9);
+   doc.setFont('helvetica', 'bold');
+   const contactLine = `الجوال: ${AGENCY_INFO.mobile} | المكتب: ${AGENCY_INFO.phone}`;
+   doc.text(contactLine, pageWidth / 2, footerY + 41, { align: 'center' });
+   
+   doc.setTextColor(0, 0, 0);
+ }
 
 interface InvoiceData {
   reference: string;
@@ -264,15 +310,6 @@ export async function generateInvoicePdf(data: InvoiceData): Promise<void> {
   // Save the PDF
   const fileName = `facture_${data.reference}_${new Date().toISOString().split('T')[0]}.pdf`;
   doc.save(fileName);
-}
-
-function formatDateShort(dateString: string): string {
-  try {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: '2-digit' });
-  } catch {
-    return dateString;
-  }
 }
 
 // ==================== CLIENT INVOICE PDF ====================
@@ -580,6 +617,9 @@ export async function generateClientInvoicePdf(data: ClientInvoicePdfData): Prom
   doc.setFont('helvetica', 'italic');
   doc.text(isArabic ? '!شكراً لثقتكم' : 'Merci de votre confiance !', pageWidth / 2, pageHeight - 10, { align: 'center' });
 
+   // Add the professional Arabic footer
+   addArabicFooter(doc);
+ 
   // Save the PDF
   const fileName = `${isProforma ? 'proforma' : 'facture'}_${data.invoiceNumber}_${new Date().toISOString().split('T')[0]}.pdf`;
   doc.save(fileName);
