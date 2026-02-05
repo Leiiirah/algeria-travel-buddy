@@ -211,7 +211,12 @@ const CommandsPage = () => {
         };
         break;
       default:
-        return;
+        // Generic fallback - just include clientFullName
+        data = {
+          ...baseData,
+          type: serviceType,
+        };
+        break;
     }
 
     const commandPayload = {
@@ -294,6 +299,11 @@ const CommandsPage = () => {
       formUpdates.company = command.data.company || '';
     } else if (command.data.type === 'dossier') {
       formUpdates.description = command.data.description || '';
+    }
+
+    // Fallback for generic/custom types - ensure clientFullName is loaded
+    if (!['visa', 'residence', 'ticket', 'dossier'].includes(command.data.type)) {
+      formUpdates.clientFullName = command.data.clientFullName || '';
     }
 
     formUpdates.assignedTo = command.assignedTo || '';
@@ -538,7 +548,17 @@ const CommandsPage = () => {
         );
 
       default:
-        return null;
+        // Generic fallback for any other service types (e.g., billet_bateau)
+        return (
+          <div className="space-y-2">
+            <Label>{t('form.clientFullName')}</Label>
+            <Input
+              value={formData.clientFullName}
+              onChange={(e) => setFormData({ ...formData, clientFullName: e.target.value })}
+              placeholder={t('form.clientFullName')}
+            />
+          </div>
+        );
     }
   };
 
@@ -1075,11 +1095,11 @@ const CommandsPage = () => {
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <Label className="text-muted-foreground text-xs">{t('form.firstName')}</Label>
-                      <p className="font-medium">{viewingCommand.data.firstName || '-'}</p>
+                      <p className="font-medium">{(viewingCommand.data as any).firstName || '-'}</p>
                     </div>
                     <div>
                       <Label className="text-muted-foreground text-xs">{t('form.lastName')}</Label>
-                      <p className="font-medium">{viewingCommand.data.lastName || '-'}</p>
+                      <p className="font-medium">{(viewingCommand.data as any).lastName || '-'}</p>
                     </div>
                   </div>
                 )}
@@ -1088,7 +1108,7 @@ const CommandsPage = () => {
                 {viewingCommand.data.type === 'residence' && (
                   <div>
                     <Label className="text-muted-foreground text-xs">{t('form.hotelName')}</Label>
-                    <p className="font-medium">{viewingCommand.data.hotelName || '-'}</p>
+                    <p className="font-medium">{(viewingCommand.data as any).hotelName || '-'}</p>
                   </div>
                 )}
 
@@ -1096,7 +1116,7 @@ const CommandsPage = () => {
                 {viewingCommand.data.type === 'ticket' && (
                   <div>
                     <Label className="text-muted-foreground text-xs">{t('form.company')}</Label>
-                    <p className="font-medium">{viewingCommand.data.company || '-'}</p>
+                    <p className="font-medium">{(viewingCommand.data as any).company || '-'}</p>
                   </div>
                 )}
 
@@ -1104,7 +1124,7 @@ const CommandsPage = () => {
                 {viewingCommand.data.type === 'dossier' && (
                   <div>
                     <Label className="text-muted-foreground text-xs">{t('form.description')}</Label>
-                    <p className="font-medium">{viewingCommand.data.description || '-'}</p>
+                    <p className="font-medium">{(viewingCommand.data as any).description || '-'}</p>
                   </div>
                 )}
 

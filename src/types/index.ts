@@ -85,7 +85,12 @@ export interface DossierCommand extends BaseCommandData {
   description: string;
 }
 
-export type CommandData = VisaCommand | ResidenceCommand | TicketCommand | DossierCommand;
+// Generic command for custom service types (e.g., billet_bateau)
+export interface GenericCommand extends BaseCommandData {
+  type: string;
+}
+
+export type CommandData = VisaCommand | ResidenceCommand | TicketCommand | DossierCommand | GenericCommand;
 
 export interface Command {
   id: string;
