@@ -1,99 +1,135 @@
 
-# Update PDF Header Info & Add Contact Settings Page
+# Tajawal Font Integration + Arabic Footer for PDF Engine
 
 ## Overview
-Two changes are needed:
-1. Update the hardcoded agency information displayed in the PDF header with the correct details you provided
-2. Create a new "Contact" page accessible to admins where they can edit these agency details, which will then be dynamically reflected in all generated PDFs
+Update the PDF generation engine to use the Tajawal font for proper Arabic text rendering and add a professional Arabic footer block with agency legal details at the bottom of every invoice PDF.
 
 ## What Changes
 
-### 1. Correct Agency Information (Immediate)
-Update the hardcoded constants in `src/constants/agency.ts` with the real values:
-- Email: elhikmatours@gmail.com
-- Address: 02 rue de kolea zaban blida .09001
-- NIF: 001209080768687
-- NIS: 001209010018958
-- RC: 09/00-0807686B12
+### 1. Tajawal Font for jsPDF
+jsPDF only supports 14 standard PDF fonts (Helvetica, Courier, Times, etc.) and cannot render Arabic characters natively. Currently, any Arabic text in the PDFs renders as garbled characters or question marks. To fix this:
 
-### 2. New Backend: Agency Settings Module
-Create a new NestJS module (`agency-settings`) to store and manage agency contact information in the database. This replaces the hardcoded constants with dynamic, editable data.
+- Download the Tajawal font `.ttf` file (Regular and Bold weights)
+- Convert to Base64 using the jsPDF font converter
+- Create a font registration module that adds Tajawal to jsPDF at runtime
+- Use Tajawal for all Arabic labels and the Arabic footer
 
-### 3. New Frontend: Contact Page
-A new admin-only page at `/contact` where the admin can view and edit the agency's information (name, address, phone, email, NIF, NIS, RC). Changes are saved to the database and immediately used in all future PDF generation.
+### 2. Arabic Footer Block
+Add a centered, multi-line Arabic footer at the bottom of every generated PDF page with:
+- Agency Arabic name: الحكمة لسياحة و الأسفار
+- Arabic address: 02، طريق القليعة، زعبانة، 09001، البليدة، الجزائر
+- Legal identifiers: RC, NIF, NIS, License Number
+- Contact phones: mobile and office numbers
+- Styled with a light beige background (#F5F0E6) and gold/brown border (#C9B896)
 
-### 4. PDF Generator Update
-Modify `generateClientInvoicePdf` (and `generateInvoicePdf`) to accept agency info as a parameter instead of importing from the hardcoded constants file. The calling pages will fetch the latest agency settings from the API before generating the PDF.
+### 3. Number-to-Words Utility
+Create a French number-to-words converter (as seen in the sample PDF: "Douze mille neuf cent soixante-treize virgule dix-huit") for displaying the total amount in written text.
+
+### 4. Layout Matching the Sample PDF
+Update the PDF layout to match the provided sample more closely:
+- Two-column EMETTEUR / DESTINATAIRE layout
+- Description table with Prix Unitaire, Quantite, Total columns
+- Right-aligned financial summary (TOTAL HT, TVA, REMISE, TOTAL TTC)
+- Left-aligned REGLEMENT section with bank details
+- Amount-in-words line at the bottom of the financial section
 
 ---
 
 ## Technical Details
 
-### Database Migration
-Create a new `agency_settings` table:
+### New File: `src/utils/tajawalFont.ts`
+Contains the Tajawal font encoded as Base64 strings (Regular + Bold weights) and a `registerTajawalFont(doc: jsPDF)` function that calls `doc.addFileToVFS()`, `doc.addFont()`, and makes the font available via `doc.setFont('Tajawal', ...)`.
 
-| Column | Type | Default |
-|--------|------|---------|
-| id | uuid (PK) | auto |
-| key | varchar (unique) | - |
-| value | text | - |
-| updatedAt | timestamp | now() |
+**Font loading approach:**
+- The Tajawal `.ttf` files will be fetched from Google Fonts CDN at PDF generation time
+- Converted to Base64 dynamically using `fetch()` + `FileReader`
+- Cached in memory after first load to avoid repeated downloads
+- Fallback: if font loading fails, the PDF falls back to Helvetica (current behavior)
 
-Seed with initial values: `legalName`, `address`, `phone`, `email`, `nif`, `nis`, `rc`.
+### New File: `src/utils/numberToWords.ts`
+French number-to-words converter:
+- Handles units (0-19), tens (20-90), hundreds, thousands, millions
+- Handles decimals ("virgule" + decimal part)
+- Follows French grammar rules (e.g., "et un" for 21, "quatre-vingts" for 80)
+- Example: `numberToWords(12973.18)` returns `"Douze mille neuf cent soixante-treize virgule dix-huit"`
 
-This key-value approach is simple and flexible -- no schema changes needed if the admin wants to add more fields later.
+### Modified File: `src/utils/invoiceGenerator.ts`
 
-### Backend Files (NestJS -- server/)
+**Changes to `generateClientInvoicePdf`:**
+
+1. **Font registration**: Call `registerTajawalFont(doc)` at the start; use `doc.setFont('Tajawal', 'normal')` for Arabic text sections
+2. **Header redesign**: Match the sample layout
+   - Logo (left) + "FACTURE PROFORMA" title (right, large text)
+   - Date on left below separator
+   - "FACTURE proforma N: XXXX" centered
+3. **Two-column info block**:
+   - Left column: EMETTEUR -- agency name, address, phone, email, NIS, NIF, RC
+   - Right column: DESTINATAIRE -- client name, passport/city
+4. **Description table**: Using autoTable with columns: Description, Prix Unitaire, Quantite, Total
+5. **Financial summary** (right-aligned):
+   - TOTAL HT
+   - TVA 9% (or 0% depending on config)
+   - REMISE (discount line, dash if none)
+   - TOTAL TTC (bold)
+6. **Payment section** (left-aligned):
+   - REGLEMENT label
+   - Payment method
+   - Bank details (Banque + Compte)
+   - "arrete la presente facture [proforma] a la somme de" + amount in words
+7. **Arabic footer block** (bottom of page):
+   - Light beige background (#F5F0E6) with gold/brown border (#C9B896)
+   - Agency Arabic name in Tajawal Bold
+   - Arabic address, legal IDs, phone numbers
+   - Centered, ~8-9pt font size
+   - Positioned above the page bottom margin so it does not overlap content
+8. **Color scheme**: Black/gray/white minimalist palette replacing blue accents
+
+**Changes to `generateInvoicePdf`** (legacy function):
+- Add the same Arabic footer block for consistency
+- Register Tajawal font
+
+**Updated `AgencyInfoParam` interface**:
+- Add optional fields: `bankName`, `bankAccount`, `mobilePhone`, `licenseNumber`, `arabicName`, `arabicAddress`
+
+### Modified File: `src/constants/agency.ts`
+Add new fields to the fallback constants:
+```
+bankName: 'ccp',
+bankAccount: '00799999001499040728',
+mobilePhone: '0770236424',
+licenseNumber: '',
+arabicName: 'الحكمة لسياحة و الأسفار',
+arabicAddress: '02، طريق القليعة، زعبانة، 09001، البليدة، الجزائر',
+```
+
+### Modified File: `src/pages/ContactPage.tsx`
+Add new editable fields to the Contact settings form:
+- Mobile Phone
+- Bank Name
+- Bank Account
+- License Number
+- Arabic Name (with `dir="rtl"`)
+- Arabic Address (with `dir="rtl"`)
+
+### Modified Files: Translation updates
+**`src/i18n/locales/fr/common.json`** and **`src/i18n/locales/ar/common.json`**:
+- Add translation keys for new Contact form fields: `mobilePhone`, `bankName`, `bankAccount`, `licenseNumber`, `arabicName`, `arabicAddress`
+
+### Backend: Agency Settings Seed Update
+**`server/src/agency-settings/agency-settings.service.ts`**:
+- Add the new keys (`bankName`, `bankAccount`, `mobilePhone`, `licenseNumber`, `arabicName`, `arabicAddress`) to `DEFAULT_SETTINGS` so they are seeded on first run
+
+### Files Summary
 
 | File | Action | Description |
 |------|--------|-------------|
-| `server/src/agency-settings/entities/agency-setting.entity.ts` | Create | TypeORM entity for `agency_settings` table |
-| `server/src/agency-settings/dto/update-agency-settings.dto.ts` | Create | DTO for bulk update |
-| `server/src/agency-settings/agency-settings.service.ts` | Create | Service with `getAll()`, `update()`, and `seed()` methods |
-| `server/src/agency-settings/agency-settings.controller.ts` | Create | GET (all users) and PUT (admin only) endpoints |
-| `server/src/agency-settings/agency-settings.module.ts` | Create | Module with OnModuleInit to auto-seed defaults |
-| `server/src/database/migrations/17707XXXXX-AddAgencySettings.ts` | Create | Migration to create `agency_settings` table and seed data |
-| `server/src/app.module.ts` | Modify | Import AgencySettingsModule |
+| `src/utils/tajawalFont.ts` | Create | Tajawal font loader and jsPDF registration |
+| `src/utils/numberToWords.ts` | Create | French number-to-words converter |
+| `src/utils/invoiceGenerator.ts` | Rewrite | New layout matching sample + Tajawal + Arabic footer |
+| `src/constants/agency.ts` | Modify | Add bank, mobile, Arabic name/address fields |
+| `src/pages/ContactPage.tsx` | Modify | Add new fields to admin settings form |
+| `server/src/agency-settings/agency-settings.service.ts` | Modify | Add new default keys to seed |
+| `src/i18n/locales/fr/common.json` | Modify | Add new field labels |
+| `src/i18n/locales/ar/common.json` | Modify | Add new field labels |
 
-**API Endpoints:**
-- `GET /agency-settings` -- Returns all settings as key-value pairs (accessible to all authenticated users)
-- `PUT /agency-settings` -- Bulk update settings (admin only)
-
-### Frontend Files
-
-| File | Action | Description |
-|------|--------|-------------|
-| `src/constants/agency.ts` | Modify | Update hardcoded defaults with real values (used as fallback) |
-| `src/types/index.ts` | Modify | Add `AgencySettings` interface |
-| `src/lib/api.ts` | Modify | Add `getAgencySettings()` and `updateAgencySettings()` API methods |
-| `src/hooks/useAgencySettings.ts` | Create | React Query hook for fetching/updating agency settings |
-| `src/pages/ContactPage.tsx` | Create | Admin settings page with editable form |
-| `src/App.tsx` | Modify | Add `/contact` route (admin only) |
-| `src/components/layout/AppSidebar.tsx` | Modify | Add "Contact" nav item in admin section |
-| `src/utils/invoiceGenerator.ts` | Modify | Accept agency info as parameter; use it in the PDF header |
-| `src/pages/CommandsPage.tsx` | Modify | Fetch agency settings before generating PDF |
-| `src/pages/InvoicesPage.tsx` | Modify | Fetch agency settings before generating PDF |
-| `src/i18n/locales/fr/common.json` | Modify | Add "contact" navigation key and form labels |
-| `src/i18n/locales/ar/common.json` | Modify | Add Arabic translations |
-
-### Contact Page Layout
-The page will have a simple card-based form with:
-- Agency Legal Name
-- Address
-- Phone
-- Email
-- NIF
-- NIS
-- RC
-
-Each field is an editable text input. A "Save" button persists changes to the backend. Only admins can access this page.
-
-### PDF Header Update
-The PDF header section (lines 321-342 in `invoiceGenerator.ts`) will display:
-- Logo (unchanged)
-- Agency legal name
-- Address line
-- Phone + Email line
-- NIF | NIS | RC line (shown for both proforma and definitive -- currently RC/NIF only shown for definitive; NIS will be added)
-
-All values will come from the agency settings passed as a parameter, falling back to the hardcoded defaults if the API call fails.
+No database migration is required -- the existing key-value `agency_settings` table handles new keys automatically.
