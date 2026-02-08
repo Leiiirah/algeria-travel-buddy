@@ -1,62 +1,102 @@
 
 
-# Unify Command Invoice with Factures Invoice Layout
+# Fix PDF Invoice Bottom Overflow
 
-## Overview
-Both the Commands tab and the Factures (Invoices) tab already call the **same** PDF function (`generateClientInvoicePdf`), so the visual layout (header, banner, financial box, footer) is identical. The difference is that the Commands page passes empty/zero values for several fields (departure date, return date, travel class, PNR, ticket price, agency fees, payment method), which makes the resulting PDF look sparser.
+## Problem
+The invoice PDF content overflows past the Arabic footer at the bottom of the page. The layout uses a "top-down" approach where each section adds to a running `currentY` value, but the footer is positioned at a fixed `pageHeight - 28`. When all optional fields are populated, the body content collides with (and runs past) the footer.
 
-This plan enriches the data passed from the Commands page so that every available field appears in the PDF, and removes the unused legacy function to keep the codebase clean.
+**Current overflow math (worst case with all fields):**
+- Usable content area: ~267mm (footer starts at pageHeight - 28 = 269mm)
+- Content reaches: ~344mm (stamp box bottom)
+- Overflow: ~77mm past the footer
+
+## Solution
+Tighten the vertical spacing throughout the document and reduce the signature box size so everything fits cleanly on a single A4 page. Add an overflow safety check that pushes the stamp/signature to a second page if content is unusually long.
 
 ## What Changes
 
-### 1. Enrich Command Invoice Data
-Update `handlePrintInvoice` in `CommandsPage.tsx` to extract and pass all available data from the command record:
+### 1. Reduce Vertical Spacing
+Tighten the gaps between sections to reclaim vertical space without sacrificing readability:
 
-| Field | Current value | New value |
-|-------|--------------|-----------|
-| `departureDate` | `''` (empty) | Extracted from `command.data.departureDate` if present, formatted with `date-fns` |
-| `returnDate` | `''` (empty) | Extracted from `command.data.returnDate` if present |
-| `travelClass` | `''` (empty) | Extracted from `command.data.travelClass` if present |
-| `pnr` | `''` (empty) | Extracted from `command.data.pnr` if present |
-| `ticketPrice` | `0` | Set to `command.buyingPrice` (the cost price is the ticket price in context of a command) |
-| `agencyFees` | `0` | Calculated as `sellingPrice - buyingPrice` (the agency margin) |
-| `paymentMethod` | `''` (empty) | Extracted from `command.data.paymentMethod` if present |
-| `companyName` | From `command.data.company` | Already correct, no change needed |
+| Location | Current gap | New gap | Savings |
+|----------|------------|---------|---------|
+| Between header lines | 6mm, 5mm, 5mm | 5mm, 4mm, 4mm | 3mm |
+| Header to banner | 8mm | 6mm | 2mm |
+| Banner to invoice # | 6mm | 4mm | 2mm |
+| Invoice # to separator | 6mm | 4mm | 2mm |
+| Separator to Client | 10mm | 7mm | 3mm |
+| Client to Prestation | 14mm | 10mm | 4mm |
+| Service detail lines | 6mm each | 5mm each | ~5mm |
+| Prestation to Financial | 14mm | 10mm | 4mm |
+| Financial box to Reglement | 12mm | 8mm | 4mm |
+| Reglement internal gaps | 6mm, 5mm, 8mm | 5mm, 4mm, 6mm | 4mm |
+| Conditions/Note to Stamp | 8mm | 4mm | 4mm |
 
-The PDF function already handles missing/zero values gracefully (it skips rendering empty fields), so this is backward-compatible.
+**Total savings: ~37mm** -- more than enough to prevent overflow.
 
-### 2. Remove Dead Legacy Function
-Delete the `generateInvoicePdf` function (lines 172-353 of `invoiceGenerator.ts`) and its associated `InvoiceData` interface (lines 9-25). This function is not imported or called anywhere in the codebase. Removing it:
-- Reduces file size by ~180 lines
-- Eliminates confusion about which function to use
-- Keeps a single source of truth for invoice PDF generation
+### 2. Reduce Signature Box
+Shrink the empty signature box from 35mm to 25mm tall. This saves 10mm and is still sufficient for a stamp/signature.
+
+### 3. Overflow Safety Check
+Before drawing the Stamp and Signature section, check if `currentY` would exceed the footer zone (`pageHeight - 60`). If it would, add a new page and draw the stamp at the top of page 2, then draw the footer on that page instead.
+
+### 4. Fix Financial Box Y-tracking
+The current code has a confusing `currentY += boxHeight - (hasBreakdown ? 42 : 26)` calculation that doesn't properly track where the box ends. Replace this with a clean calculation: set `currentY` to the actual bottom of the box (`boxStartY + boxHeight`).
+
+---
 
 ## Technical Details
 
-### File: `src/pages/CommandsPage.tsx`
-
-**Changes to `handlePrintInvoice` (lines 375-403):**
-
-Update the data object passed to `generateClientInvoicePdf`:
-- Extract `departureDate` and `returnDate` from `command.data`, format with `date-fns` if present
-- Extract `travelClass` and `pnr` from `command.data`
-- Set `ticketPrice` to `Number(command.buyingPrice)` and `agencyFees` to `Number(command.sellingPrice) - Number(command.buyingPrice)`
-- Extract `paymentMethod` from `command.data` if available
-
 ### File: `src/utils/invoiceGenerator.ts`
 
-**Remove dead code (lines 7-25 and 172-353):**
+**Spacing reductions (lines 178-467):**
+- Line 188: Change `currentY += 6` to `currentY += 5` (header line 2)
+- Line 194: Change `currentY += 5` to `currentY += 4` (header line 3)
+- Line 200: Change `currentY += 5` to `currentY += 4` (header line 4)
+- Line 206: Change `currentY += 8` to `currentY += 6` (header to banner)
+- Line 224: Change `currentY += bannerHeight + 6` to `currentY += bannerHeight + 4`
+- Line 229: Change `currentY += 6` to `currentY += 4` (separator)
+- Line 235: Change `currentY += 10` to `currentY += 7` (separator to client)
+- Line 253: Change `currentY += 14` to `currentY += 10` (client to prestation)
+- Lines 266, 273, 278, 287: Change `currentY += 6` to `currentY += 5` (service details)
+- Line 306: Change `currentY += 14` to `currentY += 10` (prestation to financial)
+- Line 371: Change `currentY += 12` to `currentY += 8` (financial to reglement)
+- Lines 379, 391: Change `currentY += 6` to `currentY += 5` (reglement internals)
+- Line 393: Change `currentY += 5` to `currentY += 4`
+- Line 398: Change `currentY += 8` to `currentY += 6` (to amount words)
 
-1. Delete the `InvoiceData` interface (lines 9-25) -- no longer needed
-2. Delete the entire `generateInvoicePdf` function (lines 172-353) -- never called anywhere
-3. Keep everything else unchanged: `AgencyInfoParam`, `ClientInvoicePdfData`, helpers, `drawArabicFooter`, and `generateClientInvoicePdf`
+**Fix financial box tracking (line 368):**
+Replace `currentY += boxHeight - (hasBreakdown ? 42 : 26)` with:
+```
+currentY = (currentY - 2) + boxHeight + 2;
+```
+where `currentY - 2` is the box top Y (from the roundedRect call at line 322).
+
+**Actually, better approach:** Save the box start Y before the box content, then after the box set `currentY = boxStartY + boxHeight`.
+
+**Signature box (line 456):**
+Change height from 35 to 25:
+```
+doc.roundedRect(pageWidth / 2 - 40, currentY, 80, 25, 2, 2, 'FD');
+```
+
+**Overflow check (before line 446):**
+Add a check before the Stamp section:
+```typescript
+const footerZoneStart = pageHeight - 60;
+if (currentY > footerZoneStart) {
+  doc.addPage();
+  currentY = 20;
+}
+```
+Then after the stamp box, call `drawArabicFooter` on the current page (it already uses `doc.internal.pageSize.height` so it adapts).
+
+Move the `drawArabicFooter` and timestamp calls to after the overflow check so they render on the correct page.
 
 ### Files Summary
 
 | File | Action | Description |
 |------|--------|-------------|
-| `src/pages/CommandsPage.tsx` | Modify | Pass richer data (dates, class, PNR, ticket breakdown) to `generateClientInvoicePdf` |
-| `src/utils/invoiceGenerator.ts` | Modify | Remove unused `InvoiceData` interface and `generateInvoicePdf` function (~180 lines) |
+| `src/utils/invoiceGenerator.ts` | Modify | Tighten spacing, shrink signature box, fix box Y-tracking, add overflow safety check |
 
-No backend changes, no new dependencies, no database changes required.
-
+No other files need changes. This is a layout-only fix within the PDF generator.
