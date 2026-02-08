@@ -1,117 +1,153 @@
 
-
-# Refine Omra Order Form: Two Types, Program Link, and New Status
+# Programme Omra -- New Tab for Group Pilgrimage Package Management
 
 ## Overview
-This plan adds two new concepts to Omra orders: an **Omra Type** (Groupe vs. Libre), a **Program reference** (linking to existing hotels from the 3rd tab), an **"En Programme"** indicator, and a new **"Reservé"** status value. The form adapts its layout based on the selected type, and all new fields are persisted in the backend.
+Add a dedicated "Programme Omra" tab (4th tab) to the Omra module that allows admins to create and manage group pilgrimage packages with structured room pricing. Employees see a read-only dashboard with real-time spot availability (confirmed vs. remaining). The existing order form's "Selectionner un Programme" dropdown is updated to pull from this new entity instead of hotels, and selecting a program + room type auto-fills the selling price.
 
 ## What Changes
 
-### 1. Omra Type Toggle
-A toggle group at the top of the "Nouvelle Commande Omra" form lets the user pick between:
-- **Omra de Groupe** -- for fixed-date agency group tours
-- **Omra Libre** -- for custom individual bookings
+### 1. New Program Entity (Backend)
+A new `omra_programs` database table stores group pilgrimage packages:
+- **name** -- Program name (e.g., "Omra Ramadan 2026")
+- **periodFrom / periodTo** -- Date range for the pilgrimage
+- **totalPlaces** -- Maximum number of spots
+- **hotelId** -- Link to an existing Omra hotel
+- **pricing** -- JSONB object with prices for each room configuration:
+  `{ chambre_1: 250000, chambre_2: 200000, chambre_3: 180000, chambre_4: 160000, chambre_5: 150000, suite: 400000 }`
+- **isActive** -- Toggle to show/hide from selectors
+- **createdBy** -- Creator user reference
 
-When "Omra Libre" is selected, the fields Hotel, Period dates, Selling Price, and Amount Paid are visually highlighted with a subtle accent border to indicate they require special attention for individual bookings.
+### 2. Programme Omra Tab (Frontend)
+A new 4th tab in the Omra page:
+- **Admin View**: Full CRUD -- create/edit/delete programs with a form containing name, date range, total places, hotel selector, and a pricing grid (6 room types + suite)
+- **Employee View**: Read-only list showing program details with real-time inventory:
+  - **Places Confirmees** (green): Count of orders linked to this program with status "confirme"
+  - **Places Restantes** (red): totalPlaces minus confirmed count
 
-### 2. New "Reserve" Status
-A fifth status value ("Reservé") is added alongside the existing four (En attente, Confirmé, Terminé, Annulé). It appears in the table's inline status dropdown with a purple color badge.
+### 3. Order Form Integration
+- The "Selectionner un Programme" dropdown in the order form now lists programs from the new entity (instead of hotels)
+- When both a program AND a room type are selected, the "Prix de vente" auto-fills with the corresponding price from the program's pricing object
+- The `programId` foreign key on `omra_orders` now references `omra_programs` instead of `omra_hotels`
 
-### 3. Program Selector
-At the bottom of the form (before the financial summary), a "Sélectionner un Programme" dropdown lists all active hotels from the Hotels tab. This acts as a label/reference only (no auto-fill, per your preference). Selecting a program also toggles the "En Programme" indicator to true.
-
-### 4. "En Programme" Indicator
-A badge visible in the orders table showing if a command is currently linked to an active program. Displayed as a small tag in the client column.
+### 4. Role-Based Access
+- Admins can create, edit, delete programs
+- Employees can only view the list (read-only)
+- The "Create Program" button is hidden for employees
 
 ---
 
 ## Technical Details
 
 ### Database Migration
-A new migration file adds 3 columns to the `omra_orders` table:
+New migration file: `server/src/database/migrations/1770900000000-AddOmraPrograms.ts`
+
+Creates the `omra_programs` table:
 
 | Column | Type | Default | Description |
 |--------|------|---------|-------------|
-| `omraType` | enum ('groupe', 'libre') | 'libre' | Type of Omra booking |
-| `programId` | uuid (nullable, FK to omra_hotels) | null | Reference to a hotel/program |
-| `inProgram` | boolean | false | Whether order is in an active group schedule |
+| id | uuid (PK) | auto | Primary key |
+| name | varchar | required | Program name |
+| periodFrom | date | required | Start date |
+| periodTo | date | required | End date |
+| totalPlaces | int | required | Max spots |
+| hotelId | uuid (FK to omra_hotels) | nullable | Linked hotel |
+| pricing | jsonb | {} | Room type prices |
+| isActive | boolean | true | Visibility toggle |
+| createdBy | uuid (FK to users) | required | Creator |
+| createdAt | timestamp | auto | Created timestamp |
+| updatedAt | timestamp | auto | Updated timestamp |
 
-The `OmraStatus` enum also gets a new value: `reserve`.
+Also updates the `omra_orders.programId` FK to reference `omra_programs` instead of `omra_hotels`.
 
-### Backend (server/) Changes
+### Backend Files
 
-**File: `server/src/omra/entities/omra-order.entity.ts`**
-- Add `OmraOrderType` enum with values `GROUPE = 'groupe'` and `LIBRE = 'libre'`
-- Add `reserve` to `OmraStatus` enum
-- Add `omraType` column (enum, default LIBRE)
-- Add `programId` column (nullable UUID)
-- Add `inProgram` column (boolean, default false)
-- Add `@ManyToOne` relation from `programId` to `OmraHotel` as `program`
+**New: `server/src/omra/entities/omra-program.entity.ts`**
+- Entity class with columns matching the table above
+- ManyToOne relations to OmraHotel and User
 
-**File: `server/src/omra/dto/create-omra-order.dto.ts`**
-- Add `omraType` (optional enum)
-- Add `programId` (optional UUID)
-- Add `inProgram` (optional boolean)
+**New: `server/src/omra/dto/create-omra-program.dto.ts`**
+- Validation: name (required string), periodFrom/periodTo (date strings), totalPlaces (number), hotelId (optional UUID), pricing (optional object with numeric values for each room type)
 
-**File: `server/src/omra/dto/update-omra-order.dto.ts`**
-- Inherits new fields from CreateOmraOrderDto via PartialType
-- Add `reserve` to status enum validation
+**New: `server/src/omra/dto/update-omra-program.dto.ts`**
+- PartialType of CreateOmraProgramDto + isActive boolean
 
-**File: `server/src/omra/omra.service.ts`**
-- Update `findAllOrders` query builder to join `order.program`
-- Add `omraType` filter support
-- Update `byStatus` stats to include `reserve`
+**Modified: `server/src/omra/omra.module.ts`**
+- Register OmraProgram entity in TypeOrmModule.forFeature
 
-**File: `server/src/database/migrations/XXXXXXXXX-AddOmraTypeAndProgram.ts`**
-- New migration creating the enum type, adding columns, and extending the status enum
+**Modified: `server/src/omra/omra.service.ts`**
+- Add program CRUD methods: findAllPrograms, findActivePrograms, findProgramById, createProgram, updateProgram, deleteProgram
+- Add getProgramStats method that counts confirmed orders per program to return inventory data
+- Prevent deletion of programs linked to active orders
 
-### Frontend Changes
+**Modified: `server/src/omra/omra.controller.ts`**
+- Add program REST endpoints under `/omra/programs/*`:
+  - GET `/programs` -- list all
+  - GET `/programs/active` -- list active only
+  - GET `/programs/:id` -- get by ID
+  - POST `/programs` -- create (admin)
+  - PATCH `/programs/:id` -- update (admin)
+  - DELETE `/programs/:id` -- delete (admin)
+  - GET `/programs/inventory` -- get spot counts per program
 
-**File: `src/types/index.ts`**
-- Add `OmraOrderType = 'groupe' | 'libre'`
-- Add `'reserve'` to `OmraStatus` union
-- Add `omraType`, `programId`, `program`, `inProgram` to `OmraOrder` interface
-- Add `'reserve'` to `omraStatusLabels`
+**Modified: `server/src/omra/entities/omra-order.entity.ts`**
+- Change the `program` ManyToOne relation from OmraHotel to OmraProgram
 
-**File: `src/lib/api.ts`**
-- Add `omraType`, `programId`, `inProgram` to `CreateOmraOrderDto`
-- Update `OmraFilters` to support `omraType` filter
+### Frontend Files
 
-**File: `src/components/omra/OmraOrdersTab.tsx`**
-- Add `omraType`, `programId`, `inProgram` to `formData` state (defaults: `'libre'`, `''`, `false`)
-- Add ToggleGroup at the top of the form for Groupe/Libre selection
-- When Omra Libre is selected, wrap Hotel, Period, Price, and Payment fields in a div with an accent border (`border-amber-300`)
-- Add program Select dropdown before the financial summary (lists active hotels)
-- When a program is selected, auto-set `inProgram` to `true`; when cleared, set to `false`
-- Add `'reserve'` to the status dropdown in the table with purple badge styling
-- Show "En Programme" badge in the client column when `order.inProgram` is true
-- Add `omraType` filter option to AdvancedFilter config
-- Update `handleOpenDialog` to populate new fields when editing
-- Update `resetForm` to include new field defaults
-- Update `handleSubmit` payload to include new fields
+**New: `src/components/omra/OmraProgramsTab.tsx`**
+- Admin: table with program list + create/edit dialog containing:
+  - Name, Date range, Total places, Hotel selector
+  - Pricing grid: 6 input fields for chambre_1 through chambre_5 + suite, each with a label and DZD price input
+- Employee: read-only table with columns: Name, Period, Hotel, Total Places, Places Confirmees (green badge), Places Restantes (red badge)
+- Both views show real-time inventory from the `/programs/inventory` endpoint
 
-**File: `src/i18n/locales/fr/omra.json`**
-- Add under `status`: `"reserve": "Réservé"`
-- Add under `orders.form`: `"omraType": "Type d'Omra"`, `"omraGroupe": "Omra de Groupe"`, `"omraLibre": "Omra Libre"`, `"selectProgram": "Sélectionner un Programme"`, `"noProgram": "Sans programme"`, `"inProgram": "En Programme"`
-- Add under `filters`: `"omraType": "Type d'Omra"`
+**Modified: `src/types/index.ts`**
+- Add `OmraProgram` interface with all fields including pricing object
+- Add `OmraProgramPricing` type: `Record<OmraRoomType, number>`
+- Add `OmraProgramInventory` interface: `{ programId, confirmed, remaining }`
 
-**File: `src/i18n/locales/ar/omra.json`**
-- Add under `status`: `"reserve": "محجوز"`
-- Add under `orders.form`: `"omraType": "نوع العمرة"`, `"omraGroupe": "عمرة جماعية"`, `"omraLibre": "عمرة حرة"`, `"selectProgram": "اختر برنامجاً"`, `"noProgram": "بدون برنامج"`, `"inProgram": "في البرنامج"`
-- Add under `filters`: `"omraType": "نوع العمرة"`
+**Modified: `src/lib/api.ts`**
+- Add program DTOs: CreateOmraProgramDto, UpdateOmraProgramDto
+- Add API methods: getOmraPrograms, getActiveOmraPrograms, createOmraProgram, updateOmraProgram, deleteOmraProgram, getOmraProgramInventory
+
+**Modified: `src/hooks/useOmra.ts`**
+- Add hooks: useOmraPrograms, useActiveOmraPrograms, useCreateOmraProgram, useUpdateOmraProgram, useDeleteOmraProgram, useOmraProgramInventory
+
+**Modified: `src/pages/OmraPage.tsx`**
+- Add 4th tab trigger "Programmes" with Calendar icon
+- Update TabsList to grid-cols-4
+- Add TabsContent for programs tab rendering OmraProgramsTab
+
+**Modified: `src/components/omra/OmraOrdersTab.tsx`**
+- Import useActiveOmraPrograms hook
+- Replace hotels-based program dropdown with programs-based dropdown (listing active programs by name + period)
+- Add auto-fill logic: when both programId and roomType are set, look up the program's pricing for that room type and set sellingPrice accordingly
+- Keep manual override possible (user can still change the price after auto-fill)
+
+**Modified: `src/i18n/locales/fr/omra.json`**
+- Add `tabs.programs: "Programmes"`
+- Add `programs` section with: title, count, newProgram, empty state, table headers (name, period, hotel, totalPlaces, confirmed, remaining, status, actions), form labels (programName, periodFrom, periodTo, totalPlaces, hotel, pricing, pricingDescription), confirm delete, inventory labels
+
+**Modified: `src/i18n/locales/ar/omra.json`**
+- Arabic equivalents for all new program translation keys
 
 ### Files Summary
 
 | File | Action | Description |
 |------|--------|-------------|
-| `server/src/database/migrations/...AddOmraTypeAndProgram.ts` | Create | Migration for new columns and enum value |
-| `server/src/omra/entities/omra-order.entity.ts` | Modify | Add OmraOrderType enum, new columns, new status |
-| `server/src/omra/dto/create-omra-order.dto.ts` | Modify | Add omraType, programId, inProgram fields |
-| `server/src/omra/dto/update-omra-order.dto.ts` | Modify | Inherits new fields |
-| `server/src/omra/omra.service.ts` | Modify | Join program relation, add filter, update stats |
-| `src/types/index.ts` | Modify | Add OmraOrderType, update OmraOrder/OmraStatus |
-| `src/lib/api.ts` | Modify | Update DTOs and filters |
-| `src/components/omra/OmraOrdersTab.tsx` | Modify | Form toggle, program selector, highlights, table badges |
+| `server/src/database/migrations/1770900000000-AddOmraPrograms.ts` | Create | Migration for omra_programs table + update FK |
+| `server/src/omra/entities/omra-program.entity.ts` | Create | Program entity with pricing JSONB |
+| `server/src/omra/dto/create-omra-program.dto.ts` | Create | Create DTO with validation |
+| `server/src/omra/dto/update-omra-program.dto.ts` | Create | Update DTO (partial) |
+| `server/src/omra/omra.module.ts` | Modify | Register OmraProgram entity |
+| `server/src/omra/omra.service.ts` | Modify | Add program CRUD + inventory methods |
+| `server/src/omra/omra.controller.ts` | Modify | Add program REST endpoints |
+| `server/src/omra/entities/omra-order.entity.ts` | Modify | Change program FK to OmraProgram |
+| `src/components/omra/OmraProgramsTab.tsx` | Create | New tab component with admin CRUD + employee read-only view |
+| `src/types/index.ts` | Modify | Add OmraProgram, OmraProgramPricing types |
+| `src/lib/api.ts` | Modify | Add program API methods and DTOs |
+| `src/hooks/useOmra.ts` | Modify | Add program React Query hooks |
+| `src/pages/OmraPage.tsx` | Modify | Add 4th tab |
+| `src/components/omra/OmraOrdersTab.tsx` | Modify | Use programs in dropdown + auto-fill pricing |
 | `src/i18n/locales/fr/omra.json` | Modify | French translations |
 | `src/i18n/locales/ar/omra.json` | Modify | Arabic translations |
-
