@@ -14,6 +14,7 @@ import { UpdateOmraVisaDto } from './dto/update-omra-visa.dto';
 export interface OmraFilters {
   status?: string;
   hotelId?: string;
+  omraType?: string;
   search?: string;
   fromDate?: string;
   toDate?: string;
@@ -94,11 +95,12 @@ export class OmraService {
   // ==================== ORDERS ====================
 
   async findAllOrders(filters: OmraFilters = {}): Promise<PaginatedResponse<OmraOrder>> {
-    const { status, hotelId, search, fromDate, toDate, page = 1, limit = 20, createdBy } = filters;
+    const { status, hotelId, omraType, search, fromDate, toDate, page = 1, limit = 20, createdBy } = filters;
 
     const queryBuilder = this.ordersRepository
       .createQueryBuilder('order')
       .leftJoinAndSelect('order.hotel', 'hotel')
+      .leftJoinAndSelect('order.program', 'program')
       .leftJoinAndSelect('order.creator', 'creator')
       .leftJoinAndSelect('order.assignee', 'assignee');
 
@@ -108,6 +110,10 @@ export class OmraService {
 
     if (hotelId) {
       queryBuilder.andWhere('order.hotelId = :hotelId', { hotelId });
+    }
+
+    if (omraType) {
+      queryBuilder.andWhere('order.omraType = :omraType', { omraType });
     }
 
     if (search) {
@@ -158,7 +164,7 @@ export class OmraService {
   async findOrderById(id: string): Promise<OmraOrder> {
     const order = await this.ordersRepository.findOne({
       where: { id },
-      relations: ['hotel', 'creator', 'assignee'],
+      relations: ['hotel', 'program', 'creator', 'assignee'],
     });
     if (!order) {
       throw new NotFoundException(`Omra order with ID ${id} not found`);
@@ -310,6 +316,7 @@ export class OmraService {
         confirme: 0,
         termine: 0,
         annule: 0,
+        reserve: 0,
       },
     };
 

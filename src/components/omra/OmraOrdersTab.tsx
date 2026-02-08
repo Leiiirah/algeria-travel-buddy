@@ -35,8 +35,9 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Plus, MoreHorizontal, Edit, Trash2, Package, Building2 } from 'lucide-react';
-import { OmraOrder, OmraRoomType } from '@/types';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { Plus, MoreHorizontal, Edit, Trash2, Package, Building2, Users, UserCheck } from 'lucide-react';
+import { OmraOrder, OmraRoomType, OmraOrderType } from '@/types';
 import { OmraFilters } from '@/lib/api';
 import { formatDZD } from '@/lib/utils';
 import {
@@ -59,6 +60,7 @@ const statusColors: Record<string, string> = {
   confirme: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400',
   termine: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400',
   annule: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400',
+  reserve: 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400',
 };
 
 const roomTypes: OmraRoomType[] = ['chambre_1', 'chambre_2', 'chambre_3', 'chambre_4', 'chambre_5', 'suite'];
@@ -81,6 +83,9 @@ export const OmraOrdersTab = () => {
     periodTo: '',
     hotelId: '',
     roomType: 'chambre_2' as OmraRoomType,
+    omraType: 'libre' as OmraOrderType,
+    programId: '',
+    inProgram: false,
     sellingPrice: 0,
     amountPaid: 0,
     buyingPrice: 0,
@@ -127,6 +132,9 @@ export const OmraOrdersTab = () => {
       periodTo: '',
       hotelId: '',
       roomType: 'chambre_2',
+      omraType: 'libre',
+      programId: '',
+      inProgram: false,
       sellingPrice: 0,
       amountPaid: 0,
       buyingPrice: 0,
@@ -147,6 +155,9 @@ export const OmraOrdersTab = () => {
         periodTo: new Date(order.periodTo).toISOString().split('T')[0],
         hotelId: order.hotelId || '',
         roomType: order.roomType,
+        omraType: order.omraType || 'libre',
+        programId: order.programId || '',
+        inProgram: order.inProgram || false,
         sellingPrice: Number(order.sellingPrice),
         amountPaid: Number(order.amountPaid),
         buyingPrice: Number(order.buyingPrice),
@@ -166,6 +177,7 @@ export const OmraOrdersTab = () => {
       ...formData,
       hotelId: formData.hotelId || undefined,
       assignedTo: formData.assignedTo || undefined,
+      programId: formData.programId || undefined,
     };
 
     if (editingOrder) {
@@ -206,6 +218,16 @@ export const OmraOrdersTab = () => {
     return new Date(date).toLocaleDateString('fr-FR');
   };
 
+  const handleProgramChange = (value: string) => {
+    if (value === '__none__') {
+      setFormData({ ...formData, programId: '', inProgram: false });
+    } else {
+      setFormData({ ...formData, programId: value, inProgram: true });
+    }
+  };
+
+  const isLibre = formData.omraType === 'libre';
+
   if (isLoading) {
     return <div className="p-8 text-center text-muted-foreground">{t('loading')}</div>;
   }
@@ -233,6 +255,7 @@ export const OmraOrdersTab = () => {
                     options: [
                       { label: t('status.en_attente'), value: 'en_attente' },
                       { label: t('status.confirme'), value: 'confirme' },
+                      { label: t('status.reserve'), value: 'reserve' },
                       { label: t('status.termine'), value: 'termine' },
                       { label: t('status.annule'), value: 'annule' },
                     ],
@@ -242,6 +265,15 @@ export const OmraOrdersTab = () => {
                     label: t('filters.hotel'),
                     type: 'select',
                     options: hotels.map((h) => ({ label: h.name, value: h.id })),
+                  },
+                  {
+                    key: 'omraType',
+                    label: t('filters.omraType'),
+                    type: 'select',
+                    options: [
+                      { label: t('orders.form.omraGroupe'), value: 'groupe' },
+                      { label: t('orders.form.omraLibre'), value: 'libre' },
+                    ],
                   },
                 ]}
               />
@@ -283,11 +315,24 @@ export const OmraOrdersTab = () => {
                       <div>
                         <p className="font-medium">{order.clientName}</p>
                         <p className="text-sm text-muted-foreground">{order.phone}</p>
-                        {order.assignee && (
-                          <Badge variant="outline" className="text-xs mt-1 bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
-                            {t('orders.table.by')} {order.assignee.firstName}
-                          </Badge>
-                        )}
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          {order.assignee && (
+                            <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
+                              {t('orders.table.by')} {order.assignee.firstName}
+                            </Badge>
+                          )}
+                          {order.inProgram && (
+                            <Badge variant="outline" className="text-xs bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
+                              {t('orders.form.inProgram')}
+                            </Badge>
+                          )}
+                          {order.omraType === 'groupe' && (
+                            <Badge variant="outline" className="text-xs bg-indigo-50 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400">
+                              <Users className="h-3 w-3 ltr:mr-1 rtl:ml-1" />
+                              {t('orders.form.omraGroupe')}
+                            </Badge>
+                          )}
+                        </div>
                       </div>
                     </TableCell>
                     <TableCell>
@@ -319,6 +364,7 @@ export const OmraOrdersTab = () => {
                         <SelectContent>
                           <SelectItem value="en_attente">{t('status.en_attente')}</SelectItem>
                           <SelectItem value="confirme">{t('status.confirme')}</SelectItem>
+                          <SelectItem value="reserve">{t('status.reserve')}</SelectItem>
                           <SelectItem value="termine">{t('status.termine')}</SelectItem>
                           <SelectItem value="annule">{t('status.annule')}</SelectItem>
                         </SelectContent>
@@ -368,6 +414,36 @@ export const OmraOrdersTab = () => {
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
+            {/* Omra Type Toggle */}
+            <div className="space-y-2">
+              <Label>{t('orders.form.omraType')}</Label>
+              <ToggleGroup
+                type="single"
+                value={formData.omraType}
+                onValueChange={(value) => {
+                  if (value) setFormData({ ...formData, omraType: value as OmraOrderType });
+                }}
+                className="justify-start"
+              >
+                <ToggleGroupItem
+                  value="groupe"
+                  aria-label={t('orders.form.omraGroupe')}
+                  className="gap-2 data-[state=on]:bg-indigo-100 data-[state=on]:text-indigo-800 dark:data-[state=on]:bg-indigo-900/30 dark:data-[state=on]:text-indigo-400"
+                >
+                  <Users className="h-4 w-4" />
+                  {t('orders.form.omraGroupe')}
+                </ToggleGroupItem>
+                <ToggleGroupItem
+                  value="libre"
+                  aria-label={t('orders.form.omraLibre')}
+                  className="gap-2 data-[state=on]:bg-amber-100 data-[state=on]:text-amber-800 dark:data-[state=on]:bg-amber-900/30 dark:data-[state=on]:text-amber-400"
+                >
+                  <UserCheck className="h-4 w-4" />
+                  {t('orders.form.omraLibre')}
+                </ToggleGroupItem>
+              </ToggleGroup>
+            </div>
+
             {/* Client Info */}
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
@@ -390,8 +466,8 @@ export const OmraOrdersTab = () => {
               </div>
             </div>
 
-            {/* Dates */}
-            <div className="grid grid-cols-3 gap-4">
+            {/* Dates - highlighted for Omra Libre */}
+            <div className={`grid grid-cols-3 gap-4 ${isLibre ? 'p-3 rounded-lg border-2 border-amber-300 dark:border-amber-700 bg-amber-50/30 dark:bg-amber-900/10' : ''}`}>
               <div className="space-y-2">
                 <Label htmlFor="orderDate">{t('orders.form.orderDate')}</Label>
                 <Input
@@ -421,8 +497,8 @@ export const OmraOrdersTab = () => {
               </div>
             </div>
 
-            {/* Hotel & Room */}
-            <div className="grid grid-cols-2 gap-4">
+            {/* Hotel & Room - highlighted for Omra Libre */}
+            <div className={`grid grid-cols-2 gap-4 ${isLibre ? 'p-3 rounded-lg border-2 border-amber-300 dark:border-amber-700 bg-amber-50/30 dark:bg-amber-900/10' : ''}`}>
               <div className="space-y-2">
                 <Label>{t('orders.form.hotel')}</Label>
                 {hotels.length === 0 && !isAddingHotel ? (
@@ -518,8 +594,8 @@ export const OmraOrdersTab = () => {
               </div>
             </div>
 
-            {/* Prices */}
-            <div className="grid grid-cols-3 gap-4">
+            {/* Prices - highlighted for Omra Libre */}
+            <div className={`grid grid-cols-3 gap-4 ${isLibre ? 'p-3 rounded-lg border-2 border-amber-300 dark:border-amber-700 bg-amber-50/30 dark:bg-amber-900/10' : ''}`}>
               <div className="space-y-2">
                 <Label htmlFor="sellingPrice">{t('orders.form.sellingPrice')}</Label>
                 <Input
@@ -578,11 +654,37 @@ export const OmraOrdersTab = () => {
               </div>
             )}
 
+            {/* Program Selector */}
+            <div className="space-y-2">
+              <Label>{t('orders.form.selectProgram')}</Label>
+              <Select
+                value={formData.programId || '__none__'}
+                onValueChange={handleProgramChange}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder={t('orders.form.selectProgram')} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__none__">{t('orders.form.noProgram')}</SelectItem>
+                  {hotels.map((hotel) => (
+                    <SelectItem key={hotel.id} value={hotel.id}>
+                      {hotel.name} {hotel.location ? `- ${hotel.location}` : ''}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {formData.inProgram && (
+                <Badge className="bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400 border-0">
+                  {t('orders.form.inProgram')}
+                </Badge>
+              )}
+            </div>
+
             {/* Summary */}
             <div className="grid grid-cols-2 gap-4 p-4 bg-muted rounded-lg">
               <div>
                 <p className="text-sm text-muted-foreground">{t('calculations.remaining')}</p>
-                <p className="text-lg font-bold">
+                <p className={`text-lg font-bold ${formData.sellingPrice - formData.amountPaid > 0 ? 'text-red-600' : 'text-green-600'}`}>
                   {formatDZD(formData.sellingPrice - formData.amountPaid)}
                 </p>
               </div>

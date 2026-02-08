@@ -18,13 +18,15 @@
   },
   "filters": {
     "status": "الحالة",
-    "hotel": "الفندق"
+    "hotel": "الفندق",
+    "omraType": "نوع العمرة"
   },
   "status": {
     "en_attente": "قيد الانتظار",
     "confirme": "مؤكد",
     "termine": "منتهي",
     "annule": "ملغى",
+    "reserve": "محجوز",
     "active": "نشط",
     "inactive": "غير نشط"
   },
@@ -83,7 +85,13 @@
       "hotelPlaceholder": "اسم الفندق",
       "assignTo": "تعيين إلى",
       "selectEmployee": "اختر موظفاً",
-      "unassigned": "غير معين"
+      "unassigned": "غير معين",
+      "omraType": "نوع العمرة",
+      "omraGroupe": "عمرة جماعية",
+      "omraLibre": "عمرة حرة",
+      "selectProgram": "اختر برنامجاً",
+      "noProgram": "بدون برنامج",
+      "inProgram": "في البرنامج"
     },
     "confirm": {
       "delete": "هل أنت متأكد من حذف هذا الطلب؟"

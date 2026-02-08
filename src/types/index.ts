@@ -180,7 +180,8 @@ export interface ServiceStats {
 // ==================== OMRA TYPES ====================
 
 export type OmraRoomType = 'chambre_1' | 'chambre_2' | 'chambre_3' | 'chambre_4' | 'chambre_5' | 'suite';
-export type OmraStatus = 'en_attente' | 'confirme' | 'termine' | 'annule';
+export type OmraStatus = 'en_attente' | 'confirme' | 'termine' | 'annule' | 'reserve';
+export type OmraOrderType = 'groupe' | 'libre';
 
 export interface OmraHotel {
   id: string;
@@ -202,6 +203,10 @@ export interface OmraOrder {
   hotel?: OmraHotel;
   roomType: OmraRoomType;
   status: OmraStatus;
+  omraType: OmraOrderType;
+  programId?: string;
+  program?: OmraHotel;
+  inProgram: boolean;
   sellingPrice: number;
   amountPaid: number;
   buyingPrice: number;
@@ -249,6 +254,7 @@ export const omraStatusLabels: Record<OmraStatus, string> = {
   confirme: 'Confirmé',
   termine: 'Terminé',
   annule: 'Annulé',
+  reserve: 'Réservé',
 };
 
 // ==================== EMPLOYEE TRANSACTIONS TYPES ====================

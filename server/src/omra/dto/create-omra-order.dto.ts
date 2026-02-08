@@ -6,8 +6,9 @@ import {
   IsNumber,
   IsDateString,
   IsUUID,
+  IsBoolean,
 } from 'class-validator';
-import { OmraRoomType } from '../entities/omra-order.entity';
+import { OmraRoomType, OmraOrderType } from '../entities/omra-order.entity';
 
 export class CreateOmraOrderDto {
   @IsString()
@@ -37,6 +38,18 @@ export class CreateOmraOrderDto {
   @IsEnum(OmraRoomType)
   @IsOptional()
   roomType?: OmraRoomType;
+
+  @IsEnum(OmraOrderType)
+  @IsOptional()
+  omraType?: OmraOrderType;
+
+  @IsUUID()
+  @IsOptional()
+  programId?: string;
+
+  @IsBoolean()
+  @IsOptional()
+  inProgram?: boolean;
 
   @IsNumber()
   @IsOptional()
