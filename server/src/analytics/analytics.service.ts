@@ -175,7 +175,7 @@ export class AnalyticsService {
     };
   }
 
-  async getEmployeeCaisseStats() {
+  async getEmployeeCaisseStats(lastResetDates?: Record<string, { resetDate: Date; newBalance: number }>) {
     // Fetch all active employees
     const employees = await this.usersRepo.find({ where: { isActive: true } });
     
@@ -193,23 +193,37 @@ export class AnalyticsService {
       const assignedOmraOrders = omraOrders.filter(o => o.assignedTo === employee.id);
       const assignedOmraVisas = omraVisas.filter(v => v.assignedTo === employee.id);
 
-      // Calculate totals from all sources
-      const commandCaisse = assignedCommands.reduce((sum, c) => sum + Number(c.amountPaid || 0), 0);
-      const omraOrderCaisse = assignedOmraOrders.reduce((sum, o) => sum + Number(o.amountPaid || 0), 0);
-      const omraVisaCaisse = assignedOmraVisas.reduce((sum, v) => sum + Number(v.amountPaid || 0), 0);
+      // Get last reset date for this employee
+      const resetInfo = lastResetDates?.[employee.id];
+      const resetDate = resetInfo ? new Date(resetInfo.resetDate) : null;
 
-      const commandImpayes = assignedCommands.reduce((sum, c) => 
+      // Filter by reset date if exists
+      const filterByDate = <T extends { createdAt: Date }>(items: T[]): T[] => {
+        if (!resetDate) return items;
+        return items.filter(item => new Date(item.createdAt) > resetDate);
+      };
+
+      const filteredCommands = filterByDate(assignedCommands);
+      const filteredOmraOrders = filterByDate(assignedOmraOrders);
+      const filteredOmraVisas = filterByDate(assignedOmraVisas);
+
+      // Calculate totals from filtered sources
+      const commandCaisse = filteredCommands.reduce((sum, c) => sum + Number(c.amountPaid || 0), 0);
+      const omraOrderCaisse = filteredOmraOrders.reduce((sum, o) => sum + Number(o.amountPaid || 0), 0);
+      const omraVisaCaisse = filteredOmraVisas.reduce((sum, v) => sum + Number(v.amountPaid || 0), 0);
+
+      const commandImpayes = filteredCommands.reduce((sum, c) => 
         sum + Math.max(0, Number(c.sellingPrice || 0) - Number(c.amountPaid || 0)), 0);
-      const omraOrderImpayes = assignedOmraOrders.reduce((sum, o) => 
+      const omraOrderImpayes = filteredOmraOrders.reduce((sum, o) => 
         sum + Math.max(0, Number(o.sellingPrice || 0) - Number(o.amountPaid || 0)), 0);
-      const omraVisaImpayes = assignedOmraVisas.reduce((sum, v) => 
+      const omraVisaImpayes = filteredOmraVisas.reduce((sum, v) => 
         sum + Math.max(0, Number(v.sellingPrice || 0) - Number(v.amountPaid || 0)), 0);
 
-      const commandBenefices = assignedCommands.reduce((sum, c) => 
+      const commandBenefices = filteredCommands.reduce((sum, c) => 
         sum + (Number(c.sellingPrice || 0) - Number(c.buyingPrice || 0)), 0);
-      const omraOrderBenefices = assignedOmraOrders.reduce((sum, o) => 
+      const omraOrderBenefices = filteredOmraOrders.reduce((sum, o) => 
         sum + (Number(o.sellingPrice || 0) - Number(o.buyingPrice || 0)), 0);
-      const omraVisaBenefices = assignedOmraVisas.reduce((sum, v) => 
+      const omraVisaBenefices = filteredOmraVisas.reduce((sum, v) => 
         sum + (Number(v.sellingPrice || 0) - Number(v.buyingPrice || 0)), 0);
 
       return {
@@ -219,7 +233,7 @@ export class AnalyticsService {
         totalCaisse: commandCaisse + omraOrderCaisse + omraVisaCaisse,
         totalImpayes: commandImpayes + omraOrderImpayes + omraVisaImpayes,
         totalBenefices: commandBenefices + omraOrderBenefices + omraVisaBenefices,
-        commandCount: assignedCommands.length + assignedOmraOrders.length + assignedOmraVisas.length,
+        commandCount: filteredCommands.length + filteredOmraOrders.length + filteredOmraVisas.length,
       };
     });
 

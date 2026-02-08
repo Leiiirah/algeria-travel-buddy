@@ -92,7 +92,8 @@
       "caisse": "الصندوق",
       "impayes": "غير المدفوع",
       "benefices": "الأرباح",
-      "commands": "الملفات"
+      "commands": "الملفات",
+      "actions": "إجراءات"
     },
     "global": {
       "title": "إجمالي الوكالة",
@@ -101,6 +102,39 @@
     "empty": {
       "title": "لا توجد بيانات",
       "description": "لا توجد طلبات معينة للموظفين"
+    },
+    "settle": "تسوية الصندوق",
+    "history": "سجل التسويات",
+    "settleDialog": {
+      "title": "تسوية الصندوق",
+      "subtitle": "تسجيل تسوية لـ {{name}}",
+      "currentCaisse": "الصندوق الحالي",
+      "currentImpayes": "غير المدفوع الحالي",
+      "currentBenefices": "الأرباح الحالية",
+      "currentCommands": "الملفات الحالية",
+      "newBalance": "الرصيد الجديد",
+      "notes": "ملاحظات",
+      "notesPlaceholder": "تسوية الصندوق لشهر...",
+      "confirm": "تأكيد التسوية",
+      "saving": "جاري الحفظ..."
+    },
+    "historyDialog": {
+      "title": "سجل التسويات",
+      "subtitle": "جميع التسويات السابقة لـ {{name}}",
+      "table": {
+        "date": "التاريخ",
+        "caisse": "الصندوق",
+        "impayes": "غير المدفوع",
+        "benefices": "الأرباح",
+        "commands": "الملفات",
+        "newBalance": "الرصيد الجديد",
+        "notes": "ملاحظات"
+      },
+      "cumulative": "الإجمالي التراكمي",
+      "empty": {
+        "title": "لا توجد تسويات",
+        "description": "لم يتم إجراء أي تسوية لهذا الموظف"
+      }
     }
   }
 }

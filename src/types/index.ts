@@ -1,6 +1,24 @@
 // User & Auth Types
 export type UserRole = 'admin' | 'employee';
 
+// ==================== CAISSE HISTORY TYPES ====================
+
+export interface CaisseSettlement {
+  id: string;
+  employeeId: string;
+  caisseAmount: number;
+  impayesAmount: number;
+  beneficesAmount: number;
+  commandCount: number;
+  newBalance: number;
+  adminId: string;
+  admin?: { firstName: string; lastName: string };
+  notes: string | null;
+  resetDate: Date;
+  createdAt: Date;
+}
+
+
 export interface User {
   id: string;
   email: string;
