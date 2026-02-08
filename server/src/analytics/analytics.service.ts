@@ -237,8 +237,10 @@ export class AnalyticsService {
       };
     });
 
-    // Filter out employees with no assigned items
-    const activeEmployeeStats = employeeStats.filter(e => e.commandCount > 0);
+    // Filter out employees with no assigned items AND no settlement history
+    const activeEmployeeStats = employeeStats.filter(e => 
+      e.commandCount > 0 || (lastResetDates && lastResetDates[e.employeeId])
+    );
 
     // Calculate global totals
     const global = {
