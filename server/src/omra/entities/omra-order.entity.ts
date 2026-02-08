@@ -10,6 +10,11 @@ import {
 import { OmraHotel } from './omra-hotel.entity';
 import { User } from '../../users/entities/user.entity';
 
+export enum OmraOrderType {
+  GROUPE = 'groupe',
+  LIBRE = 'libre',
+}
+
 export enum OmraRoomType {
   CHAMBRE_1 = 'chambre_1',
   CHAMBRE_2 = 'chambre_2',
@@ -24,6 +29,7 @@ export enum OmraStatus {
   CONFIRME = 'confirme',
   TERMINE = 'termine',
   ANNULE = 'annule',
+  RESERVE = 'reserve',
 }
 
 @Entity('omra_orders')
@@ -63,6 +69,19 @@ export class OmraOrder {
   })
   status: OmraStatus;
 
+  @Column({
+    type: 'enum',
+    enum: OmraOrderType,
+    default: OmraOrderType.LIBRE,
+  })
+  omraType: OmraOrderType;
+
+  @Column({ type: 'uuid', nullable: true })
+  programId: string;
+
+  @Column({ type: 'boolean', default: false })
+  inProgram: boolean;
+
   @Column({ type: 'decimal', precision: 10, scale: 2, default: 0 })
   sellingPrice: number;
 
@@ -90,6 +109,10 @@ export class OmraOrder {
   @ManyToOne(() => OmraHotel, { nullable: true })
   @JoinColumn({ name: 'hotelId' })
   hotel: OmraHotel;
+
+  @ManyToOne(() => OmraHotel, { nullable: true })
+  @JoinColumn({ name: 'programId' })
+  program: OmraHotel;
 
   @ManyToOne(() => User, { nullable: true })
   @JoinColumn({ name: 'createdBy' })

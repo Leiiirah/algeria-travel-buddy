@@ -1,4 +1,4 @@
-import { User, Service, Supplier, Command, Payment, SupplierTransaction, DocumentNode, OmraHotel, OmraOrder, OmraVisa, OmraRoomType, OmraStatus, EmployeeTransaction, EmployeeBalance, EmployeeTransactionType, Expense, ExpenseStats, ExpenseCategory, PaymentMethod, SupplierOrder, SupplierOrderStatus, SupplierReceipt, SupplierInvoice, SupplierInvoiceStatus, ServiceTypeEntity, InternalTask, TaskStats, TaskPriority, TaskStatus, TaskVisibility, ClientInvoice, ClientInvoiceStats, ClientInvoiceType, ClientInvoiceStatus } from '@/types';
+import { User, Service, Supplier, Command, Payment, SupplierTransaction, DocumentNode, OmraHotel, OmraOrder, OmraVisa, OmraRoomType, OmraStatus, OmraOrderType, EmployeeTransaction, EmployeeBalance, EmployeeTransactionType, Expense, ExpenseStats, ExpenseCategory, PaymentMethod, SupplierOrder, SupplierOrderStatus, SupplierReceipt, SupplierInvoice, SupplierInvoiceStatus, ServiceTypeEntity, InternalTask, TaskStats, TaskPriority, TaskStatus, TaskVisibility, ClientInvoice, ClientInvoiceStats, ClientInvoiceType, ClientInvoiceStatus } from '@/types';
 
 // API base URL - includes /api prefix to match nginx proxy configuration
 const API_URL = (import.meta.env.VITE_API_URL || 'http://69.62.127.134:8080/api')
@@ -215,6 +215,9 @@ export interface CreateOmraOrderDto {
   periodTo: string;
   hotelId?: string;
   roomType?: OmraRoomType;
+  omraType?: OmraOrderType;
+  programId?: string;
+  inProgram?: boolean;
   sellingPrice?: number;
   amountPaid?: number;
   buyingPrice?: number;
@@ -246,6 +249,7 @@ export interface UpdateOmraVisaDto extends Partial<CreateOmraVisaDto> {
 export interface OmraFilters {
   status?: string;
   hotelId?: string;
+  omraType?: string;
   search?: string;
   fromDate?: string;
   toDate?: string;

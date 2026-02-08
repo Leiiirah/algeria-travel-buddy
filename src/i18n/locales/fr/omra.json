@@ -18,13 +18,15 @@
   },
   "filters": {
     "status": "Statut",
-    "hotel": "Hôtel"
+    "hotel": "Hôtel",
+    "omraType": "Type d'Omra"
   },
   "status": {
     "en_attente": "En attente",
     "confirme": "Confirmé",
     "termine": "Terminé",
     "annule": "Annulé",
+    "reserve": "Réservé",
     "active": "Actif",
     "inactive": "Inactif"
   },
@@ -83,7 +85,13 @@
       "hotelPlaceholder": "Nom de l'hôtel",
       "assignTo": "Attribuer à",
       "selectEmployee": "Sélectionner un employé",
-      "unassigned": "Non attribué"
+      "unassigned": "Non attribué",
+      "omraType": "Type d'Omra",
+      "omraGroupe": "Omra de Groupe",
+      "omraLibre": "Omra Libre",
+      "selectProgram": "Sélectionner un Programme",
+      "noProgram": "Sans programme",
+      "inProgram": "En Programme"
     },
     "confirm": {
       "delete": "Êtes-vous sûr de vouloir supprimer cette commande ?"
