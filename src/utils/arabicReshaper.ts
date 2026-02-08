@@ -27,48 +27,29 @@ function containsArabic(text: string): boolean {
 /**
  * Reshape Arabic text for jsPDF rendering.
  *
- * jsPDF has two problems with Arabic:
- * 1. No text shaping — letters appear in isolated form instead of connected
- * 2. No RTL support — text is rendered left-to-right
+ * jsPDF has a problem with Arabic: no text shaping — letters appear in
+ * isolated form instead of connected. This function fixes it by converting
+ * Arabic characters to their Presentation Forms (pre-shaped glyphs).
  *
- * This function fixes both by:
- * 1. Converting Arabic characters to their Presentation Forms (pre-shaped glyphs)
- * 2. Reversing character order within Arabic words for visual RTL in LTR context
- * 3. Reversing the overall word order so the sentence reads right-to-left
+ * RTL direction is handled by jsPDF's built-in BiDi engine via the
+ * `isInputRtl` option on doc.text() — we do NOT reverse text manually.
  *
  * Non-Arabic tokens (numbers, Latin text) are kept as-is.
  */
 export function reshapeArabic(text: string): string {
   if (!text || !containsArabic(text)) return text;
 
-  // Step 1: Reshape the entire string to convert to presentation forms
-  const reshaped = ArabicReshaper.convertArabic(text);
-
-  // Step 2: Split into tokens (words) by spaces
-  const tokens = reshaped.split(' ');
-
-  // Step 3: Reverse character order within each Arabic token (for RTL in LTR context)
-  const processedTokens = tokens.map((token) => {
-    if (containsArabic(token)) {
-      // Reverse character order for RTL display
-      return token.split('').reverse().join('');
-    }
-    return token;
-  });
-
-  // Step 4: Reverse the word order so the full sentence reads RTL
-  processedTokens.reverse();
-
-  return processedTokens.join(' ');
+  // Reshape the entire string to convert to presentation forms
+  return ArabicReshaper.convertArabic(text);
 }
 
 /**
  * Reshape a mixed Arabic/non-Arabic string that contains labels and values.
  * Example: "رقم السجل التجاري: 12ب0807686-09/00"
  *
- * This splits at ": " to keep the value portion (numbers, codes) intact
- * while reshaping only the Arabic label part.
+ * This creates a properly ordered string with the Arabic label and value,
+ * relying on jsPDF's BiDi engine (isInputRtl) for correct RTL display.
  */
 export function reshapeArabicLabel(label: string, value: string): string {
-  return `${value} :${reshapeArabic(label)}`;
+  return `${reshapeArabic(label)}: ${value}`;
 }
