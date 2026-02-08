@@ -205,7 +205,7 @@ export interface OmraOrder {
   status: OmraStatus;
   omraType: OmraOrderType;
   programId?: string;
-  program?: OmraHotel;
+  program?: OmraProgram;
   inProgram: boolean;
   sellingPrice: number;
   amountPaid: number;
@@ -217,6 +217,32 @@ export interface OmraOrder {
   creator?: User;
   createdAt: Date;
   updatedAt: Date;
+}
+
+// Program types
+export type OmraProgramPricing = Partial<Record<OmraRoomType, number>>;
+
+export interface OmraProgram {
+  id: string;
+  name: string;
+  periodFrom: Date;
+  periodTo: Date;
+  totalPlaces: number;
+  hotelId?: string;
+  hotel?: OmraHotel;
+  pricing: OmraProgramPricing;
+  isActive: boolean;
+  createdBy: string;
+  creator?: User;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface OmraProgramInventory {
+  programId: string;
+  confirmed: number;
+  remaining: number;
+  total: number;
 }
 
 export interface OmraVisa {

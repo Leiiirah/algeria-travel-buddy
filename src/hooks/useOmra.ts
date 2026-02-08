@@ -7,6 +7,8 @@ import {
   UpdateOmraOrderDto,
   CreateOmraVisaDto,
   UpdateOmraVisaDto,
+  CreateOmraProgramDto,
+  UpdateOmraProgramDto,
   OmraFilters,
 } from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
@@ -333,5 +335,98 @@ export const useOmraStats = () => {
   return useQuery({
     queryKey: ['omra', 'stats'],
     queryFn: () => api.getOmraStats(),
+  });
+};
+
+// ==================== PROGRAMS ====================
+
+export const useOmraPrograms = () => {
+  return useQuery({
+    queryKey: ['omra', 'programs'],
+    queryFn: () => api.getOmraPrograms(),
+  });
+};
+
+export const useActiveOmraPrograms = () => {
+  return useQuery({
+    queryKey: ['omra', 'programs', 'active'],
+    queryFn: () => api.getActiveOmraPrograms(),
+  });
+};
+
+export const useOmraProgramInventory = () => {
+  return useQuery({
+    queryKey: ['omra', 'programs', 'inventory'],
+    queryFn: () => api.getOmraProgramInventory(),
+  });
+};
+
+export const useCreateOmraProgram = () => {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: (data: CreateOmraProgramDto) => api.createOmraProgram(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['omra', 'programs'] });
+      toast({
+        title: 'Programme créé',
+        description: 'Le nouveau programme a été enregistré',
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: 'Erreur',
+        description: error.message,
+        variant: 'destructive',
+      });
+    },
+  });
+};
+
+export const useUpdateOmraProgram = () => {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: UpdateOmraProgramDto }) =>
+      api.updateOmraProgram(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['omra', 'programs'] });
+      toast({
+        title: 'Programme modifié',
+        description: 'Les informations ont été mises à jour',
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: 'Erreur',
+        description: error.message,
+        variant: 'destructive',
+      });
+    },
+  });
+};
+
+export const useDeleteOmraProgram = () => {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: (id: string) => api.deleteOmraProgram(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['omra', 'programs'] });
+      toast({
+        title: 'Programme supprimé',
+        description: 'Le programme a été supprimé avec succès',
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: 'Erreur',
+        description: error.message,
+        variant: 'destructive',
+      });
+    },
   });
 };

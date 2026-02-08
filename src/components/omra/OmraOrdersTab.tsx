@@ -43,6 +43,7 @@ import { formatDZD } from '@/lib/utils';
 import {
   useOmraOrders,
   useActiveOmraHotels,
+  useActiveOmraPrograms,
   useCreateOmraOrder,
   useUpdateOmraOrder,
   useUpdateOmraOrderStatus,
@@ -100,6 +101,7 @@ export const OmraOrdersTab = () => {
     search: debouncedSearch || undefined,
   });
   const { data: hotels = [] } = useActiveOmraHotels();
+  const { data: activePrograms = [] } = useActiveOmraPrograms();
   const { data: employees } = useActiveEmployees();
   const createOrder = useCreateOmraOrder();
   const updateOrder = useUpdateOmraOrder();
@@ -222,8 +224,26 @@ export const OmraOrdersTab = () => {
     if (value === '__none__') {
       setFormData({ ...formData, programId: '', inProgram: false });
     } else {
-      setFormData({ ...formData, programId: value, inProgram: true });
+      const selectedProgram = activePrograms.find((p) => p.id === value);
+      const newData = { ...formData, programId: value, inProgram: true };
+      // Auto-fill selling price from program pricing if room type is set
+      if (selectedProgram && formData.roomType && selectedProgram.pricing[formData.roomType]) {
+        newData.sellingPrice = selectedProgram.pricing[formData.roomType] as number;
+      }
+      setFormData(newData);
     }
+  };
+
+  const handleRoomTypeChange = (value: string) => {
+    const newData = { ...formData, roomType: value as OmraRoomType };
+    // Auto-fill selling price from program pricing if a program is selected
+    if (formData.programId) {
+      const selectedProgram = activePrograms.find((p) => p.id === formData.programId);
+      if (selectedProgram && selectedProgram.pricing[value]) {
+        newData.sellingPrice = selectedProgram.pricing[value] as number;
+      }
+    }
+    setFormData(newData);
   };
 
   const isLibre = formData.omraType === 'libre';
@@ -576,9 +596,7 @@ export const OmraOrdersTab = () => {
                 <Label>{t('orders.form.roomType')}</Label>
                 <Select
                   value={formData.roomType}
-                  onValueChange={(value) =>
-                    setFormData({ ...formData, roomType: value as OmraRoomType })
-                  }
+                  onValueChange={handleRoomTypeChange}
                 >
                   <SelectTrigger>
                     <SelectValue />
@@ -666,9 +684,9 @@ export const OmraOrdersTab = () => {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="__none__">{t('orders.form.noProgram')}</SelectItem>
-                  {hotels.map((hotel) => (
-                    <SelectItem key={hotel.id} value={hotel.id}>
-                      {hotel.name} {hotel.location ? `- ${hotel.location}` : ''}
+                  {activePrograms.map((program) => (
+                    <SelectItem key={program.id} value={program.id}>
+                      {program.name} ({formatDate(program.periodFrom)} → {formatDate(program.periodTo)})
                     </SelectItem>
                   ))}
                 </SelectContent>

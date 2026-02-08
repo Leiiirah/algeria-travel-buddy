@@ -2,12 +2,13 @@ import { useTranslation } from 'react-i18next';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Package, FileText, Building2, Banknote, TrendingUp, CreditCard } from 'lucide-react';
+import { Package, FileText, Building2, Banknote, TrendingUp, CreditCard, Calendar } from 'lucide-react';
 import { formatDZD } from '@/lib/utils';
 import { useOmraStats } from '@/hooks/useOmra';
 import { OmraOrdersTab } from '@/components/omra/OmraOrdersTab';
 import { OmraVisasTab } from '@/components/omra/OmraVisasTab';
 import { OmraHotelsTab } from '@/components/omra/OmraHotelsTab';
+import { OmraProgramsTab } from '@/components/omra/OmraProgramsTab';
 import { OmraSkeleton } from '@/components/skeletons/OmraSkeleton';
 import { ErrorState } from '@/components/ui/error-state';
 
@@ -86,7 +87,7 @@ const OmraPage = () => {
 
       {/* Tabs */}
       <Tabs defaultValue="orders" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-3 lg:w-[400px]">
+        <TabsList className="grid w-full grid-cols-4 lg:w-[550px]">
           <TabsTrigger value="orders" className="gap-2">
             <Package className="h-4 w-4" />
             {t('tabs.orders')}
@@ -98,6 +99,10 @@ const OmraPage = () => {
           <TabsTrigger value="hotels" className="gap-2">
             <Building2 className="h-4 w-4" />
             {t('tabs.hotels')}
+          </TabsTrigger>
+          <TabsTrigger value="programs" className="gap-2">
+            <Calendar className="h-4 w-4" />
+            {t('tabs.programs')}
           </TabsTrigger>
         </TabsList>
 
@@ -111,6 +116,10 @@ const OmraPage = () => {
 
         <TabsContent value="hotels">
           <OmraHotelsTab />
+        </TabsContent>
+
+        <TabsContent value="programs">
+          <OmraProgramsTab />
         </TabsContent>
       </Tabs>
     </DashboardLayout>

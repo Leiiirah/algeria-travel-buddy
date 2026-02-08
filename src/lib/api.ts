@@ -1,4 +1,4 @@
-import { User, Service, Supplier, Command, Payment, SupplierTransaction, DocumentNode, OmraHotel, OmraOrder, OmraVisa, OmraRoomType, OmraStatus, OmraOrderType, EmployeeTransaction, EmployeeBalance, EmployeeTransactionType, Expense, ExpenseStats, ExpenseCategory, PaymentMethod, SupplierOrder, SupplierOrderStatus, SupplierReceipt, SupplierInvoice, SupplierInvoiceStatus, ServiceTypeEntity, InternalTask, TaskStats, TaskPriority, TaskStatus, TaskVisibility, ClientInvoice, ClientInvoiceStats, ClientInvoiceType, ClientInvoiceStatus } from '@/types';
+import { User, Service, Supplier, Command, Payment, SupplierTransaction, DocumentNode, OmraHotel, OmraOrder, OmraVisa, OmraProgram, OmraProgramInventory, OmraRoomType, OmraStatus, OmraOrderType, EmployeeTransaction, EmployeeBalance, EmployeeTransactionType, Expense, ExpenseStats, ExpenseCategory, PaymentMethod, SupplierOrder, SupplierOrderStatus, SupplierReceipt, SupplierInvoice, SupplierInvoiceStatus, ServiceTypeEntity, InternalTask, TaskStats, TaskPriority, TaskStatus, TaskVisibility, ClientInvoice, ClientInvoiceStats, ClientInvoiceType, ClientInvoiceStatus } from '@/types';
 
 // API base URL - includes /api prefix to match nginx proxy configuration
 const API_URL = (import.meta.env.VITE_API_URL || 'http://69.62.127.134:8080/api')
@@ -255,6 +255,21 @@ export interface OmraFilters {
   toDate?: string;
   page?: number;
   limit?: number;
+}
+
+// ==================== OMRA PROGRAM DTOs ====================
+
+export interface CreateOmraProgramDto {
+  name: string;
+  periodFrom: string;
+  periodTo: string;
+  totalPlaces: number;
+  hotelId?: string;
+  pricing?: Record<string, number>;
+}
+
+export interface UpdateOmraProgramDto extends Partial<CreateOmraProgramDto> {
+  isActive?: boolean;
 }
 
 // ==================== EMPLOYEE TRANSACTIONS DTOs ====================
@@ -1196,6 +1211,34 @@ class ApiClient {
   // Stats
   getOmraStats = (): Promise<OmraStats> =>
     this.request('/omra/stats');
+
+  // Programs
+  getOmraPrograms = (): Promise<OmraProgram[]> =>
+    this.request('/omra/programs');
+
+  getActiveOmraPrograms = (): Promise<OmraProgram[]> =>
+    this.request('/omra/programs/active');
+
+  getOmraProgram = (id: string): Promise<OmraProgram> =>
+    this.request(`/omra/programs/${id}`);
+
+  createOmraProgram = (data: CreateOmraProgramDto): Promise<OmraProgram> =>
+    this.request('/omra/programs', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+
+  updateOmraProgram = (id: string, data: UpdateOmraProgramDto): Promise<OmraProgram> =>
+    this.request(`/omra/programs/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    });
+
+  deleteOmraProgram = (id: string): Promise<void> =>
+    this.request(`/omra/programs/${id}`, { method: 'DELETE' });
+
+  getOmraProgramInventory = (): Promise<OmraProgramInventory[]> =>
+    this.request('/omra/programs/inventory');
 
   // ==================== EMPLOYEE TRANSACTIONS ====================
 
