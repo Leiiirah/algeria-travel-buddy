@@ -123,31 +123,20 @@ function drawArabicFooter(doc: jsPDF, info: ReturnType<typeof mergeAgencyInfo>, 
   const pageWidth = doc.internal.pageSize.width;
   const pageHeight = doc.internal.pageSize.height;
 
-  const footerHeight = 38;
-  const footerY = pageHeight - footerHeight - 6;
-  const footerX = 10;
-  const footerW = pageWidth - 20;
-
-  // Background
-  doc.setFillColor(245, 240, 230); // #F5F0E6
-  doc.setDrawColor(201, 184, 150); // #C9B896
-  doc.setLineWidth(0.6);
-  doc.roundedRect(footerX, footerY, footerW, footerHeight, 2, 2, 'FD');
-
   const centerX = pageWidth / 2;
-  let y = footerY + 8;
+  let y = pageHeight - 28;
 
-  // Line 1: Arabic name (always Tajawal)
+  // Line 1: Arabic name (Tajawal Bold)
   if (hasTajawal) {
     doc.setFont('Tajawal', 'bold');
   } else {
     doc.setFont('helvetica', 'bold');
   }
   doc.setFontSize(10);
-  doc.setTextColor(80, 60, 30);
+  doc.setTextColor(60, 60, 60);
   doc.text(info.arabicName, centerX, y, { align: 'center' });
 
-  // Line 2: Arabic address
+  // Line 2: Arabic address (Tajawal Regular)
   y += 6;
   if (hasTajawal) {
     doc.setFont('Tajawal', 'normal');
@@ -157,27 +146,21 @@ function drawArabicFooter(doc: jsPDF, info: ReturnType<typeof mergeAgencyInfo>, 
   doc.setFontSize(8);
   doc.text(info.arabicAddress, centerX, y, { align: 'center' });
 
-  // Line 3: Legal identifiers
+  // Line 3: Legal identifiers (full Arabic labels, Tajawal)
   y += 6;
   const legalParts: string[] = [];
-  if (info.rc) legalParts.push(`RC: ${info.rc}`);
-  if (info.nif) legalParts.push(`NIF: ${info.nif}`);
-  if (info.nis) legalParts.push(`NIS: ${info.nis}`);
-  if (info.licenseNumber) legalParts.push(`Licence: ${info.licenseNumber}`);
-  doc.setFont('helvetica', 'normal');
+  if (info.rc) legalParts.push(`رقم السجل التجاري: ${info.rc}`);
+  if (info.nif) legalParts.push(`رقم التعريف الجبائي: ${info.nif}`);
+  if (info.nis) legalParts.push(`رقم التعريف الإحصائي: ${info.nis}`);
+  if (info.licenseNumber) legalParts.push(`رقم رخصة الوكالة: ${info.licenseNumber}`);
   doc.setFontSize(7);
   doc.text(legalParts.join('  |  '), centerX, y, { align: 'center' });
 
-  // Line 4: Phone numbers (Arabic labels in Tajawal)
+  // Line 4: Phone numbers (Arabic labels, Tajawal)
   y += 6;
   const phoneParts: string[] = [];
   if (info.phone) phoneParts.push(`المكتب: ${info.phone}`);
   if (info.mobilePhone) phoneParts.push(`الجوال: ${info.mobilePhone}`);
-  if (hasTajawal) {
-    doc.setFont('Tajawal', 'normal');
-  } else {
-    doc.setFont('helvetica', 'normal');
-  }
   doc.setFontSize(7);
   doc.text(phoneParts.join('  |  '), centerX, y, { align: 'center' });
 
