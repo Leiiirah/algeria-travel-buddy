@@ -140,10 +140,16 @@
       "legalName": "Raison sociale",
       "address": "Adresse",
       "phone": "Téléphone",
+      "mobilePhone": "Téléphone mobile",
       "email": "Email",
       "nif": "NIF",
       "nis": "NIS",
-      "rc": "RC"
+      "rc": "RC",
+      "bankName": "Nom de la banque",
+      "bankAccount": "Numéro de compte",
+      "licenseNumber": "Numéro de licence",
+      "arabicName": "Nom en arabe",
+      "arabicAddress": "Adresse en arabe"
     }
   }
 }

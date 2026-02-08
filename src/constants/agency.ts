@@ -8,6 +8,12 @@ export const AGENCY_INFO = {
   rc: '09/00-0807686B12',
   nif: '001209080768687',
   nis: '001209010018958',
+  bankName: 'ccp',
+  bankAccount: '00799999001499040728',
+  mobilePhone: '0770236424',
+  licenseNumber: '',
+  arabicName: 'الحكمة لسياحة و الأسفار',
+  arabicAddress: '02، طريق القليعة، زعبانة، 09001، البليدة، الجزائر',
 };
  
  // Travel class options

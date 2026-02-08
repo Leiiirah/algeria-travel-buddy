@@ -13,10 +13,16 @@ const FIELDS = [
   { key: 'legalName', icon: '🏢' },
   { key: 'address', icon: '📍' },
   { key: 'phone', icon: '📞' },
+  { key: 'mobilePhone', icon: '📱' },
   { key: 'email', icon: '✉️' },
   { key: 'nif', icon: '🔢' },
   { key: 'nis', icon: '🔢' },
   { key: 'rc', icon: '📋' },
+  { key: 'bankName', icon: '🏦' },
+  { key: 'bankAccount', icon: '💳' },
+  { key: 'licenseNumber', icon: '📄' },
+  { key: 'arabicName', icon: '🕌', dir: 'rtl' as const },
+  { key: 'arabicAddress', icon: '📍', dir: 'rtl' as const },
 ] as const;
 
 export default function ContactPage() {
@@ -57,7 +63,7 @@ export default function ContactPage() {
           </CardHeader>
           <CardContent className="space-y-4">
             {isLoading ? (
-              Array.from({ length: 7 }).map((_, i) => (
+              Array.from({ length: FIELDS.length }).map((_, i) => (
                 <div key={i} className="space-y-2">
                   <Skeleton className="h-4 w-24" />
                   <Skeleton className="h-10 w-full" />
@@ -65,7 +71,7 @@ export default function ContactPage() {
               ))
             ) : (
               <>
-                {FIELDS.map(({ key, icon }) => (
+                {FIELDS.map(({ key, icon, ...rest }) => (
                   <div key={key} className="space-y-2">
                     <Label htmlFor={key}>
                       {icon} {t(`contact.fields.${key}`)}
@@ -76,7 +82,7 @@ export default function ContactPage() {
                       onChange={(e) =>
                         setForm((prev) => ({ ...prev, [key]: e.target.value }))
                       }
-                      dir={key === 'email' ? 'ltr' : undefined}
+                      dir={'dir' in rest ? rest.dir : (key === 'email' ? 'ltr' : undefined)}
                     />
                   </div>
                 ))}
