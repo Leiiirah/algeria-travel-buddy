@@ -1,42 +1,45 @@
 
 
-# Refactor PDF Engine: Dynamic Agency Data + Tajawal Branding + Arabic Footer
+# Simplify PDF Footer and Fix Arabic Misspellings
 
 ## Overview
-Refactor the entire PDF generation engine (`invoiceGenerator.ts`) so that **all** agency data is pulled dynamically from the Contact Settings (via the `agencyInfo` parameter), with the hardcoded `AGENCY_INFO` constants serving only as a fallback. The layout remains strictly **centered and minimalist**, with the **Tajawal** font used for all branding/Arabic elements. The Arabic footer block is already present but will be refined per your specifications.
+Remove the background container from the PDF footer, fix Arabic text errors in both the footer and the fallback constants, and use the corrected Arabic labels for legal identifiers and contact info. The footer becomes clean, centered text at the bottom of the page using the Tajawal font.
 
 ## What Changes
 
-### 1. Agency Header -- Fully Dynamic, Centered
-Currently the header uses `mergeAgencyInfo()` which already merges dynamic settings with fallback constants. The refactor ensures:
-- **Logo**: Centered at the top (already in place, no change).
-- **Agency Name**: Centered below the logo, rendered in **Tajawal Bold** font for brand consistency.
-- **Contact Line**: Address, Phone/Mobile, and Email centered underneath.
-- **Legal IDs Line**: NIF, NIS, and RC displayed as a centered line -- all values pulled dynamically from the Contact Settings API.
+### 1. Remove Footer Container
+- Delete the beige background fill (`#F5F0E6`) and gold border (`#C9B896`)
+- Delete the `roundedRect` call that draws the container box
+- Keep the footer text positioned at the bottom of the page, but render it as plain centered text on a white background
 
-### 2. Invoice Title Banner
-Replace the plain text title with a **full-width colored banner**:
-- **Proforma**: Blue background (#3B82F6) with white text "FACTURE PROFORMA".
-- **Finale**: Green background (#22644A) with white text "FACTURE DEFINITIVE".
-- Invoice number displayed centered below the banner.
+### 2. Fix Arabic Misspellings
+Update the following strings in both the `drawArabicFooter` function and the fallback constants in `src/constants/agency.ts`:
 
-### 3. Financial Section Enhancements
-- Keep the right-aligned financial summary box.
-- For **Final Invoices**: Display Total HT, TVA (0%), and Total TTC as separate lines (already present).
-- Continue using `numberToWords` utility for the amount-in-words line in the REGLEMENT section.
-- No changes to the calculation logic -- it already works correctly.
+| Current (incorrect) | Corrected |
+|---|---|
+| الحكمة لسياحة و الأسفار | الحكمة للسياحة والأسفار |
+| 02، طريق القليعة، زعبانة، 09001، البليدة، الجزائر | 02، طريق القليعة، زعبانة، 09001، البليدة، الجزائر |
 
-### 4. Arabic Footer Refinement
-The footer (`drawArabicFooter`) is already implemented with the beige background and gold border. Refinements:
-- Ensure Line 1 uses the **dynamic** `arabicName` from Contact Settings.
-- Ensure Line 2 uses the **dynamic** `arabicAddress`.
-- Ensure Line 3 shows dynamic RC, NIF, NIS, and License Number.
-- Ensure Line 4 shows dynamic phone numbers with Arabic labels.
-- All Arabic text rendered in **Tajawal** font.
-- Footer is already centered; no alignment changes needed.
+### 3. Use Full Arabic Labels for Legal IDs
+Replace the short Latin abbreviations in the footer's legal line with proper Arabic labels rendered in Tajawal:
 
-### 5. Legacy Function Update
-The `generateInvoicePdf` function (for Commands) currently does not accept `agencyInfo` as a parameter. It will be updated to accept it, matching the same pattern as `generateClientInvoicePdf`. The agency name in the legacy function will also use Tajawal.
+| Current | Corrected |
+|---|---|
+| `RC: {value}` | `رقم السجل التجاري: {value}` |
+| `NIF: {value}` | `رقم التعريف الجبائي: {value}` |
+| `NIS: {value}` | `رقم التعريف الإحصائي: {value}` |
+| `Licence: {value}` | `رقم رخصة الوكالة: {value}` |
+
+### 4. Keep Correct Contact Labels
+The phone labels "المكتب" (Office) and "الجوال" (Mobile) are already correct in the code and will remain unchanged.
+
+### 5. Font Consistency
+- Line 1 (Agency Name): Tajawal Bold
+- Lines 2-4 (Address, Legal, Phones): Tajawal Regular
+- The legal line currently falls back to Helvetica -- this will be changed to Tajawal as well
+
+### 6. Spacing
+Position the footer with adequate whitespace above it so it does not crowd the Reglement/Signature sections. The footer will start at `pageHeight - 30` (bottom of page with margin), giving clear separation from content above.
 
 ---
 
@@ -44,38 +47,26 @@ The `generateInvoicePdf` function (for Commands) currently does not accept `agen
 
 ### File: `src/utils/invoiceGenerator.ts`
 
-**Changes to `generateClientInvoicePdf`:**
+**Changes to `drawArabicFooter` function (lines 122-187):**
 
-1. **Header typography** (lines 390-393): Change the agency name from `doc.setFont('helvetica', 'bold')` to `doc.setFont('Tajawal', 'bold')` (with fallback to helvetica if Tajawal failed to load).
+1. **Remove container drawing** (lines 131-135): Delete `setFillColor`, `setDrawColor`, `setLineWidth`, and `roundedRect` calls.
+2. **Reposition text**: Start footer text from `pageHeight - 28` instead of relative to a box.
+3. **Fix text color**: Change from brown `(80, 60, 30)` to a standard dark gray `(60, 60, 60)` since there is no beige background to contrast against.
+4. **Legal line font** (line 167): Change from `doc.setFont('helvetica', 'normal')` to use Tajawal, so the Arabic legal labels render correctly.
+5. **Replace legal label strings** (lines 163-166): Use the full Arabic labels instead of "RC:", "NIF:", "NIS:", "Licence:".
 
-2. **Invoice title banner** (lines 418-427): Replace plain centered text with a full-width filled rectangle:
-   - Proforma: Blue (#3B82F6) background, white bold text
-   - Finale: Green (#22644A) background, white bold text
-   - Banner spans from margin to margin with rounded corners
+### File: `src/constants/agency.ts`
 
-3. **Section headers** (lines 444, 462, 515): Change section header color from blue (#3B82F6) to dark gray (#333333) for a more minimalist look, keeping the colored banner as the only accent.
-
-4. **No changes** to: Client section, Service/Prestation section, Financial calculations, REGLEMENT section, Conditions section, Stamp/Signature section, or the Arabic footer (it already works correctly with dynamic data).
-
-**Changes to `generateInvoicePdf` (legacy):**
-
-1. Add `agencyInfo?: AgencyInfoParam` parameter to the `InvoiceData` interface.
-2. Call `mergeAgencyInfo(data.agencyInfo)` instead of `mergeAgencyInfo()`.
-3. Use Tajawal for the agency name in the header.
-
-**Changes to `drawArabicFooter`:**
-- No structural changes needed -- it already uses the dynamic `info` object passed from the calling function. Just ensure all Arabic text lines explicitly set the Tajawal font before rendering.
-
-### File: `src/pages/CommandsPage.tsx`
-- No changes needed -- already passes `agencyInfo: agencySettings || undefined` to the PDF generator.
-
-### File: `src/pages/InvoicesPage.tsx`
-- No changes needed -- already passes `agencyInfo: agencySettings || undefined` to the PDF generator.
+**Fix fallback Arabic strings (lines 15-16):**
+- `arabicName`: Change from `'الحكمة لسياحة و الأسفار'` to `'الحكمة للسياحة والأسفار'`
+- `arabicAddress`: Change from `'02، طريق القليعة، زعبانة، 09001، البليدة، الجزائر'` to `'02، طريق القليعة، زعبانة، 09001، البليدة، الجزائر'`
 
 ### Files Summary
 
 | File | Action | Description |
 |------|--------|-------------|
-| `src/utils/invoiceGenerator.ts` | Modify | Use Tajawal for agency name; add colored title banner; update legacy function to accept agencyInfo; refine section header colors |
+| `src/utils/invoiceGenerator.ts` | Modify | Rewrite `drawArabicFooter`: remove container, fix Arabic labels, use Tajawal for all lines |
+| `src/constants/agency.ts` | Modify | Fix misspelled arabicName and arabicAddress fallback values |
 
-This is a focused refactor touching only the PDF generator file. All dynamic data plumbing (Contact Settings API, `useAgencySettings` hook, `mergeAgencyInfo` fallback) is already in place and working correctly.
+No changes to the Contact Settings page, hooks, or backend -- the dynamic data pipeline remains intact.
+
