@@ -10,7 +10,8 @@
   "tabs": {
     "orders": "الطلبات",
     "visas": "التأشيرات",
-    "hotels": "الفنادق"
+    "hotels": "الفنادق",
+    "programs": "البرامج"
   },
   "calculations": {
     "remaining": "المتبقي للدفع",
@@ -174,6 +175,47 @@
     },
     "confirm": {
       "delete": "هل أنت متأكد من حذف هذا الفندق؟"
+    }
+  },
+  "programs": {
+    "title": "برامج العمرة",
+    "count": "{{count}} برنامج مسجل",
+    "newProgram": "برنامج جديد",
+    "empty": {
+      "title": "لا توجد برامج",
+      "description": "ابدأ بإنشاء برنامج عمرة لمجموعاتك",
+      "action": "إنشاء برنامج"
+    },
+    "table": {
+      "name": "الاسم",
+      "period": "الفترة",
+      "hotel": "الفندق",
+      "totalPlaces": "الأماكن الإجمالية",
+      "confirmed": "الأماكن المؤكدة",
+      "remaining": "الأماكن المتبقية",
+      "status": "الحالة",
+      "actions": "الإجراءات"
+    },
+    "dialog": {
+      "createTitle": "برنامج عمرة جديد",
+      "editTitle": "تعديل البرنامج",
+      "createDescription": "أنشئ برنامجاً جديداً لمجموعات الحج",
+      "editDescription": "عدّل معلومات البرنامج"
+    },
+    "form": {
+      "programName": "اسم البرنامج",
+      "programNamePlaceholder": "مثال: عمرة رمضان 2026",
+      "periodFrom": "تاريخ البداية",
+      "periodTo": "تاريخ النهاية",
+      "totalPlaces": "عدد الأماكن",
+      "hotel": "الفندق",
+      "selectHotel": "اختر فندقاً",
+      "noHotel": "بدون فندق",
+      "pricing": "جدول الأسعار",
+      "pricingDescription": "حدد أسعار البيع حسب نوع الغرفة (د.ج)"
+    },
+    "confirm": {
+      "delete": "هل أنت متأكد من حذف هذا البرنامج؟"
     }
   },
   "actions": {

@@ -4,12 +4,15 @@ import { Repository } from 'typeorm';
 import { OmraHotel } from './entities/omra-hotel.entity';
 import { OmraOrder, OmraStatus } from './entities/omra-order.entity';
 import { OmraVisa } from './entities/omra-visa.entity';
+import { OmraProgram } from './entities/omra-program.entity';
 import { CreateOmraHotelDto } from './dto/create-omra-hotel.dto';
 import { UpdateOmraHotelDto } from './dto/update-omra-hotel.dto';
 import { CreateOmraOrderDto } from './dto/create-omra-order.dto';
 import { UpdateOmraOrderDto } from './dto/update-omra-order.dto';
 import { CreateOmraVisaDto } from './dto/create-omra-visa.dto';
 import { UpdateOmraVisaDto } from './dto/update-omra-visa.dto';
+import { CreateOmraProgramDto } from './dto/create-omra-program.dto';
+import { UpdateOmraProgramDto } from './dto/update-omra-program.dto';
 
 export interface OmraFilters {
   status?: string;
@@ -40,6 +43,8 @@ export class OmraService {
     private ordersRepository: Repository<OmraOrder>,
     @InjectRepository(OmraVisa)
     private visasRepository: Repository<OmraVisa>,
+    @InjectRepository(OmraProgram)
+    private programsRepository: Repository<OmraProgram>,
   ) {}
 
   // ==================== HOTELS ====================
@@ -295,6 +300,82 @@ export class OmraService {
   async deleteVisa(id: string): Promise<void> {
     const visa = await this.findVisaById(id);
     await this.visasRepository.remove(visa);
+  }
+
+  // ==================== PROGRAMS ====================
+
+  async findAllPrograms(): Promise<OmraProgram[]> {
+    return this.programsRepository.find({
+      relations: ['hotel', 'creator'],
+      order: { createdAt: 'DESC' },
+    });
+  }
+
+  async findActivePrograms(): Promise<OmraProgram[]> {
+    return this.programsRepository.find({
+      where: { isActive: true },
+      relations: ['hotel', 'creator'],
+      order: { name: 'ASC' },
+    });
+  }
+
+  async findProgramById(id: string): Promise<OmraProgram> {
+    const program = await this.programsRepository.findOne({
+      where: { id },
+      relations: ['hotel', 'creator'],
+    });
+    if (!program) {
+      throw new NotFoundException(`Program with ID ${id} not found`);
+    }
+    return program;
+  }
+
+  async createProgram(dto: CreateOmraProgramDto, userId: string): Promise<OmraProgram> {
+    const program = this.programsRepository.create({
+      ...dto,
+      createdBy: userId,
+    });
+    return this.programsRepository.save(program);
+  }
+
+  async updateProgram(id: string, dto: UpdateOmraProgramDto): Promise<OmraProgram> {
+    const program = await this.findProgramById(id);
+    Object.assign(program, dto);
+    return this.programsRepository.save(program);
+  }
+
+  async deleteProgram(id: string): Promise<void> {
+    const program = await this.findProgramById(id);
+
+    // Check if program is referenced by orders
+    const ordersCount = await this.ordersRepository.count({ where: { programId: id } });
+    if (ordersCount > 0) {
+      throw new BadRequestException(
+        `Impossible de supprimer ce programme car il est utilisé par ${ordersCount} commande(s). Veuillez d'abord supprimer ou modifier ces commandes.`,
+      );
+    }
+
+    await this.programsRepository.remove(program);
+  }
+
+  async getProgramInventory(): Promise<{ programId: string; confirmed: number; remaining: number; total: number }[]> {
+    const programs = await this.programsRepository.find({ where: { isActive: true } });
+
+    const result = await Promise.all(
+      programs.map(async (program) => {
+        const confirmed = await this.ordersRepository.count({
+          where: { programId: program.id, status: OmraStatus.CONFIRME },
+        });
+        return {
+          programId: program.id,
+          confirmed,
+          remaining: program.totalPlaces - confirmed,
+          total: program.totalPlaces,
+        };
+      }),
+    );
+
+    return result;
   }
 
   // ==================== STATS ====================

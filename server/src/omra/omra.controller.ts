@@ -17,6 +17,8 @@ import { CreateOmraOrderDto } from './dto/create-omra-order.dto';
 import { UpdateOmraOrderDto } from './dto/update-omra-order.dto';
 import { CreateOmraVisaDto } from './dto/create-omra-visa.dto';
 import { UpdateOmraVisaDto } from './dto/update-omra-visa.dto';
+import { CreateOmraProgramDto } from './dto/create-omra-program.dto';
+import { UpdateOmraProgramDto } from './dto/update-omra-program.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
 @Controller('omra')
@@ -54,6 +56,43 @@ export class OmraController {
   @Delete('hotels/:id')
   deleteHotel(@Param('id') id: string) {
     return this.omraService.deleteHotel(id);
+  }
+
+  // ==================== PROGRAMS ====================
+
+  @Get('programs')
+  findAllPrograms() {
+    return this.omraService.findAllPrograms();
+  }
+
+  @Get('programs/active')
+  findActivePrograms() {
+    return this.omraService.findActivePrograms();
+  }
+
+  @Get('programs/inventory')
+  getProgramInventory() {
+    return this.omraService.getProgramInventory();
+  }
+
+  @Get('programs/:id')
+  findProgramById(@Param('id') id: string) {
+    return this.omraService.findProgramById(id);
+  }
+
+  @Post('programs')
+  createProgram(@Body() dto: CreateOmraProgramDto, @Request() req: any) {
+    return this.omraService.createProgram(dto, req.user.id);
+  }
+
+  @Patch('programs/:id')
+  updateProgram(@Param('id') id: string, @Body() dto: UpdateOmraProgramDto) {
+    return this.omraService.updateProgram(id, dto);
+  }
+
+  @Delete('programs/:id')
+  deleteProgram(@Param('id') id: string) {
+    return this.omraService.deleteProgram(id);
   }
 
   // ==================== ORDERS ====================

@@ -8,6 +8,7 @@ import {
   JoinColumn,
 } from 'typeorm';
 import { OmraHotel } from './omra-hotel.entity';
+import { OmraProgram } from './omra-program.entity';
 import { User } from '../../users/entities/user.entity';
 
 export enum OmraOrderType {
@@ -110,9 +111,9 @@ export class OmraOrder {
   @JoinColumn({ name: 'hotelId' })
   hotel: OmraHotel;
 
-  @ManyToOne(() => OmraHotel, { nullable: true })
+  @ManyToOne(() => OmraProgram, { nullable: true })
   @JoinColumn({ name: 'programId' })
-  program: OmraHotel;
+  program: OmraProgram;
 
   @ManyToOne(() => User, { nullable: true })
   @JoinColumn({ name: 'createdBy' })

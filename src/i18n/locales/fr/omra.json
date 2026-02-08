@@ -10,7 +10,8 @@
   "tabs": {
     "orders": "Commandes",
     "visas": "Visas",
-    "hotels": "Hôtels"
+    "hotels": "Hôtels",
+    "programs": "Programmes"
   },
   "calculations": {
     "remaining": "Reste à payer",
@@ -174,6 +175,47 @@
     },
     "confirm": {
       "delete": "Êtes-vous sûr de vouloir supprimer cet hôtel ?"
+    }
+  },
+  "programs": {
+    "title": "Programmes Omra",
+    "count": "{{count}} programmes enregistrés",
+    "newProgram": "Nouveau Programme",
+    "empty": {
+      "title": "Aucun programme",
+      "description": "Commencez par créer un programme Omra pour vos groupes",
+      "action": "Créer un programme"
+    },
+    "table": {
+      "name": "Nom",
+      "period": "Période",
+      "hotel": "Hôtel",
+      "totalPlaces": "Places totales",
+      "confirmed": "Places Confirmées",
+      "remaining": "Places Restantes",
+      "status": "Statut",
+      "actions": "Actions"
+    },
+    "dialog": {
+      "createTitle": "Nouveau programme Omra",
+      "editTitle": "Modifier le programme",
+      "createDescription": "Créez un nouveau programme pour vos groupes de pèlerinage",
+      "editDescription": "Modifiez les informations du programme"
+    },
+    "form": {
+      "programName": "Nom du programme",
+      "programNamePlaceholder": "Ex: Omra Ramadan 2026",
+      "periodFrom": "Date début",
+      "periodTo": "Date fin",
+      "totalPlaces": "Nombre de places",
+      "hotel": "Hôtel",
+      "selectHotel": "Sélectionner un hôtel",
+      "noHotel": "Sans hôtel",
+      "pricing": "Grille tarifaire",
+      "pricingDescription": "Définissez les prix de vente par type de chambre (DA)"
+    },
+    "confirm": {
+      "delete": "Êtes-vous sûr de vouloir supprimer ce programme ?"
     }
   },
   "actions": {
