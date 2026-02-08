@@ -17,6 +17,7 @@ const FIELDS = [
   { key: 'email', icon: '✉️' },
   { key: 'nif', icon: '🔢' },
   { key: 'nis', icon: '🔢' },
+  { key: 'articleFiscal', icon: '🔢' },
   { key: 'rc', icon: '📋' },
   { key: 'bankName', icon: '🏦' },
   { key: 'bankAccount', icon: '💳' },
