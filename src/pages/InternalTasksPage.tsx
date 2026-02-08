@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { format } from 'date-fns';
 import { fr, ar } from 'date-fns/locale';
@@ -48,7 +48,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { AdvancedFilter, FilterConfig } from '@/components/search/AdvancedFilter';
+import { useDebounce } from '@/hooks/useDebounce';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUsers } from '@/hooks/useUsers';
 import {
@@ -100,7 +101,9 @@ export default function InternalTasksPage() {
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<InternalTask | null>(null);
-  const [statusFilter, setStatusFilter] = useState<'all' | 'in_progress' | 'completed'>('all');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filters, setFilters] = useState<Record<string, any>>({});
+  const debouncedSearch = useDebounce(searchQuery, 300);
 
   // Form state
   const [formData, setFormData] = useState<CreateInternalTaskDto>({
@@ -114,10 +117,88 @@ export default function InternalTasksPage() {
 
   const employees = users?.filter(u => u.isActive) || [];
 
-  const filteredTasks = tasks?.filter(task => {
-    if (statusFilter === 'all') return true;
-    return task.status === statusFilter;
-  }) || [];
+  // Build filter config for AdvancedFilter
+  const filterConfig: FilterConfig[] = useMemo(() => {
+    const configs: FilterConfig[] = [
+      {
+        key: 'status',
+        label: t('status.label'),
+        type: 'select',
+        options: [
+          { label: t('status.in_progress'), value: 'in_progress' },
+          { label: t('status.completed'), value: 'completed' },
+        ],
+      },
+      {
+        key: 'priority',
+        label: t('priority.label'),
+        type: 'select',
+        options: [
+          { label: t('priority.urgent'), value: 'urgent' },
+          { label: t('priority.normal'), value: 'normal' },
+          { label: t('priority.critical'), value: 'critical' },
+        ],
+      },
+      {
+        key: 'visibility',
+        label: t('visibility.label'),
+        type: 'select',
+        options: [
+          { label: t('visibility.clear'), value: 'clear' },
+          { label: t('visibility.unreadable'), value: 'unreadable' },
+        ],
+      },
+      {
+        key: 'dueDate',
+        label: t('dueDate'),
+        type: 'date-range',
+      },
+    ];
+
+    // Employee filter only for admins
+    if (isAdmin && employees.length > 0) {
+      configs.splice(2, 0, {
+        key: 'assignedTo',
+        label: t('assignedTo'),
+        type: 'select',
+        options: employees.map(emp => ({
+          label: `${emp.firstName} ${emp.lastName}`,
+          value: emp.id,
+        })),
+      });
+    }
+
+    return configs;
+  }, [t, isAdmin, employees]);
+
+  const filteredTasks = useMemo(() => {
+    if (!tasks) return [];
+    return tasks.filter(task => {
+      // Text search
+      if (debouncedSearch) {
+        const query = debouncedSearch.toLowerCase();
+        const matchesTitle = task.title?.toLowerCase().includes(query);
+        const matchesDesc = task.description?.toLowerCase().includes(query);
+        if (!matchesTitle && !matchesDesc) return false;
+      }
+      // Status filter
+      if (filters.status && task.status !== filters.status) return false;
+      // Priority filter
+      if (filters.priority && task.priority !== filters.priority) return false;
+      // Employee filter
+      if (filters.assignedTo && task.assignedTo !== filters.assignedTo) return false;
+      // Visibility filter
+      if (filters.visibility && task.visibility !== filters.visibility) return false;
+      // Due date filter
+      if (filters.dueDate) {
+        if (!task.dueDate) return false;
+        const filterDate = new Date(filters.dueDate);
+        const taskDate = new Date(task.dueDate);
+        if (taskDate > filterDate) return false;
+      }
+      return true;
+    });
+  }, [tasks, debouncedSearch, filters]);
 
   const resetForm = () => {
     setFormData({
@@ -290,14 +371,15 @@ export default function InternalTasksPage() {
           </Card>
         )}
 
-        {/* Filter Tabs */}
-        <Tabs value={statusFilter} onValueChange={(v) => setStatusFilter(v as typeof statusFilter)}>
-          <TabsList>
-            <TabsTrigger value="all">{t('filters.all')}</TabsTrigger>
-            <TabsTrigger value="in_progress">{t('filters.inProgress')}</TabsTrigger>
-            <TabsTrigger value="completed">{t('filters.completed')}</TabsTrigger>
-          </TabsList>
-        </Tabs>
+        {/* Search & Filters */}
+        <AdvancedFilter
+          searchQuery={searchQuery}
+          onSearchChange={setSearchQuery}
+          filters={filters}
+          onFilterChange={setFilters}
+          filterConfig={filterConfig}
+          placeholder={t('searchPlaceholder')}
+        />
 
         {/* Tasks List */}
         <Card>

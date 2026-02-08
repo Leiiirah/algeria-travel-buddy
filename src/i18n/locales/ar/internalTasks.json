@@ -62,6 +62,7 @@
     "inProgress": "قيد التنفيذ",
     "completed": "مكتملة"
   },
+  "searchPlaceholder": "البحث عن مهمة...",
   "toast": {
     "created": "تم إنشاء المهمة بنجاح",
     "updated": "تم تحديث المهمة",
