@@ -368,11 +368,17 @@ export async function generateClientInvoicePdf(data: ClientInvoicePdfData): Prom
 
   currentY = boxStartY + boxHeight;
 
-  // ===== REGLEMENT SECTION =====
-  currentY += 8;
+  // ===== REGLEMENT + CACHET ET SIGNATURE (side by side) =====
+  currentY += 6;
+
+  // --- Left side: Règlement ---
+  const reglementStartY = currentY;
+  const leftColX = 14;
+  const rightColX = pageWidth / 2 + 10;
+
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(10);
-  doc.text(isArabic ? 'الدفع' : 'RÈGLEMENT', 14, currentY);
+  doc.text(isArabic ? 'الدفع' : 'RÈGLEMENT', leftColX, currentY);
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(9);
 
@@ -385,83 +391,71 @@ export async function generateClientInvoicePdf(data: ClientInvoicePdfData): Prom
       carte: { fr: 'Carte bancaire', ar: 'بطاقة بنكية' },
     };
     const paymentLabel = paymentLabels[data.paymentMethod]?.[isArabic ? 'ar' : 'fr'] || data.paymentMethod;
-    doc.text(`${isArabic ? 'طريقة الدفع' : 'Mode de paiement'}: ${paymentLabel}`, 14, currentY);
+    doc.text(`${isArabic ? 'طريقة الدفع' : 'Mode de paiement'}: ${paymentLabel}`, leftColX, currentY);
   }
 
   if (info.bankName || info.bankAccount) {
     currentY += 5;
-    doc.text(`Banque: ${info.bankName || '—'}`, 14, currentY);
+    doc.text(`Banque: ${info.bankName || '—'}`, leftColX, currentY);
     currentY += 4;
-    doc.text(`Compte: ${info.bankAccount || '—'}`, 14, currentY);
+    doc.text(`Compte: ${info.bankAccount || '—'}`, leftColX, currentY);
   }
 
   // Amount in words
-  currentY += 6;
+  currentY += 5;
   const amountWords = numberToWords(data.totalAmount);
   const docType = isProforma ? 'proforma' : 'définitive';
   doc.setFont('helvetica', 'italic');
   doc.setFontSize(8);
   const wordsText = `Arrêté la présente facture ${docType} à la somme de: ${amountWords} Dinars Algériens`;
-  const wordsLines = doc.splitTextToSize(wordsText, pageWidth - 28);
-  doc.text(wordsLines, 14, currentY);
+  const wordsLines = doc.splitTextToSize(wordsText, pageWidth / 2 - 20);
+  doc.text(wordsLines, leftColX, currentY);
 
-  currentY += wordsLines.length * 5;
+  const leftColEndY = currentY + wordsLines.length * 4;
+
+  // --- Right side: Cachet et Signature ---
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(10);
+  doc.setTextColor(51, 51, 51);
+  doc.text(isArabic ? 'الختم والتوقيع' : 'Cachet et Signature', pageWidth - 14, reglementStartY, { align: 'right' });
+  doc.setTextColor(0, 0, 0);
+  doc.setFont('helvetica', 'normal');
+
+  // Track the bottom of both columns
+  currentY = Math.max(leftColEndY, reglementStartY + 20);
 
   // ===== CONDITIONS (Proforma) or PAYMENT INFO (Finale) =====
   if (isProforma) {
-    currentY += 5;
-    doc.setFontSize(10);
-    doc.setFont('helvetica', 'bold');
-    doc.text(isArabic ? 'الشروط:' : 'Conditions:', 14, currentY);
+    currentY += 4;
+    doc.setFontSize(9);
     doc.setFont('helvetica', 'normal');
-    currentY += 5;
-    doc.text(`• ${isArabic ? 'الدفع قبل إصدار التذكرة' : 'Paiement avant émission du billet'}`, 18, currentY);
-    currentY += 5;
-    doc.text(`• ${isArabic ? 'صلاحية العرض' : "Validité de l'offre"}: ${data.validityHours} ${isArabic ? 'ساعة' : 'heures'}`, 18, currentY);
+    doc.text(`• ${isArabic ? 'الدفع قبل إصدار التذكرة' : 'Paiement avant émission du billet'}`, leftColX + 4, currentY);
+    currentY += 4;
+    doc.text(`• ${isArabic ? 'صلاحية العرض' : "Validité de l'offre"}: ${data.validityHours} ${isArabic ? 'ساعة' : 'heures'}`, leftColX + 4, currentY);
 
     // Proforma warning
-    currentY += 10;
+    currentY += 6;
     doc.setFillColor(255, 248, 220);
     doc.setDrawColor(255, 200, 50);
-    doc.roundedRect(14, currentY - 4, pageWidth - 28, 14, 2, 2, 'FD');
-    doc.setFontSize(9);
+    doc.roundedRect(14, currentY - 3, pageWidth - 28, 10, 2, 2, 'FD');
+    doc.setFontSize(8);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(150, 100, 0);
     doc.text(
       isArabic ? '⚠ هذه فاتورة مبدئية، غير صالحة للمحاسبة' : '⚠ Ceci est une facture proforma, non valable pour la comptabilité',
       pageWidth / 2,
-      currentY + 4,
+      currentY + 3,
       { align: 'center' }
     );
     doc.setTextColor(0, 0, 0);
-    currentY += 10;
   } else {
     // Final invoice - note
-    currentY += 6;
+    currentY += 4;
     doc.setFont('helvetica', 'bold');
-    doc.text(isArabic ? 'تذكرة صادرة وغير قابلة للاسترداد' : 'Billet émis et non remboursable', 14, currentY);
+    doc.setFontSize(8);
+    doc.text(isArabic ? 'تذكرة صادرة وغير قابلة للاسترداد' : 'Billet émis et non remboursable', leftColX, currentY);
     doc.setFont('helvetica', 'normal');
-    currentY += 8;
   }
-
-  // ===== OVERFLOW SAFETY CHECK =====
-  const footerZoneStart = pageHeight - 60;
-  if (currentY > footerZoneStart) {
-    doc.addPage();
-    currentY = 20;
-  }
-
-  // ===== STAMP & SIGNATURE SECTION =====
-  currentY += 4;
-  doc.setFontSize(10);
-  doc.setFont('helvetica', 'bold');
-  doc.text(isArabic ? 'الختم والتوقيع' : 'Cachet et Signature', pageWidth / 2, currentY, { align: 'center' });
-
-  // Empty signature box
-  currentY += 6;
-  doc.setDrawColor(180, 180, 180);
-  doc.setFillColor(255, 255, 255);
-  doc.roundedRect(pageWidth / 2 - 40, currentY, 80, 25, 2, 2, 'FD');
 
   // ===== ARABIC FOOTER =====
   drawArabicFooter(doc, info, hasTajawal);
