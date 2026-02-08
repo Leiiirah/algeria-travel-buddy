@@ -56,7 +56,7 @@ import { useDebounce } from '@/hooks/useDebounce';
 import { CommandsSkeleton } from '@/components/skeletons/CommandsSkeleton';
 import { ErrorState } from '@/components/ui/error-state';
 import { EmptyState } from '@/components/ui/empty-state';
-import { generateInvoicePdf } from '@/utils/invoiceGenerator';
+import { generateClientInvoicePdf } from '@/utils/invoiceGenerator';
 import { format } from 'date-fns';
 
 const CommandsPage = () => {
@@ -372,23 +372,31 @@ const CommandsPage = () => {
 
   const handlePrintInvoice = async (command: any) => {
     const service = services?.find((s) => s.id === command.serviceId);
-    const supplier = suppliers?.find((s) => s.id === command.supplierId);
-    
-    await generateInvoicePdf({
-      reference: `CMD-${command.id.substring(0, 6).toUpperCase()}`,
-      clientName: command.data.clientFullName || '',
+
+    await generateClientInvoicePdf({
+      invoiceNumber: `CMD-${command.id.substring(0, 6).toUpperCase()}`,
+      invoiceType: 'proforma',
+      clientName: command.data.clientFullName || command.data.nomPrenom || command.data.clientName || '',
       clientPhone: command.data.phone || '',
-      paymentDate: format(new Date(command.createdAt), 'dd/MM/yyyy'),
-      amountPaid: Number(command.amountPaid),
-      totalPrice: Number(command.sellingPrice),
+      clientPassport: command.data.passportNumber || '',
+      invoiceDate: format(new Date(command.createdAt), 'dd/MM/yyyy'),
+      totalAmount: Number(command.sellingPrice),
+      paidAmount: Number(command.amountPaid),
       remaining: Number(command.sellingPrice) - Number(command.amountPaid),
-      service: service?.name || '',
+      serviceName: service?.name || '',
       serviceType: service?.type || '',
       destination: command.destination || '',
-      status: getStatusLabel(command.status),
-      company: command.data.company,
-      supplier: supplier?.name,
-      language: (window.localStorage.getItem('i18nextLng') || 'fr') as 'fr' | 'ar',
+      companyName: command.data.company || '',
+      departureDate: '',
+      returnDate: '',
+      travelClass: '',
+      pnr: '',
+      ticketPrice: 0,
+      agencyFees: 0,
+      paymentMethod: '',
+      validityHours: 48,
+      status: command.status,
+      language: (localStorage.getItem('i18nextLng') || 'fr') as 'fr' | 'ar',
     });
   };
 
