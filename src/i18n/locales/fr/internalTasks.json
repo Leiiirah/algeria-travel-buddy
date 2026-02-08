@@ -62,6 +62,7 @@
     "inProgress": "En cours",
     "completed": "Terminées"
   },
+  "searchPlaceholder": "Rechercher une tâche...",
   "toast": {
     "created": "Tâche créée avec succès",
     "updated": "Tâche mise à jour",
