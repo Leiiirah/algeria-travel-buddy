@@ -18,6 +18,7 @@ export interface AgencyInfoParam {
   bankAccount?: string;
   mobilePhone?: string;
   licenseNumber?: string;
+  articleFiscal?: string;
   arabicName?: string;
   arabicAddress?: string;
 }
@@ -94,6 +95,7 @@ function mergeAgencyInfo(param?: AgencyInfoParam) {
     bankAccount: param?.bankAccount || AGENCY_INFO.bankAccount,
     mobilePhone: param?.mobilePhone || AGENCY_INFO.mobilePhone,
     licenseNumber: param?.licenseNumber || AGENCY_INFO.licenseNumber,
+    articleFiscal: param?.articleFiscal || AGENCY_INFO.articleFiscal,
     arabicName: param?.arabicName || AGENCY_INFO.arabicName,
     arabicAddress: param?.arabicAddress || AGENCY_INFO.arabicAddress,
   };
@@ -106,7 +108,7 @@ function drawArabicFooter(doc: jsPDF, info: ReturnType<typeof mergeAgencyInfo>, 
   const pageHeight = doc.internal.pageSize.height;
 
   const centerX = pageWidth / 2;
-  let y = pageHeight - 28;
+  let y = pageHeight - 32;
 
   // Line 1: Arabic name (Tajawal Bold)
   if (hasTajawal) {
@@ -119,7 +121,7 @@ function drawArabicFooter(doc: jsPDF, info: ReturnType<typeof mergeAgencyInfo>, 
   doc.text(info.arabicName, centerX, y, { align: 'center' });
 
   // Line 2: Arabic address (Tajawal Regular)
-  y += 6;
+  y += 5;
   if (hasTajawal) {
     doc.setFont('Tajawal', 'normal');
   } else {
@@ -128,23 +130,28 @@ function drawArabicFooter(doc: jsPDF, info: ReturnType<typeof mergeAgencyInfo>, 
   doc.setFontSize(8);
   doc.text(info.arabicAddress, centerX, y, { align: 'center' });
 
-  // Line 3: Legal identifiers (full Arabic labels, Tajawal)
-  y += 6;
-  const legalParts: string[] = [];
-  if (info.rc) legalParts.push(`رقم السجل التجاري: ${info.rc}`);
-  if (info.nif) legalParts.push(`رقم التعريف الجبائي: ${info.nif}`);
-  if (info.nis) legalParts.push(`رقم التعريف الإحصائي: ${info.nis}`);
-  if (info.licenseNumber) legalParts.push(`رقم رخصة الوكالة: ${info.licenseNumber}`);
+  // Line 3: RC + NIF + Article Fiscal
+  y += 5;
   doc.setFontSize(7);
-  doc.text(legalParts.join('  |  '), centerX, y, { align: 'center' });
+  const line3Parts: string[] = [];
+  if (info.rc) line3Parts.push(`رقم السجل التجاري: ${info.rc}`);
+  if (info.nif) line3Parts.push(`رقم التعريف الجبائي: ${info.nif}`);
+  if (info.articleFiscal) line3Parts.push(`رقم المادة الجبائية: ${info.articleFiscal}`);
+  doc.text(line3Parts.join('   '), centerX, y, { align: 'center' });
 
-  // Line 4: Phone numbers (Arabic labels, Tajawal)
-  y += 6;
-  const phoneParts: string[] = [];
-  if (info.phone) phoneParts.push(`المكتب: ${info.phone}`);
-  if (info.mobilePhone) phoneParts.push(`الجوال: ${info.mobilePhone}`);
-  doc.setFontSize(7);
-  doc.text(phoneParts.join('  |  '), centerX, y, { align: 'center' });
+  // Line 4: NIS + License Number
+  y += 5;
+  const line4Parts: string[] = [];
+  if (info.nis) line4Parts.push(`رقم التعريف الإحصائي: ${info.nis}`);
+  if (info.licenseNumber) line4Parts.push(`رقم رخصة الوكالة: ${info.licenseNumber}`);
+  doc.text(line4Parts.join('   '), centerX, y, { align: 'center' });
+
+  // Line 5: Phone numbers
+  y += 5;
+  const line5Parts: string[] = [];
+  if (info.mobilePhone) line5Parts.push(`الجوال: ${info.mobilePhone}`);
+  if (info.phone) line5Parts.push(`المكتب: ${info.phone}`);
+  doc.text(line5Parts.join('   '), centerX, y, { align: 'center' });
 
   // Reset
   doc.setTextColor(0, 0, 0);

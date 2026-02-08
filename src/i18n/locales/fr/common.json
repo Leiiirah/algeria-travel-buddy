@@ -144,6 +144,7 @@
       "email": "Email",
       "nif": "NIF",
       "nis": "NIS",
+      "articleFiscal": "Article d'imposition",
       "rc": "RC",
       "bankName": "Nom de la banque",
       "bankAccount": "Numéro de compte",
