@@ -1,484 +1,66 @@
+import React from 'react';
+import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
-import { AGENCY_INFO } from '@/constants/agency';
-import { registerTajawalFont } from './tajawalFont';
-import { numberToWords } from './numberToWords';
-import { reshapeArabic, reshapeArabicLabel } from './arabicReshaper';
+import { createRoot } from 'react-dom/client';
+import InvoiceTemplate from '@/components/invoice/InvoiceTemplate';
+import type { AgencyInfoParam, ClientInvoicePdfData } from '@/components/invoice/InvoiceTemplate';
 
-// ============ Shared types ============
+// Re-export types for backward compatibility
+export type { AgencyInfoParam, ClientInvoicePdfData };
 
-export interface AgencyInfoParam {
-  legalName?: string;
-  address?: string;
-  phone?: string;
-  email?: string;
-  rc?: string;
-  nif?: string;
-  nis?: string;
-  bankName?: string;
-  bankAccount?: string;
-  mobilePhone?: string;
-  licenseNumber?: string;
-  articleFiscal?: string;
-  arabicName?: string;
-  arabicAddress?: string;
-}
-
-interface ClientInvoicePdfData {
-  invoiceNumber: string;
-  invoiceType: 'proforma' | 'finale';
-  clientName: string;
-  clientPhone: string;
-  clientPassport: string;
-  invoiceDate: string;
-  totalAmount: number;
-  paidAmount: number;
-  remaining: number;
-  serviceName: string;
-  serviceType: string;
-  destination: string;
-  companyName: string;
-  departureDate: string;
-  returnDate: string;
-  travelClass: string;
-  pnr: string;
-  ticketPrice: number;
-  agencyFees: number;
-  paymentMethod: string;
-  validityHours: number;
-  status: string;
-  language: 'fr' | 'ar';
-  agencyInfo?: AgencyInfoParam;
-}
-
-// ============ Helpers ============
-
-async function getLogoBase64(): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    img.crossOrigin = 'anonymous';
-    img.onload = () => {
-      const canvas = document.createElement('canvas');
-      canvas.width = img.width;
-      canvas.height = img.height;
-      const ctx = canvas.getContext('2d');
-      if (ctx) {
-        ctx.drawImage(img, 0, 0);
-        resolve(canvas.toDataURL('image/png'));
-      } else {
-        reject(new Error('Could not get canvas context'));
-      }
-    };
-    img.onerror = () => reject(new Error('Could not load logo'));
-    img.src = new URL('../assets/logo-elhikma.png', import.meta.url).href;
-  });
-}
-
-function formatDateShort(dateString: string): string {
-  try {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: '2-digit' });
-  } catch {
-    return dateString;
-  }
-}
-
-function mergeAgencyInfo(param?: AgencyInfoParam) {
-  return {
-    legalName: param?.legalName || AGENCY_INFO.legalName,
-    address: param?.address || AGENCY_INFO.address,
-    phone: param?.phone || AGENCY_INFO.phone,
-    email: param?.email || AGENCY_INFO.email,
-    rc: param?.rc || AGENCY_INFO.rc,
-    nif: param?.nif || AGENCY_INFO.nif,
-    nis: param?.nis || AGENCY_INFO.nis,
-    bankName: param?.bankName || AGENCY_INFO.bankName,
-    bankAccount: param?.bankAccount || AGENCY_INFO.bankAccount,
-    mobilePhone: param?.mobilePhone || AGENCY_INFO.mobilePhone,
-    licenseNumber: param?.licenseNumber || AGENCY_INFO.licenseNumber,
-    articleFiscal: param?.articleFiscal || AGENCY_INFO.articleFiscal,
-    arabicName: param?.arabicName || AGENCY_INFO.arabicName,
-    arabicAddress: param?.arabicAddress || AGENCY_INFO.arabicAddress,
-  };
-}
-
-// ============ Arabic Footer ============
-
-function drawArabicFooter(doc: jsPDF, info: ReturnType<typeof mergeAgencyInfo>, hasTajawal: boolean) {
-  const pageWidth = doc.internal.pageSize.width;
-  const pageHeight = doc.internal.pageSize.height;
-
-  const centerX = pageWidth / 2;
-  let y = pageHeight - 32;
-
-  // Line 1: Arabic name (Tajawal Bold)
-  if (hasTajawal) {
-    doc.setFont('Tajawal', 'bold');
-  } else {
-    doc.setFont('helvetica', 'bold');
-  }
-  doc.setFontSize(10);
-  doc.setTextColor(60, 60, 60);
-  doc.text(reshapeArabic(info.arabicName), centerX, y, { align: 'center', isInputRtl: true });
-
-  // Line 2: Arabic address (Tajawal Regular)
-  y += 5;
-  if (hasTajawal) {
-    doc.setFont('Tajawal', 'normal');
-  } else {
-    doc.setFont('helvetica', 'normal');
-  }
-  doc.setFontSize(8);
-  doc.text(reshapeArabic(info.arabicAddress), centerX, y, { align: 'center', isInputRtl: true });
-
-  // Line 3: RC + NIF + Article Fiscal
-  y += 5;
-  doc.setFontSize(7);
-  const line3Parts: string[] = [];
-  if (info.rc) line3Parts.push(reshapeArabicLabel('رقم السجل التجاري', info.rc));
-  if (info.nif) line3Parts.push(reshapeArabicLabel('رقم التعريف الجبائي', info.nif));
-  if (info.articleFiscal) line3Parts.push(reshapeArabicLabel('رقم المادة الجبائية', info.articleFiscal));
-  doc.text(line3Parts.join('   '), centerX, y, { align: 'center', isInputRtl: true });
-
-  // Line 4: NIS + License Number
-  y += 5;
-  const line4Parts: string[] = [];
-  if (info.nis) line4Parts.push(reshapeArabicLabel('رقم التعريف الإحصائي', info.nis));
-  if (info.licenseNumber) line4Parts.push(reshapeArabicLabel('رقم رخصة الوكالة', info.licenseNumber));
-  doc.text(line4Parts.join('   '), centerX, y, { align: 'center', isInputRtl: true });
-
-  // Line 5: Phone numbers
-  y += 5;
-  const line5Parts: string[] = [];
-  if (info.mobilePhone) line5Parts.push(reshapeArabicLabel('الجوال', info.mobilePhone));
-  if (info.phone) line5Parts.push(reshapeArabicLabel('المكتب', info.phone));
-  doc.text(line5Parts.join('   '), centerX, y, { align: 'center', isInputRtl: true });
-
-  // Reset
-  doc.setTextColor(0, 0, 0);
-  doc.setFont('helvetica', 'normal');
-}
-
-// ==================== CLIENT INVOICE PDF ====================
-
+/**
+ * Generate a client invoice PDF using HTML-to-PDF approach.
+ *
+ * 1. Creates a temporary off-screen container
+ * 2. Renders the InvoiceTemplate React component into it
+ * 3. Captures it with html2canvas at 2x scale
+ * 4. Inserts the canvas image into a jsPDF A4 document
+ * 5. Saves the PDF and cleans up
+ */
 export async function generateClientInvoicePdf(data: ClientInvoicePdfData): Promise<void> {
-  const doc = new jsPDF();
-  const pageWidth = doc.internal.pageSize.width;
-  const pageHeight = doc.internal.pageSize.height;
+  // 1. Create off-screen container
+  const container = document.createElement('div');
+  container.style.position = 'fixed';
+  container.style.left = '-9999px';
+  container.style.top = '0';
+  container.style.zIndex = '-9999';
+  document.body.appendChild(container);
+
+  // 2. Render the React template
+  const root = createRoot(container);
+  root.render(React.createElement(InvoiceTemplate, { data }));
+
+  // Wait for render + images to load
+  await new Promise(resolve => setTimeout(resolve, 500));
+
+  // 3. Capture with html2canvas
+  const templateEl = container.firstElementChild as HTMLElement;
+  if (!templateEl) {
+    root.unmount();
+    document.body.removeChild(container);
+    throw new Error('InvoiceTemplate did not render');
+  }
+
+  const canvas = await html2canvas(templateEl, {
+    scale: 2,
+    useCORS: true,
+    backgroundColor: '#ffffff',
+    logging: false,
+  });
+
+  // 4. Create PDF
+  const pdf = new jsPDF('p', 'mm', 'a4');
+  const pageWidth = pdf.internal.pageSize.getWidth();
+  const pageHeight = pdf.internal.pageSize.getHeight();
+  const imgData = canvas.toDataURL('image/png');
+  pdf.addImage(imgData, 'PNG', 0, 0, pageWidth, pageHeight);
+
+  // 5. Save
   const isProforma = data.invoiceType === 'proforma';
-  const isArabic = data.language === 'ar';
-
-  // Helper: RTL text options for Arabic content — jsPDF has a built-in BiDi engine
-  const rtl: { isInputRtl?: boolean } = isArabic ? { isInputRtl: true } : {};
-
-  // Register Tajawal for Arabic text
-  const hasTajawal = await registerTajawalFont(doc);
-
-  // Merge agency info
-  const info = mergeAgencyInfo(data.agencyInfo);
-
-  // ===== CENTERED LOGO =====
-  try {
-    const logoBase64 = await getLogoBase64();
-    doc.addImage(logoBase64, 'PNG', (pageWidth - 35) / 2, 8, 35, 26);
-  } catch (error) {
-    console.warn('Could not load logo:', error);
-  }
-
-  // ===== AGENCY HEADER (centered underneath logo) =====
-  let currentY = 38;
-  doc.setFontSize(14);
-  if (hasTajawal) {
-    doc.setFont('Tajawal', 'bold');
-  } else {
-    doc.setFont('helvetica', 'bold');
-  }
-  doc.text(info.legalName, pageWidth / 2, currentY, { align: 'center' });
-  doc.setFont('helvetica', 'normal');
-
-  currentY += 5;
-  doc.setFontSize(9);
-  doc.setFont('helvetica', 'normal');
-  doc.setTextColor(80, 80, 80);
-  doc.text(`${isArabic ? reshapeArabic('العنوان') : 'Adresse'}: ${info.address}`, pageWidth / 2, currentY, { align: 'center', ...rtl });
-
-  currentY += 4;
-  const phoneText = info.mobilePhone
-    ? `${isArabic ? reshapeArabic('الهاتف') : 'Tél'}: ${info.phone} / ${info.mobilePhone} | Email: ${info.email}`
-    : `${isArabic ? reshapeArabic('الهاتف') : 'Tél'}: ${info.phone} | Email: ${info.email}`;
-  doc.text(phoneText, pageWidth / 2, currentY, { align: 'center', ...rtl });
-
-  currentY += 4;
-  doc.text(`RC: ${info.rc} | NIF: ${info.nif} | NIS: ${info.nis}`, pageWidth / 2, currentY, { align: 'center' });
-
-  doc.setTextColor(0, 0, 0);
-
-  // ===== INVOICE TITLE BANNER =====
-  currentY += 6;
-  const bannerHeight = 14;
-  if (isProforma) {
-    doc.setFillColor(59, 130, 246); // Blue #3B82F6
-  } else {
-    doc.setFillColor(34, 100, 74); // Green #22644A
-  }
-  doc.roundedRect(14, currentY, pageWidth - 28, bannerHeight, 2, 2, 'F');
-
-  doc.setFontSize(14);
-  doc.setFont('helvetica', 'bold');
-  doc.setTextColor(255, 255, 255);
-  const titleText = isProforma
-    ? (isArabic ? reshapeArabic('فاتورة مبدئية') : 'FACTURE PROFORMA')
-    : (isArabic ? reshapeArabic('فاتورة نهائية') : 'FACTURE DÉFINITIVE');
-  doc.text(titleText, pageWidth / 2, currentY + 10, { align: 'center', ...rtl });
-  doc.setTextColor(0, 0, 0);
-
-  currentY += bannerHeight + 4;
-  doc.setFontSize(11);
-  doc.setFont('helvetica', 'normal');
-  doc.text(`N° ${data.invoiceNumber}`, pageWidth / 2, currentY, { align: 'center' });
-
-  currentY += 4;
-  doc.setDrawColor(180, 180, 180);
-  doc.setLineWidth(0.5);
-  doc.line(14, currentY, pageWidth - 14, currentY);
-
-  // ===== CLIENT SECTION =====
-  currentY += 7;
-  doc.setFontSize(11);
-  doc.setFont('helvetica', 'bold');
-  doc.setTextColor(51, 51, 51); // #333333 dark gray
-  doc.text(isArabic ? reshapeArabic('العميل') : 'CLIENT', 14, currentY, rtl);
-  doc.setFont('helvetica', 'normal');
-  doc.text(`${isArabic ? reshapeArabic('التاريخ') : 'Date'}: ${data.invoiceDate}`, pageWidth - 14, currentY, { align: 'right', ...rtl });
-  doc.setTextColor(0, 0, 0);
-
-  doc.setFontSize(10);
-  currentY += 8;
-  doc.text(`${isArabic ? reshapeArabic('الاسم') : 'Nom'}: ${data.clientName}`, 14, currentY, rtl);
-  if (data.clientPassport) {
-    currentY += 6;
-    doc.text(`${isArabic ? reshapeArabic('جواز السفر') : 'Passeport'}: ${data.clientPassport}`, 14, currentY, rtl);
-  }
-
-  // ===== SERVICE/PRESTATION SECTION =====
-  currentY += 10;
-  doc.setFontSize(11);
-  doc.setFont('helvetica', 'bold');
-  doc.setTextColor(51, 51, 51); // #333333 dark gray
-  doc.text(isArabic ? reshapeArabic('الخدمة') : 'PRESTATION', 14, currentY, rtl);
-  doc.setTextColor(0, 0, 0);
-
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(10);
-  currentY += 8;
-  doc.text(`${data.serviceName}`, 14, currentY);
-
-  if (data.destination) {
-    currentY += 5;
-    const arrow = isArabic ? '←' : '✈';
-    const formattedDestination = data.destination.replace(/-/g, ` ${arrow} `);
-    doc.text(`${isArabic ? reshapeArabic('المسار') : 'Itinéraire'}: ${formattedDestination}`, 14, currentY, rtl);
-  }
-
-  if (data.companyName) {
-    currentY += 5;
-    doc.text(`${isArabic ? reshapeArabic('الشركة') : 'Compagnie'}: ${data.companyName}`, 14, currentY, rtl);
-  }
-
-  if (data.departureDate) {
-    currentY += 5;
-    const departureLbl = isArabic ? reshapeArabic('تاريخ المغادرة') : 'Date de départ';
-    doc.text(`${departureLbl}: ${data.departureDate}`, 14, currentY, rtl);
-    if (data.returnDate) {
-      doc.text(`${isArabic ? reshapeArabic('العودة') : 'Retour'}: ${data.returnDate}`, pageWidth / 2, currentY, rtl);
-    }
-  }
-
-  if (data.travelClass) {
-    currentY += 5;
-    const classLabels: Record<string, { fr: string; ar: string }> = {
-      economique: { fr: 'Économique', ar: reshapeArabic('اقتصادية') },
-      affaires: { fr: 'Affaires', ar: reshapeArabic('رجال أعمال') },
-      premiere: { fr: 'Première', ar: reshapeArabic('الدرجة الأولى') },
-    };
-    const classLabel = classLabels[data.travelClass]?.[isArabic ? 'ar' : 'fr'] || data.travelClass;
-    doc.text(`${isArabic ? reshapeArabic('الدرجة') : 'Classe'}: ${classLabel}`, 14, currentY, rtl);
-  }
-
-  // PNR only for final invoices
-  if (!isProforma && data.pnr) {
-    currentY += 6;
-    doc.setFont('helvetica', 'bold');
-    doc.text(`PNR: ${data.pnr}`, 14, currentY);
-    doc.setFont('helvetica', 'normal');
-  }
-
-  // ===== FINANCIAL SECTION =====
-  currentY += 10;
-  doc.setFontSize(11);
-  doc.setFont('helvetica', 'bold');
-  doc.setTextColor(51, 51, 51); // #333333 dark gray
-  doc.text(isArabic ? reshapeArabic('التفاصيل المالية') : 'DÉTAILS FINANCIERS', 14, currentY, rtl);
-  doc.setTextColor(0, 0, 0);
-
-  // Financial details box
-  currentY += 8;
-  const boxX = 14;
-  const boxWidth = pageWidth - 28;
-  const hasBreakdown = data.ticketPrice > 0 || data.agencyFees > 0;
-  const boxHeight = hasBreakdown ? 52 : 36;
-  const boxStartY = currentY - 2;
-
-  doc.setDrawColor(200, 200, 200);
-  doc.setFillColor(250, 250, 250);
-  doc.roundedRect(boxX, boxStartY, boxWidth, boxHeight, 3, 3, 'FD');
-
-  doc.setFontSize(10);
-  doc.setFont('helvetica', 'normal');
-
-  const labelX = boxX + 10;
-  const valueX = boxX + boxWidth - 10;
-
-  // Show ticket price and agency fees if available
-  if (hasBreakdown) {
-    currentY += 6;
-    doc.text(isArabic ? reshapeArabic('سعر التذكرة:') : 'Prix du billet:', labelX, currentY, rtl);
-    doc.text(`${data.ticketPrice.toLocaleString('fr-FR')} DA`, valueX, currentY, { align: 'right' });
-
-    currentY += 8;
-    doc.text(isArabic ? reshapeArabic('رسوم الوكالة:') : 'Frais agence:', labelX, currentY, rtl);
-    doc.text(`${data.agencyFees.toLocaleString('fr-FR')} DA`, valueX, currentY, { align: 'right' });
-
-    currentY += 6;
-    doc.setDrawColor(180, 180, 180);
-    doc.line(labelX, currentY, valueX, currentY);
-  }
-
-  currentY += 6;
-  doc.setFont('helvetica', 'bold');
-  if (!isProforma) {
-    doc.text(isArabic ? reshapeArabic('المجموع قبل الضريبة:') : 'Total HT:', labelX, currentY, rtl);
-    doc.text(`${data.totalAmount.toLocaleString('fr-FR')} DA`, valueX, currentY, { align: 'right' });
-
-    currentY += 8;
-    doc.setFont('helvetica', 'normal');
-    doc.text(isArabic ? reshapeArabic('ضريبة (0%):') : 'TVA (0%):', labelX, currentY, rtl);
-    doc.text('0 DA', valueX, currentY, { align: 'right' });
-
-    currentY += 8;
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(11);
-    doc.text(isArabic ? reshapeArabic('المجموع الكلي:') : 'Total TTC:', labelX, currentY, rtl);
-    doc.text(`${data.totalAmount.toLocaleString('fr-FR')} DA`, valueX, currentY, { align: 'right' });
-  } else {
-    doc.text(isArabic ? reshapeArabic('المجموع:') : 'Total:', labelX, currentY, rtl);
-    doc.text(`${data.totalAmount.toLocaleString('fr-FR')} DA`, valueX, currentY, { align: 'right' });
-  }
-  doc.setFontSize(10);
-  doc.setTextColor(0, 0, 0);
-
-  currentY = boxStartY + boxHeight;
-
-  // ===== REGLEMENT + CACHET ET SIGNATURE (side by side) =====
-  currentY += 6;
-
-  // --- Left side: Règlement ---
-  const reglementStartY = currentY;
-  const leftColX = 14;
-  const rightColX = pageWidth / 2 + 10;
-
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(10);
-  doc.text(isArabic ? reshapeArabic('الدفع') : 'RÈGLEMENT', leftColX, currentY, rtl);
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(9);
-
-  if (data.paymentMethod) {
-    currentY += 5;
-    const paymentLabels: Record<string, { fr: string; ar: string }> = {
-      especes: { fr: 'Espèces', ar: reshapeArabic('نقدي') },
-      virement: { fr: 'Virement', ar: reshapeArabic('تحويل بنكي') },
-      cheque: { fr: 'Chèque', ar: reshapeArabic('شيك') },
-      carte: { fr: 'Carte bancaire', ar: reshapeArabic('بطاقة بنكية') },
-    };
-    const paymentLabel = paymentLabels[data.paymentMethod]?.[isArabic ? 'ar' : 'fr'] || data.paymentMethod;
-    doc.text(`${isArabic ? reshapeArabic('طريقة الدفع') : 'Mode de paiement'}: ${paymentLabel}`, leftColX, currentY, rtl);
-  }
-
-  if (info.bankName || info.bankAccount) {
-    currentY += 5;
-    doc.text(`Banque: ${info.bankName || '—'}`, leftColX, currentY);
-    currentY += 4;
-    doc.text(`Compte: ${info.bankAccount || '—'}`, leftColX, currentY);
-  }
-
-  // Amount in words
-  currentY += 5;
-  const amountWords = numberToWords(data.totalAmount);
-  const docType = isProforma ? 'proforma' : 'définitive';
-  doc.setFont('helvetica', 'italic');
-  doc.setFontSize(8);
-  const wordsText = `Arrêté la présente facture ${docType} à la somme de: ${amountWords} Dinars Algériens`;
-  const wordsLines = doc.splitTextToSize(wordsText, pageWidth / 2 - 20);
-  doc.text(wordsLines, leftColX, currentY);
-
-  const leftColEndY = currentY + wordsLines.length * 4;
-
-  // --- Right side: Cachet et Signature ---
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(10);
-  doc.setTextColor(51, 51, 51);
-  doc.text(isArabic ? reshapeArabic('الختم والتوقيع') : 'Cachet et Signature', pageWidth - 14, reglementStartY, { align: 'right', ...rtl });
-  doc.setTextColor(0, 0, 0);
-  doc.setFont('helvetica', 'normal');
-
-  // Track the bottom of both columns
-  currentY = Math.max(leftColEndY, reglementStartY + 20);
-
-  // ===== CONDITIONS (Proforma) or PAYMENT INFO (Finale) =====
-  if (isProforma) {
-    currentY += 4;
-    doc.setFontSize(9);
-    doc.setFont('helvetica', 'normal');
-    doc.text(`• ${isArabic ? reshapeArabic('الدفع قبل إصدار التذكرة') : 'Paiement avant émission du billet'}`, leftColX + 4, currentY, rtl);
-    currentY += 4;
-    doc.text(`• ${isArabic ? reshapeArabic('صلاحية العرض') : "Validité de l'offre"}: ${data.validityHours} ${isArabic ? reshapeArabic('ساعة') : 'heures'}`, leftColX + 4, currentY, rtl);
-
-    // Proforma warning
-    currentY += 6;
-    doc.setFillColor(255, 248, 220);
-    doc.setDrawColor(255, 200, 50);
-    doc.roundedRect(14, currentY - 3, pageWidth - 28, 10, 2, 2, 'FD');
-    doc.setFontSize(8);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(150, 100, 0);
-    doc.text(
-      isArabic ? reshapeArabic('⚠ هذه فاتورة مبدئية، غير صالحة للمحاسبة') : '⚠ Ceci est une facture proforma, non valable pour la comptabilité',
-      pageWidth / 2,
-      currentY + 3,
-      { align: 'center', ...rtl }
-    );
-    doc.setTextColor(0, 0, 0);
-  } else {
-    // Final invoice - note
-    currentY += 4;
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(8);
-    doc.text(isArabic ? reshapeArabic('تذكرة صادرة وغير قابلة للاسترداد') : 'Billet émis et non remboursable', leftColX, currentY, rtl);
-    doc.setFont('helvetica', 'normal');
-  }
-
-  // ===== ARABIC FOOTER =====
-  drawArabicFooter(doc, info, hasTajawal);
-
-  // ===== GENERATION TIMESTAMP =====
-  doc.setFontSize(7);
-  doc.setFont('helvetica', 'normal');
-  doc.setTextColor(160, 160, 160);
-  const timestamp = new Date().toLocaleString(isArabic ? 'ar-DZ' : 'fr-FR');
-  doc.text(`${isArabic ? reshapeArabic('تم الإنشاء في') : 'Généré le'} ${timestamp}`, pageWidth - 14, pageHeight - 2, { align: 'right', ...rtl });
-
-  // Save the PDF
   const fileName = `${isProforma ? 'proforma' : 'facture'}_${data.invoiceNumber}_${new Date().toISOString().split('T')[0]}.pdf`;
-  doc.save(fileName);
+  pdf.save(fileName);
+
+  // 6. Cleanup
+  root.unmount();
+  document.body.removeChild(container);
 }
