@@ -1,112 +1,63 @@
 
 
-# Fix PDF Footer Content and Add Missing Field
+# Fix Arabic Text Rendering in PDF Footer
 
-## Overview
-The PDF footer text does not match the correct agency information. This plan updates the footer layout to match the exact format from the reference image, adds a new "Article Fiscal" field (رقم المادة الجبائية) that is currently missing from the system, and updates the default values to be accurate. All footer data is already fetched dynamically from the backend -- we just need to add the missing field and fix the layout/values.
+## Problem
+jsPDF does not have a built-in Arabic text shaping engine. Arabic letters change shape based on their position in a word (initial, medial, final, isolated), but jsPDF renders every character in its isolated form. This causes letters to appear disconnected, missing, or garbled in the generated PDF.
+
+## Solution
+Install the `arabic-reshaper` npm package and run all Arabic text through it before passing to jsPDF. This library converts standard Arabic Unicode characters into their correct "Presentation Forms" (Unicode block FB50-FDFF and FE70-FEFF), which are pre-shaped glyphs that render correctly without a text shaping engine.
+
+Example:
+- Input: `الحكمة للسياحة و الاسفار` (standard Unicode)
+- Output: `ﺍﻟﺤﻜﻤﺔ ﻟﻠﺴﻴﺎﺣﺔ ﻭ ﺍﻻﺳﻔﺎﺭ` (presentation forms -- looks identical to a human reader but each glyph is pre-shaped)
 
 ## What Changes
 
-### 1. Add New Field: `articleFiscal` (رقم المادة الجبائية)
-This field ("Tax Article Number" / "Article d'imposition") does not exist anywhere in the system. It needs to be added to:
-- Backend default settings
-- Frontend `AgencyInfoParam` type
-- `mergeAgencyInfo` helper
-- Fallback constants
-- Contact page form
-- Translation files (FR and AR)
+### 1. Install `arabic-reshaper` package
+Add the `arabic-reshaper` npm dependency to the project.
 
-### 2. Update Default Values
-Several values in the backend defaults and frontend fallbacks are incorrect:
+### 2. Create Arabic text utility
+Create a helper function `reshapeArabic(text: string): string` in a new utility file that wraps the reshaper and also reverses the text for RTL rendering in jsPDF (since jsPDF does not handle RTL ordering either).
 
-| Field | Current Value | Correct Value |
-|-------|--------------|---------------|
-| `arabicName` | الحكمة للسياحة والأسفار | الحكمة لسياحة و الأسفار |
-| `nis` | 001209010018958 | 001209010019858 |
-| `rc` | 09/00-0807686B12 | 12ب0807686-09/00 |
-| `phone` | 020475949 | 025 17 29 68 |
-| `mobilePhone` | 0770236424 | 0540 40 00 80 |
-| `licenseNumber` | (empty) | 1500 |
-| `articleFiscal` | (new) | 00120908076 |
+### 3. Apply reshaping to all Arabic text in PDF
+Update `drawArabicFooter` in `invoiceGenerator.ts` to reshape all Arabic strings before calling `doc.text()`. This includes:
+- Agency Arabic name (Line 1)
+- Arabic address (Line 2)
+- Arabic labels for RC, NIF, Article Fiscal, NIS, License, phone (Lines 3-5)
 
-### 3. Rewrite Footer Layout
-The current footer renders 4 lines. The reference image shows 5 lines with a specific arrangement:
-
-```text
-Line 1: الحكمة لسياحة و الأسفار                          (agency name - bold)
-Line 2: 02، طريق القليعة، زعبانة، 09001، البليدة، الجزائر    (address)
-Line 3: رقم السجل التجاري: ... رقم التعريف الجبائي: ... رقم المادة الجبائية: ...  (RC + NIF + Article)
-Line 4: رقم التعريف الإحصائي: ... رقم رخصة الوكالة: ...      (NIS + License)
-Line 5: الجوال: ... المكتب: ...                            (phone numbers)
-```
-
-Key differences from current layout:
-- Line 3 now includes the new `articleFiscal` field
-- Legal identifiers are split across two lines (3 on one, 2 on the next) instead of all crammed into one line
-- Footer starts at `pageHeight - 32` instead of `pageHeight - 28` to accommodate the extra line
+Also apply reshaping to any other Arabic text in the invoice body (labels like "العميل", "الخدمة", etc. when `isArabic` is true).
 
 ---
 
 ## Technical Details
 
+### New file: `src/utils/arabicReshaper.ts`
+- Import `arabic-reshaper` (or `ArabicReshaper.convertArabic`)
+- Export a `reshapeArabic(text: string): string` function that:
+  1. Splits the text by spaces to handle mixed Arabic/Latin content
+  2. For Arabic segments: applies the reshaper to convert to presentation forms, then reverses character order for RTL
+  3. For non-Arabic segments (numbers, Latin text): keeps as-is
+  4. Reverses the word order so RTL reads correctly in jsPDF's LTR rendering
+
 ### File: `src/utils/invoiceGenerator.ts`
+- Import `reshapeArabic` from the new utility
+- In `drawArabicFooter`: wrap every Arabic string with `reshapeArabic()` before passing to `doc.text()`
+  - Line 1: `reshapeArabic(info.arabicName)`
+  - Line 2: `reshapeArabic(info.arabicAddress)`
+  - Lines 3-5: reshape the Arabic label portions while keeping the numeric values intact
+- In the main `generateClientInvoicePdf` function: apply `reshapeArabic()` to all Arabic labels used when `isArabic === true` (e.g., "العميل", "الاسم", "جواز السفر", "الخدمة", etc.)
 
-**Add `articleFiscal` to `AgencyInfoParam` (line 16):**
-Add `articleFiscal?: string;` to the interface.
-
-**Update `mergeAgencyInfo` (line 84-99):**
-Add `articleFiscal: param?.articleFiscal || AGENCY_INFO.articleFiscal` to the return object.
-
-**Rewrite `drawArabicFooter` (lines 104-151):**
-- Start Y at `pageHeight - 32` (was -28) to fit 5 lines
-- Line 1: Arabic name (Tajawal Bold, size 10)
-- Line 2: Arabic address (Tajawal Regular, size 8)
-- Line 3: RC + NIF + Article Fiscal (size 7), separated by spaces
-- Line 4: NIS + License Number (size 7), separated by spaces
-- Line 5: Mobile + Office phone (size 7)
-- All lines centered, using Tajawal font
-
-### File: `src/constants/agency.ts`
-
-**Add field and update values (lines 1-17):**
-- Add `articleFiscal: '00120908076'`
-- Update `arabicName` to `'الحكمة لسياحة و الأسفار'`
-- Update `nis` to `'001209010019858'`
-- Update `rc` to `'12ب0807686-09/00'`
-- Update `phone` to `'025 17 29 68'`
-- Update `mobilePhone` to `'0540 40 00 80'`
-- Update `licenseNumber` to `'1500'`
-
-### File: `server/src/agency-settings/agency-settings.service.ts`
-
-**Add field and update defaults (lines 6-20):**
-- Add `articleFiscal: '00120908076'` to DEFAULT_SETTINGS
-- Update `arabicName`, `nis`, `rc`, `phone`, `mobilePhone`, `licenseNumber` to correct values
-
-### File: `src/pages/ContactPage.tsx`
-
-**Add `articleFiscal` to FIELDS array (line 20):**
-Insert `{ key: 'articleFiscal', icon: '🔢' }` after the `nis` entry.
-
-### File: `src/i18n/locales/fr/common.json`
-
-**Add translation (line 146):**
-Add `"articleFiscal": "Article d'imposition"` to the `contact.fields` section.
-
-### File: `src/i18n/locales/ar/common.json`
-
-**Add translation (line 146):**
-Add `"articleFiscal": "رقم المادة الجبائية"` to the `contact.fields` section.
+### Package installation
+- `arabic-reshaper` (npm package, ~5KB, MIT-compatible license)
 
 ### Files Summary
 
 | File | Action | Description |
 |------|--------|-------------|
-| `src/utils/invoiceGenerator.ts` | Modify | Add `articleFiscal` to type + merge, rewrite footer to 5-line layout |
-| `src/constants/agency.ts` | Modify | Add `articleFiscal`, fix default values |
-| `server/src/agency-settings/agency-settings.service.ts` | Modify | Add `articleFiscal`, fix default values |
-| `src/pages/ContactPage.tsx` | Modify | Add `articleFiscal` field to form |
-| `src/i18n/locales/fr/common.json` | Modify | Add `articleFiscal` translation |
-| `src/i18n/locales/ar/common.json` | Modify | Add `articleFiscal` translation |
+| `package.json` | Modify | Add `arabic-reshaper` dependency |
+| `src/utils/arabicReshaper.ts` | Create | Helper to reshape + reverse Arabic text for jsPDF |
+| `src/utils/invoiceGenerator.ts` | Modify | Apply `reshapeArabic()` to all Arabic strings before rendering |
 
-No database schema changes needed -- the backend uses a flexible key-value store that auto-creates new keys.
+No database or backend changes needed. This is purely a frontend PDF rendering fix.
+
