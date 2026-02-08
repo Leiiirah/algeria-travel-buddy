@@ -33,8 +33,16 @@ export class RefactorDocumentsToHierarchy1770600000000 implements MigrationInter
       CREATE INDEX "IDX_documents_parentId" ON "documents" ("parentId")
     `);
 
-    // 6. Insert system folders at root level using a known admin user
-    // Get the first admin user to set as uploadedBy
+    // 6. Make category nullable BEFORE inserting folders (category still exists at this point)
+    const hasCategory = await queryRunner.query(`
+      SELECT column_name FROM information_schema.columns
+      WHERE table_name = 'documents' AND column_name = 'category'
+    `);
+    if (hasCategory.length > 0) {
+      await queryRunner.query(`ALTER TABLE "documents" ALTER COLUMN "category" DROP NOT NULL`);
+    }
+
+    // 7. Insert system folders at root level using a known admin user
     const adminUser = await queryRunner.query(`
       SELECT id FROM "users" WHERE role = 'admin' LIMIT 1
     `);
