@@ -33,7 +33,7 @@ export class Document {
   @Column({ type: 'uuid', nullable: true })
   parentId: string | null;
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   fileUrl: string | null;
 
   @Column()
