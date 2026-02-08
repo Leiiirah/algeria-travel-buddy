@@ -12,7 +12,7 @@ export const AGENCY_INFO = {
   bankAccount: '00799999001499040728',
   mobilePhone: '0770236424',
   licenseNumber: '',
-  arabicName: 'الحكمة لسياحة و الأسفار',
+  arabicName: 'الحكمة للسياحة والأسفار',
   arabicAddress: '02، طريق القليعة، زعبانة، 09001، البليدة، الجزائر',
 };
  
