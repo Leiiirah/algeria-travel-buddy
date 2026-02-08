@@ -104,11 +104,11 @@ export class SearchService {
             });
         });
 
-        // 4. Search Documents
+        // 4. Search Documents (files only)
         const documents = await this.documentRepository
             .createQueryBuilder('document')
             .where('document.name ILIKE :search', { search: searchTerm })
-            .orWhere('document.category::text ILIKE :search', { search: searchTerm })
+            .andWhere('document.type = :type', { type: 'file' })
             .take(limit)
             .getMany();
 
@@ -117,8 +117,8 @@ export class SearchService {
                 id: doc.id,
                 type: 'document',
                 label: doc.name,
-                sublabel: `Document ${doc.category}`,
-                url: `/documents?search=${encodeURIComponent(doc.name)}`,
+                sublabel: 'Document PDF',
+                url: `/documents`,
             });
         });
 

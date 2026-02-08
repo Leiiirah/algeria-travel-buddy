@@ -1,45 +1,48 @@
 {
   "title": "مكتبة المستندات",
   "subtitle": "الإدارة الإلكترونية للوثائق",
-  "categories": {
-    "all": "الكل",
-    "assurance": "التأمين",
-    "cnas": "CNAS",
-    "casnos": "CASNOS",
-    "autre": "أخرى"
-  },
-  "list": {
-    "title": "المستندات",
-    "count": "{{count}} مستند(ات)"
-  },
-  "dialog": {
-    "uploadTitle": "رفع مستند",
-    "uploadDesc": "أضف مستنداً جديداً للمكتبة"
-  },
-  "form": {
-    "name": "اسم المستند",
-    "namePlaceholder": "مثال: شهادة التأمين 2025",
-    "category": "الفئة",
-    "selectCategory": "اختر فئة",
-    "file": "ملف PDF",
-    "dropzone": "اسحب وأفلت أو انقر للاختيار"
+  "breadcrumbs": {
+    "root": "المستندات"
   },
   "actions": {
-    "upload": "رفع",
+    "newFolder": "مجلد جديد",
+    "upload": "رفع ملف PDF",
     "uploading": "جاري الرفع...",
     "download": "تحميل",
-    "replace": "استبدال"
+    "rename": "إعادة تسمية",
+    "delete": "حذف",
+    "move": "نقل"
+  },
+  "dialog": {
+    "newFolderTitle": "إنشاء مجلد",
+    "newFolderDesc": "أدخل اسم المجلد الجديد",
+    "folderName": "اسم المجلد",
+    "folderNamePlaceholder": "مثال: 2026",
+    "uploadTitle": "رفع مستند",
+    "uploadDesc": "سيتم إضافة الملف في المجلد الحالي",
+    "fileName": "اسم المستند",
+    "fileNamePlaceholder": "مثال: شهادة التأمين 2025",
+    "file": "ملف PDF",
+    "dropzone": "اسحب وأفلت أو انقر للاختيار",
+    "renameTitle": "إعادة تسمية",
+    "renameDesc": "أدخل الاسم الجديد",
+    "deleteTitle": "تأكيد الحذف",
+    "deleteFolderWarning": "سيتم حذف هذا المجلد وكل محتوياته نهائياً.",
+    "deleteFileWarning": "سيتم حذف هذا الملف نهائياً."
+  },
+  "list": {
+    "count": "{{count}} عنصر(عناصر)",
+    "folders": "المجلدات",
+    "files": "الملفات"
+  },
+  "empty": {
+    "title": "هذا المجلد فارغ",
+    "description": "أنشئ مجلداً فرعياً أو ارفع ملفاً"
   },
   "table": {
     "updatedAt": "تم التحديث في {{date}}"
   },
   "filters": {
-    "category": "الفئة",
-    "fromDate": "من تاريخ",
-    "toDate": "إلى تاريخ"
-  },
-  "empty": {
-    "title": "لم يتم العثور على مستندات",
-    "description": "ارفع مستنداً للبدء"
+    "search": "البحث في هذا المجلد..."
   }
 }

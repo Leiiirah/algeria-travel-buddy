@@ -1,4 +1,4 @@
-import { User, Service, Supplier, Command, Payment, SupplierTransaction, Document, OmraHotel, OmraOrder, OmraVisa, OmraRoomType, OmraStatus, EmployeeTransaction, EmployeeBalance, EmployeeTransactionType, Expense, ExpenseStats, ExpenseCategory, PaymentMethod, SupplierOrder, SupplierOrderStatus, SupplierReceipt, SupplierInvoice, SupplierInvoiceStatus, ServiceTypeEntity, InternalTask, TaskStats, TaskPriority, TaskStatus, TaskVisibility, ClientInvoice, ClientInvoiceStats, ClientInvoiceType, ClientInvoiceStatus } from '@/types';
+import { User, Service, Supplier, Command, Payment, SupplierTransaction, DocumentNode, OmraHotel, OmraOrder, OmraVisa, OmraRoomType, OmraStatus, EmployeeTransaction, EmployeeBalance, EmployeeTransactionType, Expense, ExpenseStats, ExpenseCategory, PaymentMethod, SupplierOrder, SupplierOrderStatus, SupplierReceipt, SupplierInvoice, SupplierInvoiceStatus, ServiceTypeEntity, InternalTask, TaskStats, TaskPriority, TaskStatus, TaskVisibility, ClientInvoice, ClientInvoiceStats, ClientInvoiceType, ClientInvoiceStatus } from '@/types';
 
 // API base URL - includes /api prefix to match nginx proxy configuration
 const API_URL = (import.meta.env.VITE_API_URL || 'http://69.62.127.134:8080/api')
@@ -129,8 +129,22 @@ export interface CreateSupplierTransactionDto {
 
 export interface UploadDocumentDto {
   name: string;
-  category: 'assurance' | 'cnas' | 'casnos' | 'autre';
+  parentId?: string;
   file: File;
+}
+
+export interface CreateFolderDto {
+  name: string;
+  parentId?: string;
+}
+
+export interface MoveNodeDto {
+  parentId?: string | null;
+}
+
+export interface DocumentAncestor {
+  id: string;
+  name: string;
 }
 
 export interface SupplierBalance {
@@ -962,21 +976,36 @@ class ApiClient {
 
   // ==================== DOCUMENTS ====================
 
-  getDocuments = (category?: string): Promise<Document[]> => {
-    const query = category ? `?category=${encodeURIComponent(category)}` : '';
+  getDocuments = (parentId?: string): Promise<DocumentNode[]> => {
+    const query = parentId ? `?parentId=${encodeURIComponent(parentId)}` : '';
     return this.request(`/documents${query}`);
   };
 
-  uploadDocument = (data: UploadDocumentDto): Promise<Document> => {
+  getDocumentAncestors = (id: string): Promise<DocumentAncestor[]> =>
+    this.request(`/documents/${id}/ancestors`);
+
+  createFolder = (data: CreateFolderDto): Promise<DocumentNode> =>
+    this.request('/documents/folder', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+
+  uploadDocument = (data: UploadDocumentDto): Promise<DocumentNode> => {
     const formData = new FormData();
     formData.append('name', data.name);
-    formData.append('category', data.category);
+    if (data.parentId) formData.append('parentId', data.parentId);
     formData.append('file', data.file);
     return this.requestWithFormData('/documents/upload', formData);
   };
 
-  updateDocument = (id: string, data: { name?: string; category?: string }): Promise<Document> =>
+  updateDocument = (id: string, data: { name?: string }): Promise<DocumentNode> =>
     this.request(`/documents/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    });
+
+  moveDocument = (id: string, data: MoveNodeDto): Promise<DocumentNode> =>
+    this.request(`/documents/${id}/move`, {
       method: 'PATCH',
       body: JSON.stringify(data),
     });

@@ -3,7 +3,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { Response } from 'express';
 import { DocumentsService } from './documents.service';
-import { UploadDocumentDto, UpdateDocumentDto } from './dto/document.dto';
+import { CreateFolderDto, UploadDocumentDto, UpdateDocumentDto, MoveNodeDto } from './dto/document.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
@@ -13,11 +13,22 @@ import * as path from 'path';
 @Controller('documents')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class DocumentsController {
-  constructor(private readonly documentsService: DocumentsService) { }
+  constructor(private readonly documentsService: DocumentsService) {}
 
   @Get()
-  findAll(@Query('category') category?: string) {
-    return this.documentsService.findAll(category);
+  findAll(@Query('parentId') parentId?: string) {
+    return this.documentsService.findByParent(parentId || undefined);
+  }
+
+  @Get(':id/ancestors')
+  getAncestors(@Param('id') id: string) {
+    return this.documentsService.getAncestors(id);
+  }
+
+  @Post('folder')
+  @Roles('admin')
+  createFolder(@Body() dto: CreateFolderDto, @Request() req: any) {
+    return this.documentsService.createFolder(dto, req.user.id);
   }
 
   @Post('upload')
@@ -39,6 +50,12 @@ export class DocumentsController {
   @Roles('admin')
   update(@Param('id') id: string, @Body() updateDto: UpdateDocumentDto) {
     return this.documentsService.update(id, updateDto);
+  }
+
+  @Patch(':id/move')
+  @Roles('admin')
+  move(@Param('id') id: string, @Body() moveDto: MoveNodeDto) {
+    return this.documentsService.move(id, moveDto);
   }
 
   @Delete(':id')

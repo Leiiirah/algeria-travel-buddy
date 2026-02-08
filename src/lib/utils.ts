@@ -68,16 +68,6 @@ export const getPaymentMethodLabel = (method: string): string => {
   return labels[method] || method;
 };
 
-// Get document category label in French
-export const getDocumentCategoryLabel = (category: string): string => {
-  const labels: Record<string, string> = {
-    assurance: 'Assurance',
-    cnas: 'CNAS',
-    casnos: 'CASNOS',
-    autre: 'Autre',
-  };
-  return labels[category] || category;
-};
 
 // Get transaction type label in French
 export const getTransactionTypeLabel = (type: SupplierTransactionType): string => {
