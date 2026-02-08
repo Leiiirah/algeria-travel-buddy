@@ -5,34 +5,32 @@ let tajawalRegularCache: string | null = null;
 let tajawalBoldCache: string | null = null;
 
 /**
- * Fetch a font from Google Fonts CDN and convert to base64.
- * Results are cached in memory to avoid repeated downloads.
+ * Fetch a font file and convert to base64 string.
+ * Uses ArrayBuffer for reliable binary-to-base64 conversion.
  */
 async function fetchFontAsBase64(url: string): Promise<string> {
   const response = await fetch(url);
-  const blob = await response.blob();
-  return new Promise<string>((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      const dataUrl = reader.result as string;
-      // Strip the data URL prefix to get raw base64
-      const base64 = dataUrl.split(',')[1];
-      resolve(base64);
-    };
-    reader.onerror = reject;
-    reader.readAsDataURL(blob);
-  });
+  if (!response.ok) {
+    throw new Error(`Font fetch failed: ${response.status} ${response.statusText}`);
+  }
+  const arrayBuffer = await response.arrayBuffer();
+  const bytes = new Uint8Array(arrayBuffer);
+  let binary = '';
+  for (let i = 0; i < bytes.length; i++) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+  return btoa(binary);
 }
 
-// Google Fonts static CDN URLs for Tajawal
+// Full TTF files from Google Fonts GitHub (unsubsetted, with proper cmap tables)
 const TAJAWAL_REGULAR_URL =
-  'https://fonts.gstatic.com/s/tajawal/v9/Iura6YBj_oCad4k1nzGBCw.ttf';
+  'https://raw.githubusercontent.com/google/fonts/main/ofl/tajawal/Tajawal-Regular.ttf';
 const TAJAWAL_BOLD_URL =
-  'https://fonts.gstatic.com/s/tajawal/v9/Iurf6YBj_oCad4k1l_6gHrRpiYlJ.ttf';
+  'https://raw.githubusercontent.com/google/fonts/main/ofl/tajawal/Tajawal-Bold.ttf';
 
 /**
  * Register the Tajawal font (Regular + Bold) with a jsPDF document instance.
- * Fonts are fetched from Google Fonts CDN on first call and cached afterwards.
+ * Fonts are fetched from GitHub on first call and cached afterwards.
  *
  * If the font loading fails, the function logs a warning and returns false,
  * allowing the caller to fall back to Helvetica.
