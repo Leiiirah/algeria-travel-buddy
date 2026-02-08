@@ -13,7 +13,7 @@ export const AGENCY_INFO = {
   mobilePhone: '0540 40 00 80',
   licenseNumber: '1500',
   articleFiscal: '00120908076',
-  arabicName: 'الحكمة لسياحة و الأسفار',
+  arabicName: 'الحكمة للسياحة و الاسفار',
   arabicAddress: '02، طريق القليعة، زعبانة، 09001، البليدة، الجزائر',
 };
  
