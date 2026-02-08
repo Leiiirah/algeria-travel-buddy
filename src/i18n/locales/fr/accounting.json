@@ -92,7 +92,8 @@
       "caisse": "Caisse",
       "impayes": "Impayés",
       "benefices": "Bénéfices",
-      "commands": "Dossiers"
+      "commands": "Dossiers",
+      "actions": "Actions"
     },
     "global": {
       "title": "Total Agence",
@@ -101,6 +102,39 @@
     "empty": {
       "title": "Aucune donnée",
       "description": "Aucune commande assignée aux employés"
+    },
+    "settle": "Régler la caisse",
+    "history": "Historique des règlements",
+    "settleDialog": {
+      "title": "Règlement de caisse",
+      "subtitle": "Enregistrer un règlement pour {{name}}",
+      "currentCaisse": "Caisse actuelle",
+      "currentImpayes": "Impayés actuels",
+      "currentBenefices": "Bénéfices actuels",
+      "currentCommands": "Dossiers actuels",
+      "newBalance": "Nouveau solde",
+      "notes": "Notes",
+      "notesPlaceholder": "Caisse réglée pour...",
+      "confirm": "Confirmer le règlement",
+      "saving": "Enregistrement..."
+    },
+    "historyDialog": {
+      "title": "Historique des règlements",
+      "subtitle": "Tous les règlements passés pour {{name}}",
+      "table": {
+        "date": "Date",
+        "caisse": "Caisse",
+        "impayes": "Impayés",
+        "benefices": "Bénéfices",
+        "commands": "Dossiers",
+        "newBalance": "Nouveau solde",
+        "notes": "Notes"
+      },
+      "cumulative": "Total cumulé",
+      "empty": {
+        "title": "Aucun règlement",
+        "description": "Aucun règlement n'a été effectué pour cet employé"
+      }
     }
   }
 }

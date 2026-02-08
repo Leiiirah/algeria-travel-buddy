@@ -1,4 +1,4 @@
-import { User, Service, Supplier, Command, Payment, SupplierTransaction, DocumentNode, OmraHotel, OmraOrder, OmraVisa, OmraProgram, OmraProgramInventory, OmraRoomType, OmraStatus, OmraOrderType, EmployeeTransaction, EmployeeBalance, EmployeeTransactionType, Expense, ExpenseStats, ExpenseCategory, PaymentMethod, SupplierOrder, SupplierOrderStatus, SupplierReceipt, SupplierInvoice, SupplierInvoiceStatus, ServiceTypeEntity, InternalTask, TaskStats, TaskPriority, TaskStatus, TaskVisibility, ClientInvoice, ClientInvoiceStats, ClientInvoiceType, ClientInvoiceStatus } from '@/types';
+import { User, Service, Supplier, Command, Payment, SupplierTransaction, DocumentNode, OmraHotel, OmraOrder, OmraVisa, OmraProgram, OmraProgramInventory, OmraRoomType, OmraStatus, OmraOrderType, EmployeeTransaction, EmployeeBalance, EmployeeTransactionType, Expense, ExpenseStats, ExpenseCategory, PaymentMethod, SupplierOrder, SupplierOrderStatus, SupplierReceipt, SupplierInvoice, SupplierInvoiceStatus, ServiceTypeEntity, InternalTask, TaskStats, TaskPriority, TaskStatus, TaskVisibility, ClientInvoice, ClientInvoiceStats, ClientInvoiceType, ClientInvoiceStatus, CaisseSettlement } from '@/types';
 
 // API base URL - includes /api prefix to match nginx proxy configuration
 const API_URL = (import.meta.env.VITE_API_URL || 'http://69.62.127.134:8080/api')
@@ -1102,6 +1102,20 @@ class ApiClient {
     };
   }> =>
     this.request('/analytics/employee-caisses');
+
+  // ==================== CAISSE HISTORY ====================
+
+  createCaisseSettlement = (data: { employeeId: string; newBalance?: number; notes?: string }): Promise<CaisseSettlement> =>
+    this.request('/caisse-history/settle', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+
+  getCaisseSettlements = (employeeId: string): Promise<CaisseSettlement[]> =>
+    this.request(`/caisse-history/employee/${employeeId}`);
+
+  getCaisseLastResets = (): Promise<Record<string, { resetDate: string; newBalance: number }>> =>
+    this.request('/caisse-history/last-resets');
 
   // ==================== SEARCH ====================
 

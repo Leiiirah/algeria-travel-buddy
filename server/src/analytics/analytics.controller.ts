@@ -1,11 +1,15 @@
 import { Controller, Get, Query, UseGuards, Request, Param, ForbiddenException } from '@nestjs/common';
 import { AnalyticsService } from './analytics.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { CaisseHistoryService } from '../caisse-history/caisse-history.service';
 
 @Controller('analytics')
 @UseGuards(JwtAuthGuard)
 export class AnalyticsController {
-  constructor(private readonly analyticsService: AnalyticsService) {}
+  constructor(
+    private readonly analyticsService: AnalyticsService,
+    private readonly caisseHistoryService: CaisseHistoryService,
+  ) {}
 
   @Get('dashboard')
   getDashboardStats(@Request() req: any) {
@@ -38,11 +42,13 @@ export class AnalyticsController {
   }
 
   @Get('employee-caisses')
-  getEmployeeCaisseStats(@Request() req: any) {
+  async getEmployeeCaisseStats(@Request() req: any) {
     // Admin only endpoint
     if (req.user.role !== 'admin') {
       throw new ForbiddenException('Admin access required');
     }
-    return this.analyticsService.getEmployeeCaisseStats();
+    // Fetch last reset dates and pass to analytics
+    const lastResetDates = await this.caisseHistoryService.getAllLastResetDates();
+    return this.analyticsService.getEmployeeCaisseStats(lastResetDates);
   }
 }
