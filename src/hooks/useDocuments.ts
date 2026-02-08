@@ -1,11 +1,42 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { api, UploadDocumentDto } from '@/lib/api';
+import { api, UploadDocumentDto, CreateFolderDto, MoveNodeDto } from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
 
-export const useDocuments = (category?: string) => {
+export const useDocuments = (parentId?: string | null) => {
   return useQuery({
-    queryKey: ['documents', category],
-    queryFn: () => api.getDocuments(category),
+    queryKey: ['documents', parentId ?? 'root'],
+    queryFn: () => api.getDocuments(parentId ?? undefined),
+  });
+};
+
+export const useDocumentAncestors = (folderId: string | null) => {
+  return useQuery({
+    queryKey: ['document-ancestors', folderId],
+    queryFn: () => api.getDocumentAncestors(folderId!),
+    enabled: !!folderId,
+  });
+};
+
+export const useCreateFolder = () => {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: (data: CreateFolderDto) => api.createFolder(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['documents'] });
+      toast({
+        title: 'Dossier créé',
+        description: 'Le dossier a été créé avec succès',
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: 'Erreur',
+        description: error.message,
+        variant: 'destructive',
+      });
+    },
   });
 };
 
@@ -37,13 +68,37 @@ export const useUpdateDocument = () => {
   const { toast } = useToast();
 
   return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: { name?: string; category?: string } }) =>
+    mutationFn: ({ id, data }: { id: string; data: { name?: string } }) =>
       api.updateDocument(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['documents'] });
       toast({
         title: 'Document modifié',
         description: 'Les informations ont été mises à jour',
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: 'Erreur',
+        description: error.message,
+        variant: 'destructive',
+      });
+    },
+  });
+};
+
+export const useMoveDocument = () => {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: MoveNodeDto }) =>
+      api.moveDocument(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['documents'] });
+      toast({
+        title: 'Élément déplacé',
+        description: "L'élément a été déplacé avec succès",
       });
     },
     onError: (error: Error) => {
@@ -65,8 +120,8 @@ export const useDeleteDocument = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['documents'] });
       toast({
-        title: 'Document supprimé',
-        description: 'Le document a été supprimé avec succès',
+        title: 'Supprimé',
+        description: "L'élément a été supprimé avec succès",
       });
     },
     onError: (error: Error) => {

@@ -1,22 +1,33 @@
-import { IsNotEmpty, IsEnum, IsOptional, IsString } from 'class-validator';
-import { DocumentCategory } from '../entities/document.entity';
+import { IsNotEmpty, IsOptional, IsString, IsUUID } from 'class-validator';
+
+export class CreateFolderDto {
+  @IsString()
+  @IsNotEmpty()
+  name: string;
+
+  @IsUUID()
+  @IsOptional()
+  parentId?: string;
+}
 
 export class UploadDocumentDto {
   @IsString()
   @IsNotEmpty()
   name: string;
 
-  @IsEnum(DocumentCategory)
-  @IsNotEmpty()
-  category: DocumentCategory;
+  @IsUUID()
+  @IsOptional()
+  parentId?: string;
 }
 
 export class UpdateDocumentDto {
   @IsString()
   @IsOptional()
   name?: string;
+}
 
-  @IsEnum(DocumentCategory)
+export class MoveNodeDto {
+  @IsUUID()
   @IsOptional()
-  category?: DocumentCategory;
+  parentId?: string | null;
 }

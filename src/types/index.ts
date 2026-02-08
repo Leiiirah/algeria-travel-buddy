@@ -122,14 +122,16 @@ export const calculateNetProfit = (sellingPrice: number, buyingPrice: number): n
 };
 
 // Document Types
-export type DocumentCategory = 'assurance' | 'cnas' | 'casnos' | 'autre';
+export type DocumentNodeType = 'folder' | 'file';
 
-export interface Document {
+export interface DocumentNode {
   id: string;
   name: string;
-  category: DocumentCategory;
-  fileUrl: string;
+  type: DocumentNodeType;
+  parentId: string | null;
+  fileUrl: string | null;
   uploadedBy: string;
+  uploader?: User;
   createdAt: Date;
   updatedAt: Date;
 }

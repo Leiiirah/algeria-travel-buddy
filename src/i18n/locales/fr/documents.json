@@ -1,45 +1,48 @@
 {
   "title": "Bibliothèque de documents",
   "subtitle": "Gestion électronique des documents (GED)",
-  "categories": {
-    "all": "Tous",
-    "assurance": "Assurance",
-    "cnas": "CNAS",
-    "casnos": "CASNOS",
-    "autre": "Autre"
-  },
-  "list": {
-    "title": "Documents",
-    "count": "{{count}} document(s) trouvé(s)"
-  },
-  "dialog": {
-    "uploadTitle": "Téléverser un document",
-    "uploadDesc": "Ajoutez un nouveau document à la bibliothèque"
-  },
-  "form": {
-    "name": "Nom du document",
-    "namePlaceholder": "Ex: Attestation Assurance 2025",
-    "category": "Catégorie",
-    "selectCategory": "Sélectionner une catégorie",
-    "file": "Fichier PDF",
-    "dropzone": "Glissez-déposez ou cliquez pour sélectionner"
+  "breadcrumbs": {
+    "root": "Documents"
   },
   "actions": {
-    "upload": "Téléverser",
+    "newFolder": "Nouveau dossier",
+    "upload": "Téléverser un PDF",
     "uploading": "Téléversement...",
     "download": "Télécharger",
-    "replace": "Remplacer"
+    "rename": "Renommer",
+    "delete": "Supprimer",
+    "move": "Déplacer"
+  },
+  "dialog": {
+    "newFolderTitle": "Créer un dossier",
+    "newFolderDesc": "Entrez le nom du nouveau dossier",
+    "folderName": "Nom du dossier",
+    "folderNamePlaceholder": "Ex: 2026",
+    "uploadTitle": "Téléverser un document",
+    "uploadDesc": "Le fichier sera ajouté dans le dossier actuel",
+    "fileName": "Nom du document",
+    "fileNamePlaceholder": "Ex: Attestation Assurance 2025",
+    "file": "Fichier PDF",
+    "dropzone": "Glissez-déposez ou cliquez pour sélectionner",
+    "renameTitle": "Renommer",
+    "renameDesc": "Entrez le nouveau nom",
+    "deleteTitle": "Confirmer la suppression",
+    "deleteFolderWarning": "Ce dossier et tout son contenu seront supprimés définitivement.",
+    "deleteFileWarning": "Ce fichier sera supprimé définitivement."
+  },
+  "list": {
+    "count": "{{count}} élément(s)",
+    "folders": "Dossiers",
+    "files": "Fichiers"
+  },
+  "empty": {
+    "title": "Ce dossier est vide",
+    "description": "Créez un sous-dossier ou téléversez un fichier"
   },
   "table": {
     "updatedAt": "Mis à jour le {{date}}"
   },
   "filters": {
-    "category": "Catégorie",
-    "fromDate": "Date début",
-    "toDate": "Date fin"
-  },
-  "empty": {
-    "title": "Aucun document trouvé",
-    "description": "Téléversez un document pour commencer"
+    "search": "Rechercher dans ce dossier..."
   }
 }
