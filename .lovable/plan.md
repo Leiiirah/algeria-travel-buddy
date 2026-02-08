@@ -1,135 +1,81 @@
 
-# Tajawal Font Integration + Arabic Footer for PDF Engine
+
+# Refactor PDF Engine: Dynamic Agency Data + Tajawal Branding + Arabic Footer
 
 ## Overview
-Update the PDF generation engine to use the Tajawal font for proper Arabic text rendering and add a professional Arabic footer block with agency legal details at the bottom of every invoice PDF.
+Refactor the entire PDF generation engine (`invoiceGenerator.ts`) so that **all** agency data is pulled dynamically from the Contact Settings (via the `agencyInfo` parameter), with the hardcoded `AGENCY_INFO` constants serving only as a fallback. The layout remains strictly **centered and minimalist**, with the **Tajawal** font used for all branding/Arabic elements. The Arabic footer block is already present but will be refined per your specifications.
 
 ## What Changes
 
-### 1. Tajawal Font for jsPDF
-jsPDF only supports 14 standard PDF fonts (Helvetica, Courier, Times, etc.) and cannot render Arabic characters natively. Currently, any Arabic text in the PDFs renders as garbled characters or question marks. To fix this:
+### 1. Agency Header -- Fully Dynamic, Centered
+Currently the header uses `mergeAgencyInfo()` which already merges dynamic settings with fallback constants. The refactor ensures:
+- **Logo**: Centered at the top (already in place, no change).
+- **Agency Name**: Centered below the logo, rendered in **Tajawal Bold** font for brand consistency.
+- **Contact Line**: Address, Phone/Mobile, and Email centered underneath.
+- **Legal IDs Line**: NIF, NIS, and RC displayed as a centered line -- all values pulled dynamically from the Contact Settings API.
 
-- Download the Tajawal font `.ttf` file (Regular and Bold weights)
-- Convert to Base64 using the jsPDF font converter
-- Create a font registration module that adds Tajawal to jsPDF at runtime
-- Use Tajawal for all Arabic labels and the Arabic footer
+### 2. Invoice Title Banner
+Replace the plain text title with a **full-width colored banner**:
+- **Proforma**: Blue background (#3B82F6) with white text "FACTURE PROFORMA".
+- **Finale**: Green background (#22644A) with white text "FACTURE DEFINITIVE".
+- Invoice number displayed centered below the banner.
 
-### 2. Arabic Footer Block
-Add a centered, multi-line Arabic footer at the bottom of every generated PDF page with:
-- Agency Arabic name: الحكمة لسياحة و الأسفار
-- Arabic address: 02، طريق القليعة، زعبانة، 09001، البليدة، الجزائر
-- Legal identifiers: RC, NIF, NIS, License Number
-- Contact phones: mobile and office numbers
-- Styled with a light beige background (#F5F0E6) and gold/brown border (#C9B896)
+### 3. Financial Section Enhancements
+- Keep the right-aligned financial summary box.
+- For **Final Invoices**: Display Total HT, TVA (0%), and Total TTC as separate lines (already present).
+- Continue using `numberToWords` utility for the amount-in-words line in the REGLEMENT section.
+- No changes to the calculation logic -- it already works correctly.
 
-### 3. Number-to-Words Utility
-Create a French number-to-words converter (as seen in the sample PDF: "Douze mille neuf cent soixante-treize virgule dix-huit") for displaying the total amount in written text.
+### 4. Arabic Footer Refinement
+The footer (`drawArabicFooter`) is already implemented with the beige background and gold border. Refinements:
+- Ensure Line 1 uses the **dynamic** `arabicName` from Contact Settings.
+- Ensure Line 2 uses the **dynamic** `arabicAddress`.
+- Ensure Line 3 shows dynamic RC, NIF, NIS, and License Number.
+- Ensure Line 4 shows dynamic phone numbers with Arabic labels.
+- All Arabic text rendered in **Tajawal** font.
+- Footer is already centered; no alignment changes needed.
 
-### 4. Layout Matching the Sample PDF
-Update the PDF layout to match the provided sample more closely:
-- Two-column EMETTEUR / DESTINATAIRE layout
-- Description table with Prix Unitaire, Quantite, Total columns
-- Right-aligned financial summary (TOTAL HT, TVA, REMISE, TOTAL TTC)
-- Left-aligned REGLEMENT section with bank details
-- Amount-in-words line at the bottom of the financial section
+### 5. Legacy Function Update
+The `generateInvoicePdf` function (for Commands) currently does not accept `agencyInfo` as a parameter. It will be updated to accept it, matching the same pattern as `generateClientInvoicePdf`. The agency name in the legacy function will also use Tajawal.
 
 ---
 
 ## Technical Details
 
-### New File: `src/utils/tajawalFont.ts`
-Contains the Tajawal font encoded as Base64 strings (Regular + Bold weights) and a `registerTajawalFont(doc: jsPDF)` function that calls `doc.addFileToVFS()`, `doc.addFont()`, and makes the font available via `doc.setFont('Tajawal', ...)`.
-
-**Font loading approach:**
-- The Tajawal `.ttf` files will be fetched from Google Fonts CDN at PDF generation time
-- Converted to Base64 dynamically using `fetch()` + `FileReader`
-- Cached in memory after first load to avoid repeated downloads
-- Fallback: if font loading fails, the PDF falls back to Helvetica (current behavior)
-
-### New File: `src/utils/numberToWords.ts`
-French number-to-words converter:
-- Handles units (0-19), tens (20-90), hundreds, thousands, millions
-- Handles decimals ("virgule" + decimal part)
-- Follows French grammar rules (e.g., "et un" for 21, "quatre-vingts" for 80)
-- Example: `numberToWords(12973.18)` returns `"Douze mille neuf cent soixante-treize virgule dix-huit"`
-
-### Modified File: `src/utils/invoiceGenerator.ts`
+### File: `src/utils/invoiceGenerator.ts`
 
 **Changes to `generateClientInvoicePdf`:**
 
-1. **Font registration**: Call `registerTajawalFont(doc)` at the start; use `doc.setFont('Tajawal', 'normal')` for Arabic text sections
-2. **Header redesign**: Match the sample layout
-   - Logo (left) + "FACTURE PROFORMA" title (right, large text)
-   - Date on left below separator
-   - "FACTURE proforma N: XXXX" centered
-3. **Two-column info block**:
-   - Left column: EMETTEUR -- agency name, address, phone, email, NIS, NIF, RC
-   - Right column: DESTINATAIRE -- client name, passport/city
-4. **Description table**: Using autoTable with columns: Description, Prix Unitaire, Quantite, Total
-5. **Financial summary** (right-aligned):
-   - TOTAL HT
-   - TVA 9% (or 0% depending on config)
-   - REMISE (discount line, dash if none)
-   - TOTAL TTC (bold)
-6. **Payment section** (left-aligned):
-   - REGLEMENT label
-   - Payment method
-   - Bank details (Banque + Compte)
-   - "arrete la presente facture [proforma] a la somme de" + amount in words
-7. **Arabic footer block** (bottom of page):
-   - Light beige background (#F5F0E6) with gold/brown border (#C9B896)
-   - Agency Arabic name in Tajawal Bold
-   - Arabic address, legal IDs, phone numbers
-   - Centered, ~8-9pt font size
-   - Positioned above the page bottom margin so it does not overlap content
-8. **Color scheme**: Black/gray/white minimalist palette replacing blue accents
+1. **Header typography** (lines 390-393): Change the agency name from `doc.setFont('helvetica', 'bold')` to `doc.setFont('Tajawal', 'bold')` (with fallback to helvetica if Tajawal failed to load).
 
-**Changes to `generateInvoicePdf`** (legacy function):
-- Add the same Arabic footer block for consistency
-- Register Tajawal font
+2. **Invoice title banner** (lines 418-427): Replace plain centered text with a full-width filled rectangle:
+   - Proforma: Blue (#3B82F6) background, white bold text
+   - Finale: Green (#22644A) background, white bold text
+   - Banner spans from margin to margin with rounded corners
 
-**Updated `AgencyInfoParam` interface**:
-- Add optional fields: `bankName`, `bankAccount`, `mobilePhone`, `licenseNumber`, `arabicName`, `arabicAddress`
+3. **Section headers** (lines 444, 462, 515): Change section header color from blue (#3B82F6) to dark gray (#333333) for a more minimalist look, keeping the colored banner as the only accent.
 
-### Modified File: `src/constants/agency.ts`
-Add new fields to the fallback constants:
-```
-bankName: 'ccp',
-bankAccount: '00799999001499040728',
-mobilePhone: '0770236424',
-licenseNumber: '',
-arabicName: 'الحكمة لسياحة و الأسفار',
-arabicAddress: '02، طريق القليعة، زعبانة، 09001، البليدة، الجزائر',
-```
+4. **No changes** to: Client section, Service/Prestation section, Financial calculations, REGLEMENT section, Conditions section, Stamp/Signature section, or the Arabic footer (it already works correctly with dynamic data).
 
-### Modified File: `src/pages/ContactPage.tsx`
-Add new editable fields to the Contact settings form:
-- Mobile Phone
-- Bank Name
-- Bank Account
-- License Number
-- Arabic Name (with `dir="rtl"`)
-- Arabic Address (with `dir="rtl"`)
+**Changes to `generateInvoicePdf` (legacy):**
 
-### Modified Files: Translation updates
-**`src/i18n/locales/fr/common.json`** and **`src/i18n/locales/ar/common.json`**:
-- Add translation keys for new Contact form fields: `mobilePhone`, `bankName`, `bankAccount`, `licenseNumber`, `arabicName`, `arabicAddress`
+1. Add `agencyInfo?: AgencyInfoParam` parameter to the `InvoiceData` interface.
+2. Call `mergeAgencyInfo(data.agencyInfo)` instead of `mergeAgencyInfo()`.
+3. Use Tajawal for the agency name in the header.
 
-### Backend: Agency Settings Seed Update
-**`server/src/agency-settings/agency-settings.service.ts`**:
-- Add the new keys (`bankName`, `bankAccount`, `mobilePhone`, `licenseNumber`, `arabicName`, `arabicAddress`) to `DEFAULT_SETTINGS` so they are seeded on first run
+**Changes to `drawArabicFooter`:**
+- No structural changes needed -- it already uses the dynamic `info` object passed from the calling function. Just ensure all Arabic text lines explicitly set the Tajawal font before rendering.
+
+### File: `src/pages/CommandsPage.tsx`
+- No changes needed -- already passes `agencyInfo: agencySettings || undefined` to the PDF generator.
+
+### File: `src/pages/InvoicesPage.tsx`
+- No changes needed -- already passes `agencyInfo: agencySettings || undefined` to the PDF generator.
 
 ### Files Summary
 
 | File | Action | Description |
 |------|--------|-------------|
-| `src/utils/tajawalFont.ts` | Create | Tajawal font loader and jsPDF registration |
-| `src/utils/numberToWords.ts` | Create | French number-to-words converter |
-| `src/utils/invoiceGenerator.ts` | Rewrite | New layout matching sample + Tajawal + Arabic footer |
-| `src/constants/agency.ts` | Modify | Add bank, mobile, Arabic name/address fields |
-| `src/pages/ContactPage.tsx` | Modify | Add new fields to admin settings form |
-| `server/src/agency-settings/agency-settings.service.ts` | Modify | Add new default keys to seed |
-| `src/i18n/locales/fr/common.json` | Modify | Add new field labels |
-| `src/i18n/locales/ar/common.json` | Modify | Add new field labels |
+| `src/utils/invoiceGenerator.ts` | Modify | Use Tajawal for agency name; add colored title banner; update legacy function to accept agencyInfo; refine section header colors |
 
-No database migration is required -- the existing key-value `agency_settings` table handles new keys automatically.
+This is a focused refactor touching only the PDF generator file. All dynamic data plumbing (Contact Settings API, `useAgencySettings` hook, `mergeAgencyInfo` fallback) is already in place and working correctly.
