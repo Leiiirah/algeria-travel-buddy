@@ -1,72 +1,62 @@
 
 
-# Simplify PDF Footer and Fix Arabic Misspellings
+# Unify Command Invoice with Factures Invoice Layout
 
 ## Overview
-Remove the background container from the PDF footer, fix Arabic text errors in both the footer and the fallback constants, and use the corrected Arabic labels for legal identifiers and contact info. The footer becomes clean, centered text at the bottom of the page using the Tajawal font.
+Both the Commands tab and the Factures (Invoices) tab already call the **same** PDF function (`generateClientInvoicePdf`), so the visual layout (header, banner, financial box, footer) is identical. The difference is that the Commands page passes empty/zero values for several fields (departure date, return date, travel class, PNR, ticket price, agency fees, payment method), which makes the resulting PDF look sparser.
+
+This plan enriches the data passed from the Commands page so that every available field appears in the PDF, and removes the unused legacy function to keep the codebase clean.
 
 ## What Changes
 
-### 1. Remove Footer Container
-- Delete the beige background fill (`#F5F0E6`) and gold border (`#C9B896`)
-- Delete the `roundedRect` call that draws the container box
-- Keep the footer text positioned at the bottom of the page, but render it as plain centered text on a white background
+### 1. Enrich Command Invoice Data
+Update `handlePrintInvoice` in `CommandsPage.tsx` to extract and pass all available data from the command record:
 
-### 2. Fix Arabic Misspellings
-Update the following strings in both the `drawArabicFooter` function and the fallback constants in `src/constants/agency.ts`:
+| Field | Current value | New value |
+|-------|--------------|-----------|
+| `departureDate` | `''` (empty) | Extracted from `command.data.departureDate` if present, formatted with `date-fns` |
+| `returnDate` | `''` (empty) | Extracted from `command.data.returnDate` if present |
+| `travelClass` | `''` (empty) | Extracted from `command.data.travelClass` if present |
+| `pnr` | `''` (empty) | Extracted from `command.data.pnr` if present |
+| `ticketPrice` | `0` | Set to `command.buyingPrice` (the cost price is the ticket price in context of a command) |
+| `agencyFees` | `0` | Calculated as `sellingPrice - buyingPrice` (the agency margin) |
+| `paymentMethod` | `''` (empty) | Extracted from `command.data.paymentMethod` if present |
+| `companyName` | From `command.data.company` | Already correct, no change needed |
 
-| Current (incorrect) | Corrected |
-|---|---|
-| الحكمة لسياحة و الأسفار | الحكمة للسياحة والأسفار |
-| 02، طريق القليعة، زعبانة، 09001، البليدة، الجزائر | 02، طريق القليعة، زعبانة، 09001، البليدة، الجزائر |
+The PDF function already handles missing/zero values gracefully (it skips rendering empty fields), so this is backward-compatible.
 
-### 3. Use Full Arabic Labels for Legal IDs
-Replace the short Latin abbreviations in the footer's legal line with proper Arabic labels rendered in Tajawal:
-
-| Current | Corrected |
-|---|---|
-| `RC: {value}` | `رقم السجل التجاري: {value}` |
-| `NIF: {value}` | `رقم التعريف الجبائي: {value}` |
-| `NIS: {value}` | `رقم التعريف الإحصائي: {value}` |
-| `Licence: {value}` | `رقم رخصة الوكالة: {value}` |
-
-### 4. Keep Correct Contact Labels
-The phone labels "المكتب" (Office) and "الجوال" (Mobile) are already correct in the code and will remain unchanged.
-
-### 5. Font Consistency
-- Line 1 (Agency Name): Tajawal Bold
-- Lines 2-4 (Address, Legal, Phones): Tajawal Regular
-- The legal line currently falls back to Helvetica -- this will be changed to Tajawal as well
-
-### 6. Spacing
-Position the footer with adequate whitespace above it so it does not crowd the Reglement/Signature sections. The footer will start at `pageHeight - 30` (bottom of page with margin), giving clear separation from content above.
-
----
+### 2. Remove Dead Legacy Function
+Delete the `generateInvoicePdf` function (lines 172-353 of `invoiceGenerator.ts`) and its associated `InvoiceData` interface (lines 9-25). This function is not imported or called anywhere in the codebase. Removing it:
+- Reduces file size by ~180 lines
+- Eliminates confusion about which function to use
+- Keeps a single source of truth for invoice PDF generation
 
 ## Technical Details
 
+### File: `src/pages/CommandsPage.tsx`
+
+**Changes to `handlePrintInvoice` (lines 375-403):**
+
+Update the data object passed to `generateClientInvoicePdf`:
+- Extract `departureDate` and `returnDate` from `command.data`, format with `date-fns` if present
+- Extract `travelClass` and `pnr` from `command.data`
+- Set `ticketPrice` to `Number(command.buyingPrice)` and `agencyFees` to `Number(command.sellingPrice) - Number(command.buyingPrice)`
+- Extract `paymentMethod` from `command.data` if available
+
 ### File: `src/utils/invoiceGenerator.ts`
 
-**Changes to `drawArabicFooter` function (lines 122-187):**
+**Remove dead code (lines 7-25 and 172-353):**
 
-1. **Remove container drawing** (lines 131-135): Delete `setFillColor`, `setDrawColor`, `setLineWidth`, and `roundedRect` calls.
-2. **Reposition text**: Start footer text from `pageHeight - 28` instead of relative to a box.
-3. **Fix text color**: Change from brown `(80, 60, 30)` to a standard dark gray `(60, 60, 60)` since there is no beige background to contrast against.
-4. **Legal line font** (line 167): Change from `doc.setFont('helvetica', 'normal')` to use Tajawal, so the Arabic legal labels render correctly.
-5. **Replace legal label strings** (lines 163-166): Use the full Arabic labels instead of "RC:", "NIF:", "NIS:", "Licence:".
-
-### File: `src/constants/agency.ts`
-
-**Fix fallback Arabic strings (lines 15-16):**
-- `arabicName`: Change from `'الحكمة لسياحة و الأسفار'` to `'الحكمة للسياحة والأسفار'`
-- `arabicAddress`: Change from `'02، طريق القليعة، زعبانة، 09001، البليدة، الجزائر'` to `'02، طريق القليعة، زعبانة، 09001، البليدة، الجزائر'`
+1. Delete the `InvoiceData` interface (lines 9-25) -- no longer needed
+2. Delete the entire `generateInvoicePdf` function (lines 172-353) -- never called anywhere
+3. Keep everything else unchanged: `AgencyInfoParam`, `ClientInvoicePdfData`, helpers, `drawArabicFooter`, and `generateClientInvoicePdf`
 
 ### Files Summary
 
 | File | Action | Description |
 |------|--------|-------------|
-| `src/utils/invoiceGenerator.ts` | Modify | Rewrite `drawArabicFooter`: remove container, fix Arabic labels, use Tajawal for all lines |
-| `src/constants/agency.ts` | Modify | Fix misspelled arabicName and arabicAddress fallback values |
+| `src/pages/CommandsPage.tsx` | Modify | Pass richer data (dates, class, PNR, ticket breakdown) to `generateClientInvoicePdf` |
+| `src/utils/invoiceGenerator.ts` | Modify | Remove unused `InvoiceData` interface and `generateInvoicePdf` function (~180 lines) |
 
-No changes to the Contact Settings page, hooks, or backend -- the dynamic data pipeline remains intact.
+No backend changes, no new dependencies, no database changes required.
 
