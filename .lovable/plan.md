@@ -1,134 +1,63 @@
 
 
-# Fix Arabic Text Double-Reversal and Visual Ordering in PDF
+# Fix Arabic Text Rendering in PDF Footer
 
 ## Problem
-The current `reshapeArabic` function uses a word-by-word approach: it splits text by spaces, reverses characters within each word, then reverses word order. This causes two issues:
-
-1. **Double-reversal artifacts** -- When Arabic Presentation Forms (ligatures like Lam-Alef) are split and reversed per-word, the positional glyphs end up in wrong positions, causing missing or garbled letters (e.g., "ةمكحل" instead of "الحكمة").
-2. **Number corruption** -- Numbers embedded in Arabic text (like in the address "09001") get caught up in the reversal and appear scrambled.
+jsPDF does not have a built-in Arabic text shaping engine. Arabic letters change shape based on their position in a word (initial, medial, final, isolated), but jsPDF renders every character in its isolated form. This causes letters to appear disconnected, missing, or garbled in the generated PDF.
 
 ## Solution
-Replace the word-based reversal with a **run-based Bidi algorithm** that:
-- Segments text into directional runs (Arabic vs digits/Latin) at the character level
-- Reverses only Arabic runs, leaving numbers and Latin text intact
-- Reverses the overall run order to achieve visual RTL in jsPDF's LTR engine
+Install the `arabic-reshaper` npm package and run all Arabic text through it before passing to jsPDF. This library converts standard Arabic Unicode characters into their correct "Presentation Forms" (Unicode block FB50-FDFF and FE70-FEFF), which are pre-shaped glyphs that render correctly without a text shaping engine.
 
-## Changes
+Example:
+- Input: `الحكمة للسياحة و الاسفار` (standard Unicode)
+- Output: `ﺍﻟﺤﻜﻤﺔ ﻟﻠﺴﻴﺎﺣﺔ ﻭ ﺍﻻﺳﻔﺎﺭ` (presentation forms -- looks identical to a human reader but each glyph is pre-shaped)
 
-### 1. Rewrite `src/utils/arabicReshaper.ts`
+## What Changes
 
-Replace the current word-splitting approach with run-based logic:
+### 1. Install `arabic-reshaper` package
+Add the `arabic-reshaper` npm dependency to the project.
 
-```text
-Current flow (broken):
-  text -> reshape -> split by spaces -> reverse each word -> reverse word order
+### 2. Create Arabic text utility
+Create a helper function `reshapeArabic(text: string): string` in a new utility file that wraps the reshaper and also reverses the text for RTL rendering in jsPDF (since jsPDF does not handle RTL ordering either).
 
-New flow (correct):
-  text -> reshape -> split into character-level runs (Arabic vs non-Arabic)
-       -> reverse chars within Arabic runs only
-       -> reverse overall run order
-```
+### 3. Apply reshaping to all Arabic text in PDF
+Update `drawArabicFooter` in `invoiceGenerator.ts` to reshape all Arabic strings before calling `doc.text()`. This includes:
+- Agency Arabic name (Line 1)
+- Arabic address (Line 2)
+- Arabic labels for RC, NIF, Article Fiscal, NIS, License, phone (Lines 3-5)
 
-**New `reshapeArabic` function:**
-- Step 1: Apply `ArabicReshaper.convertArabic()` for presentation forms (joining/shaping)
-- Step 2: Walk character-by-character, classify each as Arabic (U+0600-06FF, U+0750-077F, U+08A0-08FF, U+FB50-FDFF, U+FE70-FEFF) or non-Arabic (digits, Latin)
-- Step 3: Group into contiguous directional runs. Neutral characters (spaces, punctuation like ، and :) attach to the current run
-- Step 4: Reverse characters within each Arabic run only
-- Step 5: Reverse the order of all runs (so RTL base direction is achieved)
-
-**Updated `reshapeArabicLabel` function:**
-- Keep the same `value :reshapedLabel` pattern (already correct for visual RTL in LTR rendering)
-
-### 2. Update Arabic strings in `src/constants/agency.ts`
-
-Update `arabicName` to the exact string requested:
-- From: `'الحكمة للسياحة و الاسفار'`
-- To: `'الحكمة للسياحة والأسفار'`
-
-### 3. Update server defaults in `server/src/agency-settings/agency-settings.service.ts`
-
-Same `arabicName` update:
-- From: `'الحكمة للسياحة و الاسفار'`
-- To: `'الحكمة للسياحة والأسفار'`
-
-### 4. Update footer in `src/utils/invoiceGenerator.ts`
-
-**`drawArabicFooter` changes:**
-- Increase agency name font size to **12pt** (from 10pt) for header emphasis
-- Keep detail lines at **8pt** for consistency
-- Use `align: 'center'` for footer (designed as centered block)
-- Ensure Tajawal font is set for all 5 lines
-
-**Body Arabic content alignment (when `isArabic === true`):**
-- Update section headers (CLIENT, PRESTATION, etc.) to use `align: 'right'` at `pageWidth - 14`
-- Update label lines (Nom, Passeport, Itineraire, etc.) to use right-aligned positioning
-- Update financial labels to right-align
-- Update Reglement section header and labels
-- Keep non-Arabic values (dates, numbers, amounts) left-aligned or right-aligned as appropriate
-
-This means when Arabic is selected, the invoice body flips to an RTL layout where:
-- Labels anchor from the right margin
-- Values appear to their left
-- Section headers are right-aligned
-
-### 5. Font size consistency
-
-Standardize across the PDF:
-- Footer agency name: **12pt** bold
-- Footer details (address, legal IDs, phones): **8pt** normal
-- Body section headers: **11pt** bold (unchanged)
-- Body labels: **10pt** normal (unchanged)
+Also apply reshaping to any other Arabic text in the invoice body (labels like "العميل", "الخدمة", etc. when `isArabic` is true).
 
 ---
 
 ## Technical Details
 
-### File: `src/utils/arabicReshaper.ts` (full rewrite)
-
-New helper functions:
-- `isArabicChar(ch)` -- unchanged, detects Arabic Unicode ranges
-- `isDigitOrLatin(ch)` -- new, detects ASCII digits (0x30-0x39) and Latin letters (0x41-0x5A, 0x61-0x7A)
-- `containsArabic(text)` -- unchanged
-- `splitIntoRuns(text)` -- new, segments text into `{ text: string, isRTL: boolean }[]` runs at the character level, with neutral characters inheriting the direction of the preceding strong character
-- `reshapeArabic(text)` -- rewritten to use run-based approach
-- `reshapeArabicLabel(label, value)` -- unchanged logic
-
-### File: `src/constants/agency.ts` (line 16)
-
-Change `arabicName` value from `'الحكمة للسياحة و الاسفار'` to `'الحكمة للسياحة والأسفار'`.
-
-### File: `server/src/agency-settings/agency-settings.service.ts` (line 19)
-
-Change `arabicName` value from `'الحكمة للسياحة و الاسفار'` to `'الحكمة للسياحة والأسفار'`.
+### New file: `src/utils/arabicReshaper.ts`
+- Import `arabic-reshaper` (or `ArabicReshaper.convertArabic`)
+- Export a `reshapeArabic(text: string): string` function that:
+  1. Splits the text by spaces to handle mixed Arabic/Latin content
+  2. For Arabic segments: applies the reshaper to convert to presentation forms, then reverses character order for RTL
+  3. For non-Arabic segments (numbers, Latin text): keeps as-is
+  4. Reverses the word order so RTL reads correctly in jsPDF's LTR rendering
 
 ### File: `src/utils/invoiceGenerator.ts`
+- Import `reshapeArabic` from the new utility
+- In `drawArabicFooter`: wrap every Arabic string with `reshapeArabic()` before passing to `doc.text()`
+  - Line 1: `reshapeArabic(info.arabicName)`
+  - Line 2: `reshapeArabic(info.arabicAddress)`
+  - Lines 3-5: reshape the Arabic label portions while keeping the numeric values intact
+- In the main `generateClientInvoicePdf` function: apply `reshapeArabic()` to all Arabic labels used when `isArabic === true` (e.g., "العميل", "الاسم", "جواز السفر", "الخدمة", etc.)
 
-**Footer (`drawArabicFooter`, lines 107-160):**
-- Line 120: Change `doc.setFontSize(10)` to `doc.setFontSize(12)` for agency name
-- Line 131: Keep `doc.setFontSize(8)` for address
-- Line 136: Keep `doc.setFontSize(7)` for legal details (or increase to 8 for consistency)
-
-**Body Arabic alignment (lines 196-466):**
-When `isArabic` is true, update positioning for:
-- Agency header address/phone lines (lines 200-209): right-align at `pageWidth - 14`
-- Client section header and labels (lines 243-258): right-align
-- Date label (line 249): left-align at `14` (flipped from current)
-- Service section header and labels (lines 261-311): right-align
-- Financial section header (line 318): right-align
-- Financial labels inside the box (lines 342-372): use `valueX` for labels, `labelX` for amounts (swap)
-- Reglement section (lines 387-420): right-align headers and labels
-- Cachet et Signature (line 428): left-align at `14` (flipped from current right)
-- Conditions/notes (lines 436-465): right-align
+### Package installation
+- `arabic-reshaper` (npm package, ~5KB, MIT-compatible license)
 
 ### Files Summary
 
 | File | Action | Description |
 |------|--------|-------------|
-| `src/utils/arabicReshaper.ts` | Rewrite | Run-based Bidi logic replacing word-based reversal |
-| `src/constants/agency.ts` | Modify | Correct `arabicName` string |
-| `server/src/agency-settings/agency-settings.service.ts` | Modify | Correct `arabicName` default |
-| `src/utils/invoiceGenerator.ts` | Modify | Font sizes, RTL body alignment for Arabic mode |
+| `package.json` | Modify | Add `arabic-reshaper` dependency |
+| `src/utils/arabicReshaper.ts` | Create | Helper to reshape + reverse Arabic text for jsPDF |
+| `src/utils/invoiceGenerator.ts` | Modify | Apply `reshapeArabic()` to all Arabic strings before rendering |
 
-No database changes needed.
+No database or backend changes needed. This is purely a frontend PDF rendering fix.
 

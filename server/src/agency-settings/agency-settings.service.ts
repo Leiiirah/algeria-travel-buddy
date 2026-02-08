@@ -16,7 +16,7 @@ const DEFAULT_SETTINGS: Record<string, string> = {
   mobilePhone: '0540 40 00 80',
   licenseNumber: '1500',
   articleFiscal: '00120908076',
-  arabicName: 'الحكمة للسياحة والأسفار',
+  arabicName: 'الحكمة للسياحة و الاسفار',
   arabicAddress: '02، طريق القليعة، زعبانة، 09001، البليدة، الجزائر',
 };
 
