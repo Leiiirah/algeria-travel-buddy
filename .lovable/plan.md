@@ -1,43 +1,69 @@
 
 
-# Fix: Duplicate Variable Declaration in Migration
+# Add Search and Advanced Filters to Internal Tasks Page
 
-## Problem
+## Overview
+Add a search bar with advanced filtering capabilities to the Internal Tasks (Missions Internes) page, reusing the existing `AdvancedFilter` component already used across other pages (Commands, Employees, Suppliers, etc.).
 
-The migration file `1770600000000-RefactorDocumentsToHierarchy.ts` declares `const hasCategory` twice in the same function scope (lines 37 and 95). JavaScript/TypeScript does not allow two `const` declarations with the same name in the same scope, causing a `SyntaxError` at runtime.
+## Current State
+- The page only has basic `Tabs` (All / In Progress / Completed) for status filtering
+- No text search capability exists
+- No filtering by employee, priority, visibility, or date
 
-## Root Cause
+## What Will Change
 
-When the "make category nullable" step was added (step 6), a `const hasCategory` check was introduced. However, the same variable name was already used in step 8 (drop the category column). Both use `const`, so the compiled JS file throws `SyntaxError: Identifier 'hasCategory' has already been declared`.
+### New Filter Capabilities
+- **Text search**: Search tasks by title and description
+- **Status filter**: In Progress / Completed (replaces the current Tabs approach)
+- **Priority filter**: Urgent / Normal / Critical
+- **Employee filter** (admin only): Filter by assigned employee
+- **Visibility filter**: Clear / Unreadable
+- **Due date filter**: Filter by due date
 
-## Fix
+### User Experience
+The current status `Tabs` component will be replaced with the `AdvancedFilter` bar that includes:
+1. A search input field (searches across task title and description)
+2. A "Filters" button that opens a popover with dropdowns for status, priority, employee, visibility, and a date picker for due date
+3. A badge showing the count of active filters
+4. A reset button to clear all filters
 
-Rename the second `hasCategory` variable (line 95) to `hasCategoryColumn` to avoid the naming conflict.
+---
 
-**Before (line 95):**
-```typescript
-const hasCategory = await queryRunner.query(`
-```
+## Technical Details
 
-**After:**
-```typescript
-const hasCategoryColumn = await queryRunner.query(`
-```
+### File: `src/pages/InternalTasksPage.tsx`
 
-And update the reference on line 100 from `hasCategory.length` to `hasCategoryColumn.length`.
+**Changes:**
+1. Import `AdvancedFilter` and `FilterConfig` from `@/components/search/AdvancedFilter`
+2. Import `useDebounce` for search query debouncing
+3. Replace `statusFilter` state with:
+   - `searchQuery` (string) for text search
+   - `filters` (Record) for advanced filters (status, priority, assignedTo, visibility, dueDate)
+4. Build `filterConfig` array with translated labels using `useTranslation`:
+   - Status: select with In Progress / Completed options
+   - Priority: select with Urgent / Normal / Critical options
+   - Employee: select populated from `employees` list (admin only)
+   - Visibility: select with Clear / Unreadable options
+   - Due Date: date-range picker
+5. Update `filteredTasks` logic to apply all filters + debounced search query
+6. Replace the `Tabs` component (lines 294-300) with the `AdvancedFilter` component placed between the stats section and the task list card
 
-## File to Modify
+**Filtering logic (client-side):**
+- Text search matches against `task.title` and `task.description` (case-insensitive)
+- Status filter matches `task.status`
+- Priority filter matches `task.priority`
+- Employee filter matches `task.assignedTo`
+- Visibility filter matches `task.visibility`
+- Due date filter matches tasks on or before the selected date
 
-| File | Change |
-|------|--------|
-| `server/src/database/migrations/1770600000000-RefactorDocumentsToHierarchy.ts` | Rename second `hasCategory` to `hasCategoryColumn` on lines 95 and 100 |
+### Translation Files
 
-## After Deploying
+**`src/i18n/locales/fr/internalTasks.json`** - Add keys:
+- `"searchPlaceholder": "Rechercher une tâche..."`
 
-1. Pull the latest code on the VPS
-2. Rebuild: `npm run build`
-3. Restart: `pm2 restart elhikma-backend`
-4. Check logs: `pm2 logs elhikma-backend --lines 30`
+**`src/i18n/locales/ar/internalTasks.json`** - Add keys:
+- `"searchPlaceholder": "البحث عن مهمة..."`
 
-The migration should now run successfully, creating the system folders and completing the schema transition.
+### No Backend Changes Required
+All filtering is done client-side since tasks are already fully loaded via the existing `useInternalTasks` hook.
 
