@@ -92,12 +92,12 @@ export class RefactorDocumentsToHierarchy1770600000000 implements MigrationInter
 
     // 8. Drop the category column and its enum
     // Check if column exists before dropping
-    const hasCategory = await queryRunner.query(`
+    const hasCategoryColumn = await queryRunner.query(`
       SELECT column_name FROM information_schema.columns
       WHERE table_name = 'documents' AND column_name = 'category'
     `);
 
-    if (hasCategory.length > 0) {
+    if (hasCategoryColumn.length > 0) {
       await queryRunner.query(`ALTER TABLE "documents" DROP COLUMN "category"`);
     }
 
