@@ -80,6 +80,13 @@ const PAYMENT_LABELS: Record<string, { fr: string; ar: string }> = {
   carte: { fr: 'Carte bancaire', ar: 'بطاقة بنكية' },
 };
 
+const STATUS_LABELS: Record<string, { fr: string; ar: string; color: string; bg: string }> = {
+  payee: { fr: 'Payée', ar: 'مدفوعة', color: '#166534', bg: '#dcfce7' },
+  partielle: { fr: 'Partielle', ar: 'جزئية', color: '#92400e', bg: '#fef3c7' },
+  en_attente: { fr: 'En attente', ar: 'قيد الانتظار', color: '#991b1b', bg: '#fee2e2' },
+  annulee: { fr: 'Annulée', ar: 'ملغاة', color: '#6b7280', bg: '#f3f4f6' },
+};
+
 function fmt(n: number) {
   return n.toLocaleString('fr-FR');
 }
@@ -88,10 +95,6 @@ interface InvoiceTemplateProps {
   data: ClientInvoicePdfData;
 }
 
-/**
- * A4 invoice layout rendered as HTML for html2canvas capture.
- * This component is never shown to the user — it is rendered off-screen.
- */
 const InvoiceTemplate = forwardRef<HTMLDivElement, InvoiceTemplateProps>(
   ({ data }, ref) => {
     const info = mergeAgencyInfo(data.agencyInfo);
@@ -99,20 +102,22 @@ const InvoiceTemplate = forwardRef<HTMLDivElement, InvoiceTemplateProps>(
     const isArabic = data.language === 'ar';
     const lang = isArabic ? 'ar' : 'fr';
 
-    const bannerColor = isProforma ? '#3B82F6' : '#22644A';
+    const accent = isProforma ? '#1E3A5F' : '#1B4332';
+    const accentLight = isProforma ? '#e8eef5' : '#e6f0eb';
+
     const titleText = isProforma
       ? isArabic ? 'فاتورة مبدئية' : 'FACTURE PROFORMA'
       : isArabic ? 'فاتورة نهائية' : 'FACTURE DÉFINITIVE';
 
     const hasBreakdown = data.ticketPrice > 0 || data.agencyFees > 0;
-
     const classLabel = TRAVEL_CLASS_LABELS[data.travelClass]?.[lang] || data.travelClass;
     const paymentLabel = PAYMENT_LABELS[data.paymentMethod]?.[lang] || data.paymentMethod;
+    const statusInfo = STATUS_LABELS[data.status] || STATUS_LABELS['en_attente'];
 
     const amountWords = numberToWords(data.totalAmount);
     const docType = isProforma ? 'proforma' : 'définitive';
 
-    const arrow = isArabic ? '←' : '✈';
+    const arrow = isArabic ? '←' : '→';
     const formattedDestination = data.destination?.replace(/-/g, ` ${arrow} `) || '';
 
     const timestamp = new Date().toLocaleString(isArabic ? 'ar-DZ' : 'fr-FR');
@@ -125,258 +130,411 @@ const InvoiceTemplate = forwardRef<HTMLDivElement, InvoiceTemplateProps>(
           minHeight: '1123px',
           fontFamily: "'Tajawal', sans-serif",
           backgroundColor: '#ffffff',
-          color: '#000000',
-          padding: '24px 32px',
+          color: '#1a1a1a',
+          padding: '32px',
           boxSizing: 'border-box',
           position: 'relative',
           display: 'flex',
           flexDirection: 'column',
         }}
       >
-        {/* ===== HEADER ===== */}
-        <div style={{ textAlign: 'center', marginBottom: '8px' }}>
-          <img
-            src={logoSrc}
-            alt="Logo"
-            style={{ width: '120px', height: 'auto', margin: '0 auto 8px' }}
-            crossOrigin="anonymous"
-          />
-          <div style={{ fontSize: '16px', fontWeight: 700, color: '#000' }}>
-            {info.legalName}
+        {/* ===== BILINGUAL LETTERHEAD ===== */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '6px' }}>
+          {/* French side */}
+          <div style={{ flex: 1, textAlign: 'left' }}>
+            <div style={{ fontSize: '16px', fontWeight: 700, color: accent, letterSpacing: '0.5px' }}>
+              {info.legalName}
+            </div>
+            <div style={{ fontSize: '10px', color: '#4a5568', marginTop: '4px', lineHeight: '1.5' }}>
+              {info.address}
+            </div>
+            <div style={{ fontSize: '10px', color: '#4a5568', lineHeight: '1.5' }}>
+              Tél: {info.phone}{info.mobilePhone ? ` / ${info.mobilePhone}` : ''}
+            </div>
           </div>
-          <div style={{ fontSize: '10px', color: '#505050', marginTop: '2px' }}>
-            {isArabic ? 'العنوان' : 'Adresse'}: {info.address}
+
+          {/* Logo center */}
+          <div style={{ width: '120px', textAlign: 'center', padding: '0 16px' }}>
+            <img
+              src={logoSrc}
+              alt="Logo"
+              style={{ width: '100px', height: 'auto' }}
+              crossOrigin="anonymous"
+            />
           </div>
-          <div style={{ fontSize: '10px', color: '#505050', marginTop: '2px' }}>
-            {isArabic ? 'الهاتف' : 'Tél'}: {info.phone}
-            {info.mobilePhone ? ` / ${info.mobilePhone}` : ''} | Email: {info.email}
-          </div>
-          <div style={{ fontSize: '10px', color: '#505050', marginTop: '2px' }}>
-            RC: {info.rc} | NIF: {info.nif} | NIS: {info.nis}
+
+          {/* Arabic side */}
+          <div style={{ flex: 1, textAlign: 'right' }} dir="rtl">
+            <div style={{ fontSize: '16px', fontWeight: 700, color: accent }}>
+              {info.arabicName}
+            </div>
+            <div style={{ fontSize: '10px', color: '#4a5568', marginTop: '4px', lineHeight: '1.5' }}>
+              {info.arabicAddress}
+            </div>
+            <div style={{ fontSize: '10px', color: '#4a5568', lineHeight: '1.5' }}>
+              البريد: {info.email}
+            </div>
           </div>
         </div>
+
+        {/* Legal identifiers row */}
+        <div style={{ textAlign: 'center', fontSize: '9px', color: '#6b7280', marginBottom: '4px', letterSpacing: '0.3px' }}>
+          RC: {info.rc} &nbsp;|&nbsp; NIF: {info.nif} &nbsp;|&nbsp; NIS: {info.nis}
+          {info.articleFiscal && <> &nbsp;|&nbsp; Art. Fiscal: {info.articleFiscal}</>}
+        </div>
+
+        {/* Separator */}
+        <div style={{ height: '2px', background: `linear-gradient(90deg, transparent, ${accent}, transparent)`, marginBottom: '12px' }} />
 
         {/* ===== TITLE BANNER ===== */}
         <div
           style={{
-            backgroundColor: bannerColor,
-            borderRadius: '6px',
-            padding: '10px 0',
-            textAlign: 'center',
-            marginTop: '8px',
+            backgroundColor: accent,
+            borderRadius: '4px',
+            padding: '10px 20px',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            marginBottom: '14px',
           }}
         >
-          <span
-            style={{ fontSize: '16px', fontWeight: 700, color: '#ffffff' }}
+          <span style={{ fontSize: '15px', fontWeight: 700, color: '#ffffff', letterSpacing: '1px' }}
             dir={isArabic ? 'rtl' : undefined}
           >
             {titleText}
           </span>
+          <span style={{ fontSize: '13px', fontWeight: 600, color: '#ffffff' }}>
+            N° {data.invoiceNumber}
+          </span>
+          <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.85)' }}
+            dir={isArabic ? 'rtl' : undefined}
+          >
+            {isArabic ? 'التاريخ' : 'Date'}: {data.invoiceDate}
+          </span>
         </div>
 
-        {/* ===== INVOICE NUMBER ===== */}
-        <div style={{ textAlign: 'center', margin: '8px 0 4px', fontSize: '13px' }}>
-          N° {data.invoiceNumber}
-        </div>
-        <hr style={{ border: 'none', borderTop: '1px solid #b4b4b4', margin: '0 0 10px' }} />
-
-        {/* ===== CLIENT SECTION ===== */}
-        <div style={{ marginBottom: '10px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: '13px', fontWeight: 700, color: '#333' }} dir={isArabic ? 'rtl' : undefined}>
-              {isArabic ? 'العميل' : 'CLIENT'}
+        {/* ===== STATUS BADGE (finale only) ===== */}
+        {!isProforma && (
+          <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '8px' }}>
+            <span
+              style={{
+                display: 'inline-block',
+                fontSize: '10px',
+                fontWeight: 700,
+                color: statusInfo.color,
+                backgroundColor: statusInfo.bg,
+                padding: '3px 12px',
+                borderRadius: '12px',
+                letterSpacing: '0.5px',
+              }}
+            >
+              {statusInfo[lang]}
             </span>
-            <span style={{ fontSize: '12px' }} dir={isArabic ? 'rtl' : undefined}>
-              {isArabic ? 'التاريخ' : 'Date'}: {data.invoiceDate}
-            </span>
           </div>
-          <div style={{ fontSize: '12px', marginTop: '6px' }} dir={isArabic ? 'rtl' : undefined}>
-            {isArabic ? 'الاسم' : 'Nom'}: {data.clientName}
-          </div>
-          {data.clientPassport && (
-            <div style={{ fontSize: '12px', marginTop: '4px' }} dir={isArabic ? 'rtl' : undefined}>
-              {isArabic ? 'جواز السفر' : 'Passeport'}: {data.clientPassport}
-            </div>
-          )}
-        </div>
+        )}
 
-        {/* ===== PRESTATION SECTION ===== */}
-        <div style={{ marginBottom: '10px' }}>
-          <div style={{ fontSize: '13px', fontWeight: 700, color: '#333', marginBottom: '6px' }} dir={isArabic ? 'rtl' : undefined}>
-            {isArabic ? 'الخدمة' : 'PRESTATION'}
-          </div>
-          <div style={{ fontSize: '12px' }}>{data.serviceName}</div>
-
-          {formattedDestination && (
-            <div style={{ fontSize: '12px', marginTop: '4px' }} dir={isArabic ? 'rtl' : undefined}>
-              {isArabic ? 'المسار' : 'Itinéraire'}: {formattedDestination}
-            </div>
-          )}
-
-          {data.companyName && (
-            <div style={{ fontSize: '12px', marginTop: '4px' }} dir={isArabic ? 'rtl' : undefined}>
-              {isArabic ? 'الشركة' : 'Compagnie'}: {data.companyName}
-            </div>
-          )}
-
-          {data.departureDate && (
-            <div style={{ fontSize: '12px', marginTop: '4px', display: 'flex', gap: '24px' }}>
-              <span dir={isArabic ? 'rtl' : undefined}>
-                {isArabic ? 'تاريخ المغادرة' : 'Date de départ'}: {data.departureDate}
-              </span>
-              {data.returnDate && (
-                <span dir={isArabic ? 'rtl' : undefined}>
-                  {isArabic ? 'العودة' : 'Retour'}: {data.returnDate}
-                </span>
-              )}
-            </div>
-          )}
-
-          {data.travelClass && (
-            <div style={{ fontSize: '12px', marginTop: '4px' }} dir={isArabic ? 'rtl' : undefined}>
-              {isArabic ? 'الدرجة' : 'Classe'}: {classLabel}
-            </div>
-          )}
-
-          {!isProforma && data.pnr && (
-            <div style={{ fontSize: '12px', marginTop: '5px', fontWeight: 700 }}>
-              PNR: {data.pnr}
-            </div>
-          )}
-        </div>
-
-        {/* ===== FINANCIAL SECTION ===== */}
-        <div style={{ marginBottom: '10px' }}>
-          <div style={{ fontSize: '13px', fontWeight: 700, color: '#333', marginBottom: '6px' }} dir={isArabic ? 'rtl' : undefined}>
-            {isArabic ? 'التفاصيل المالية' : 'DÉTAILS FINANCIERS'}
-          </div>
-
+        {/* ===== TWO-COLUMN INFO CARDS ===== */}
+        <div style={{ display: 'flex', gap: '16px', marginBottom: '14px' }}>
+          {/* Client Card */}
           <div
             style={{
-              border: '1px solid #c8c8c8',
-              borderRadius: '6px',
-              backgroundColor: '#fafafa',
-              padding: '12px 16px',
+              flex: 1,
+              borderLeft: `3px solid ${accent}`,
+              backgroundColor: '#fafbfc',
+              borderRadius: '0 4px 4px 0',
+              padding: '12px 14px',
             }}
           >
-            {hasBreakdown && (
-              <>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', marginBottom: '6px' }}>
-                  <span dir={isArabic ? 'rtl' : undefined}>
-                    {isArabic ? 'سعر التذكرة:' : 'Prix du billet:'}
-                  </span>
-                  <span>{fmt(data.ticketPrice)} DA</span>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', marginBottom: '6px' }}>
-                  <span dir={isArabic ? 'rtl' : undefined}>
-                    {isArabic ? 'رسوم الوكالة:' : 'Frais agence:'}
-                  </span>
-                  <span>{fmt(data.agencyFees)} DA</span>
-                </div>
-                <hr style={{ border: 'none', borderTop: '1px solid #b4b4b4', margin: '4px 0 8px' }} />
-              </>
+            <div style={{ fontSize: '11px', fontWeight: 700, color: accent, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px' }}
+              dir={isArabic ? 'rtl' : undefined}
+            >
+              {isArabic ? 'العميل' : 'Client'}
+            </div>
+            <InfoRow label={isArabic ? 'الاسم' : 'Nom'} value={data.clientName} isArabic={isArabic} />
+            {data.clientPassport && (
+              <InfoRow label={isArabic ? 'جواز السفر' : 'Passeport'} value={data.clientPassport} isArabic={isArabic} />
             )}
+            {data.clientPhone && (
+              <InfoRow label={isArabic ? 'الهاتف' : 'Tél'} value={data.clientPhone} isArabic={isArabic} />
+            )}
+          </div>
 
-            {!isProforma ? (
-              <>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', fontWeight: 700, marginBottom: '6px' }}>
-                  <span dir={isArabic ? 'rtl' : undefined}>
-                    {isArabic ? 'المجموع قبل الضريبة:' : 'Total HT:'}
-                  </span>
-                  <span>{fmt(data.totalAmount)} DA</span>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', marginBottom: '6px' }}>
-                  <span dir={isArabic ? 'rtl' : undefined}>
-                    {isArabic ? 'ضريبة (0%):' : 'TVA (0%):'}
-                  </span>
-                  <span>0 DA</span>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', fontWeight: 700 }}>
-                  <span dir={isArabic ? 'rtl' : undefined}>
-                    {isArabic ? 'المجموع الكلي:' : 'Total TTC:'}
-                  </span>
-                  <span>{fmt(data.totalAmount)} DA</span>
-                </div>
-              </>
-            ) : (
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', fontWeight: 700 }}>
-                <span dir={isArabic ? 'rtl' : undefined}>
-                  {isArabic ? 'المجموع:' : 'Total:'}
+          {/* Prestation Card */}
+          <div
+            style={{
+              flex: 1,
+              borderLeft: `3px solid ${accent}`,
+              backgroundColor: '#fafbfc',
+              borderRadius: '0 4px 4px 0',
+              padding: '12px 14px',
+            }}
+          >
+            <div style={{ fontSize: '11px', fontWeight: 700, color: accent, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px' }}
+              dir={isArabic ? 'rtl' : undefined}
+            >
+              {isArabic ? 'الخدمة' : 'Prestation'}
+            </div>
+            <div style={{ fontSize: '12px', fontWeight: 600, marginBottom: '5px' }}>{data.serviceName}</div>
+            {formattedDestination && (
+              <InfoRow label={isArabic ? 'المسار' : 'Itinéraire'} value={formattedDestination} isArabic={isArabic} />
+            )}
+            {data.companyName && (
+              <InfoRow
+                label={isArabic ? 'الشركة' : 'Compagnie'}
+                value={`${data.companyName}${classLabel ? ` — ${classLabel}` : ''}`}
+                isArabic={isArabic}
+              />
+            )}
+            {data.departureDate && (
+              <InfoRow
+                label={isArabic ? 'المغادرة' : 'Départ'}
+                value={`${data.departureDate}${data.returnDate ? `  →  ${data.returnDate}` : ''}`}
+                isArabic={isArabic}
+              />
+            )}
+            {!isProforma && data.pnr && (
+              <div style={{ marginTop: '4px' }}>
+                <span style={{
+                  display: 'inline-block',
+                  fontSize: '11px',
+                  fontWeight: 700,
+                  backgroundColor: accentLight,
+                  color: accent,
+                  padding: '2px 10px',
+                  borderRadius: '4px',
+                  letterSpacing: '1px',
+                }}>
+                  PNR: {data.pnr}
                 </span>
-                <span>{fmt(data.totalAmount)} DA</span>
               </div>
             )}
           </div>
+        </div>
+
+        {/* ===== FINANCIAL TABLE ===== */}
+        <div style={{ marginBottom: '14px' }}>
+          <div style={{ fontSize: '11px', fontWeight: 700, color: accent, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px' }}
+            dir={isArabic ? 'rtl' : undefined}
+          >
+            {isArabic ? 'التفاصيل المالية' : 'Détails Financiers'}
+          </div>
+
+          <table
+            style={{
+              width: '100%',
+              borderCollapse: 'collapse',
+              fontSize: '12px',
+            }}
+          >
+            <thead>
+              <tr style={{ backgroundColor: '#f1f5f9' }}>
+                <th style={{ textAlign: 'left', padding: '8px 12px', fontWeight: 600, color: '#475569', borderBottom: `2px solid ${accent}` }}
+                  dir={isArabic ? 'rtl' : undefined}
+                >
+                  {isArabic ? 'البيان' : 'Désignation'}
+                </th>
+                <th style={{ textAlign: 'right', padding: '8px 12px', fontWeight: 600, color: '#475569', borderBottom: `2px solid ${accent}`, width: '160px' }}
+                  dir={isArabic ? 'rtl' : undefined}
+                >
+                  {isArabic ? 'المبلغ (د.ج)' : 'Montant (DA)'}
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {hasBreakdown && (
+                <>
+                  <tr style={{ borderBottom: '1px solid #e2e8f0' }}>
+                    <td style={{ padding: '7px 12px' }} dir={isArabic ? 'rtl' : undefined}>
+                      {isArabic ? 'سعر التذكرة' : 'Prix du billet'}
+                    </td>
+                    <td style={{ padding: '7px 12px', textAlign: 'right' }}>{fmt(data.ticketPrice)} DA</td>
+                  </tr>
+                  <tr style={{ borderBottom: '1px solid #e2e8f0' }}>
+                    <td style={{ padding: '7px 12px' }} dir={isArabic ? 'rtl' : undefined}>
+                      {isArabic ? 'رسوم الوكالة' : "Frais d'agence"}
+                    </td>
+                    <td style={{ padding: '7px 12px', textAlign: 'right' }}>{fmt(data.agencyFees)} DA</td>
+                  </tr>
+                </>
+              )}
+
+              {!isProforma ? (
+                <>
+                  <tr style={{ borderBottom: '1px solid #e2e8f0', backgroundColor: '#fafbfc' }}>
+                    <td style={{ padding: '7px 12px', fontWeight: 600 }} dir={isArabic ? 'rtl' : undefined}>
+                      {isArabic ? 'المجموع قبل الضريبة' : 'Total HT'}
+                    </td>
+                    <td style={{ padding: '7px 12px', textAlign: 'right', fontWeight: 600 }}>{fmt(data.totalAmount)} DA</td>
+                  </tr>
+                  <tr style={{ borderBottom: '1px solid #e2e8f0' }}>
+                    <td style={{ padding: '7px 12px' }} dir={isArabic ? 'rtl' : undefined}>
+                      {isArabic ? 'ضريبة (0%)' : 'TVA (0%)'}
+                    </td>
+                    <td style={{ padding: '7px 12px', textAlign: 'right' }}>0 DA</td>
+                  </tr>
+                  {/* Total TTC highlighted row */}
+                  <tr style={{ backgroundColor: accent }}>
+                    <td style={{ padding: '9px 12px', fontWeight: 700, color: '#ffffff', fontSize: '13px' }}
+                      dir={isArabic ? 'rtl' : undefined}
+                    >
+                      {isArabic ? 'المجموع الكلي' : 'TOTAL TTC'}
+                    </td>
+                    <td style={{ padding: '9px 12px', textAlign: 'right', fontWeight: 700, color: '#ffffff', fontSize: '13px' }}>
+                      {fmt(data.totalAmount)} DA
+                    </td>
+                  </tr>
+                  {/* Payment status rows */}
+                  <tr style={{ borderBottom: '1px solid #e2e8f0' }}>
+                    <td style={{ padding: '7px 12px' }} dir={isArabic ? 'rtl' : undefined}>
+                      {isArabic ? 'المبلغ المدفوع' : 'Montant payé'}
+                    </td>
+                    <td style={{ padding: '7px 12px', textAlign: 'right', color: '#166534', fontWeight: 600 }}>
+                      {fmt(data.paidAmount)} DA
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style={{ padding: '7px 12px', fontWeight: 600 }} dir={isArabic ? 'rtl' : undefined}>
+                      {isArabic ? 'المتبقي' : 'Reste à payer'}
+                    </td>
+                    <td style={{
+                      padding: '7px 12px',
+                      textAlign: 'right',
+                      fontWeight: 700,
+                      color: data.remaining > 0 ? '#991b1b' : '#166534',
+                    }}>
+                      {fmt(data.remaining)} DA
+                    </td>
+                  </tr>
+                </>
+              ) : (
+                <tr style={{ backgroundColor: accent }}>
+                  <td style={{ padding: '9px 12px', fontWeight: 700, color: '#ffffff', fontSize: '13px' }}
+                    dir={isArabic ? 'rtl' : undefined}
+                  >
+                    {isArabic ? 'المجموع' : 'TOTAL'}
+                  </td>
+                  <td style={{ padding: '9px 12px', textAlign: 'right', fontWeight: 700, color: '#ffffff', fontSize: '13px' }}>
+                    {fmt(data.totalAmount)} DA
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         </div>
 
         {/* ===== PAYMENT + SIGNATURE SIDE BY SIDE ===== */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', gap: '24px' }}>
-          {/* Left: Règlement */}
-          <div style={{ flex: 1 }}>
-            <div style={{ fontSize: '12px', fontWeight: 700, marginBottom: '4px' }} dir={isArabic ? 'rtl' : undefined}>
-              {isArabic ? 'الدفع' : 'RÈGLEMENT'}
+        <div style={{ display: 'flex', gap: '16px', marginBottom: '12px' }}>
+          {/* Payment */}
+          <div
+            style={{
+              flex: 1,
+              borderLeft: `3px solid ${accent}`,
+              backgroundColor: '#fafbfc',
+              borderRadius: '0 4px 4px 0',
+              padding: '12px 14px',
+            }}
+          >
+            <div style={{ fontSize: '11px', fontWeight: 700, color: accent, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px' }}
+              dir={isArabic ? 'rtl' : undefined}
+            >
+              {isArabic ? 'الدفع' : 'Règlement'}
             </div>
 
             {data.paymentMethod && (
-              <div style={{ fontSize: '11px', marginBottom: '3px' }} dir={isArabic ? 'rtl' : undefined}>
-                {isArabic ? 'طريقة الدفع' : 'Mode de paiement'}: {paymentLabel}
-              </div>
+              <InfoRow label={isArabic ? 'طريقة الدفع' : 'Mode'} value={paymentLabel} isArabic={isArabic} />
+            )}
+            {info.bankName && (
+              <InfoRow label={isArabic ? 'البنك' : 'Banque'} value={info.bankName} isArabic={isArabic} />
+            )}
+            {info.bankAccount && (
+              <InfoRow label={isArabic ? 'الحساب' : 'Compte'} value={info.bankAccount} isArabic={isArabic} />
             )}
 
-            {(info.bankName || info.bankAccount) && (
-              <>
-                <div style={{ fontSize: '11px', marginBottom: '2px' }}>
-                  Banque: {info.bankName || '—'}
-                </div>
-                <div style={{ fontSize: '11px', marginBottom: '3px' }}>
-                  Compte: {info.bankAccount || '—'}
-                </div>
-              </>
-            )}
-
-            <div style={{ fontSize: '10px', fontStyle: 'italic', marginTop: '4px', lineHeight: '1.4' }}>
-              Arrêté la présente facture {docType} à la somme de: {amountWords} Dinars Algériens
+            <div style={{ fontSize: '10px', fontStyle: 'italic', marginTop: '8px', lineHeight: '1.5', color: '#4a5568' }}>
+              Arrêté la présente facture {docType} à la somme de :{' '}
+              <span style={{ fontWeight: 600, color: '#1a1a1a' }}>{amountWords} Dinars Algériens</span>
             </div>
           </div>
 
-          {/* Right: Cachet et Signature */}
-          <div style={{ width: '200px', textAlign: 'right' }}>
-            <div style={{ fontSize: '12px', fontWeight: 700, color: '#333', marginBottom: '4px' }} dir={isArabic ? 'rtl' : undefined}>
+          {/* Signature */}
+          <div
+            style={{
+              width: '220px',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+            }}
+          >
+            <div style={{ fontSize: '11px', fontWeight: 700, color: accent, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px' }}
+              dir={isArabic ? 'rtl' : undefined}
+            >
               {isArabic ? 'الختم والتوقيع' : 'Cachet et Signature'}
             </div>
-            <div style={{ height: '60px' }} />
+            <div
+              style={{
+                width: '100%',
+                height: '80px',
+                border: `2px dashed ${accent}40`,
+                borderRadius: '6px',
+                display: 'flex',
+                alignItems: 'flex-end',
+                justifyContent: 'center',
+                paddingBottom: '6px',
+              }}
+            >
+              <span style={{ fontSize: '8px', color: '#9ca3af' }}>
+                {isArabic ? 'التوقيع هنا' : 'Signature ici'}
+              </span>
+            </div>
           </div>
         </div>
 
         {/* ===== CONDITIONS ===== */}
         {isProforma ? (
-          <div style={{ marginBottom: '8px' }}>
-            <div style={{ fontSize: '11px', marginBottom: '3px' }} dir={isArabic ? 'rtl' : undefined}>
-              • {isArabic ? 'الدفع قبل إصدار التذكرة' : 'Paiement avant émission du billet'}
-            </div>
-            <div style={{ fontSize: '11px', marginBottom: '6px' }} dir={isArabic ? 'rtl' : undefined}>
-              • {isArabic ? 'صلاحية العرض' : "Validité de l'offre"}: {data.validityHours} {isArabic ? 'ساعة' : 'heures'}
+          <div style={{ marginBottom: '10px' }}>
+            <div
+              style={{
+                backgroundColor: accentLight,
+                border: `1px solid ${accent}30`,
+                borderRadius: '4px',
+                padding: '8px 14px',
+                fontSize: '11px',
+                color: '#1a1a1a',
+                lineHeight: '1.6',
+              }}
+            >
+              <div style={{ marginBottom: '3px' }} dir={isArabic ? 'rtl' : undefined}>
+                • {isArabic ? 'الدفع قبل إصدار التذكرة' : 'Paiement avant émission du billet'}
+              </div>
+              <div dir={isArabic ? 'rtl' : undefined}>
+                • {isArabic ? 'صلاحية العرض' : "Validité de l'offre"}: <strong>{data.validityHours} {isArabic ? 'ساعة' : 'heures'}</strong>
+              </div>
             </div>
             {/* Warning banner */}
             <div
               style={{
+                marginTop: '8px',
                 backgroundColor: '#FFF8DC',
                 border: '1px solid #FFC832',
-                borderRadius: '6px',
-                padding: '6px 12px',
+                borderRadius: '4px',
+                padding: '6px 14px',
                 textAlign: 'center',
                 fontSize: '10px',
                 fontWeight: 700,
-                color: '#966400',
+                color: '#92400e',
               }}
             >
               <span dir={isArabic ? 'rtl' : undefined}>
-                ⚠ {isArabic ? 'هذه فاتورة مبدئية، غير صالحة للمحاسبة' : 'Ceci est une facture proforma, non valable pour la comptabilité'}
+                ⚠ {isArabic
+                  ? 'هذه فاتورة مبدئية، غير صالحة للمحاسبة'
+                  : 'Ceci est une facture proforma, non valable pour la comptabilité'}
               </span>
             </div>
           </div>
         ) : (
-          <div style={{ fontSize: '10px', fontWeight: 700, marginBottom: '8px' }} dir={isArabic ? 'rtl' : undefined}>
+          <div style={{ fontSize: '10px', fontWeight: 700, color: '#4a5568', marginBottom: '10px', textAlign: 'center' }}
+            dir={isArabic ? 'rtl' : undefined}
+          >
             {isArabic ? 'تذكرة صادرة وغير قابلة للاسترداد' : 'Billet émis et non remboursable'}
           </div>
         )}
@@ -384,37 +542,54 @@ const InvoiceTemplate = forwardRef<HTMLDivElement, InvoiceTemplateProps>(
         {/* Spacer to push footer to bottom */}
         <div style={{ flex: 1 }} />
 
+        {/* ===== FOOTER SEPARATOR ===== */}
+        <div style={{ height: '1px', background: `linear-gradient(90deg, transparent, ${accent}80, transparent)`, marginBottom: '10px' }} />
+
         {/* ===== ARABIC FOOTER ===== */}
-        <div style={{ textAlign: 'center', marginTop: '12px' }} dir="rtl">
-          <div style={{ fontSize: '12px', fontWeight: 700, color: '#3c3c3c', marginBottom: '4px' }}>
+        <div style={{ textAlign: 'center', marginBottom: '4px' }} dir="rtl">
+          <div style={{ fontSize: '12px', fontWeight: 700, color: accent, marginBottom: '3px' }}>
             {info.arabicName}
           </div>
-          <div style={{ fontSize: '10px', color: '#3c3c3c', marginBottom: '3px' }}>
+          <div style={{ fontSize: '9px', color: '#4a5568', marginBottom: '2px' }}>
             {info.arabicAddress}
           </div>
-          <div style={{ fontSize: '9px', color: '#3c3c3c', marginBottom: '3px' }}>
+          <div style={{ fontSize: '8px', color: '#6b7280', marginBottom: '2px' }}>
             {info.rc && `رقم السجل التجاري: ${info.rc}`}
-            {info.nif && `   رقم التعريف الجبائي: ${info.nif}`}
-            {info.articleFiscal && `   رقم المادة الجبائية: ${info.articleFiscal}`}
+            {info.nif && `  ·  رقم التعريف الجبائي: ${info.nif}`}
+            {info.articleFiscal && `  ·  رقم المادة الجبائية: ${info.articleFiscal}`}
           </div>
-          <div style={{ fontSize: '9px', color: '#3c3c3c', marginBottom: '3px' }}>
+          <div style={{ fontSize: '8px', color: '#6b7280', marginBottom: '2px' }}>
             {info.nis && `رقم التعريف الإحصائي: ${info.nis}`}
-            {info.licenseNumber && `   رقم رخصة الوكالة: ${info.licenseNumber}`}
+            {info.licenseNumber && `  ·  رقم رخصة الوكالة: ${info.licenseNumber}`}
           </div>
-          <div style={{ fontSize: '9px', color: '#3c3c3c' }}>
+          <div style={{ fontSize: '8px', color: '#6b7280' }}>
             {info.mobilePhone && `الجوال: ${info.mobilePhone}`}
-            {info.phone && `   المكتب: ${info.phone}`}
+            {info.phone && `  ·  المكتب: ${info.phone}`}
           </div>
         </div>
 
         {/* ===== GENERATION TIMESTAMP ===== */}
-        <div style={{ textAlign: 'right', fontSize: '9px', color: '#a0a0a0', marginTop: '8px' }} dir={isArabic ? 'rtl' : undefined}>
+        <div style={{ textAlign: 'right', fontSize: '8px', color: '#b0b0b0', marginTop: '6px' }}
+          dir={isArabic ? 'rtl' : undefined}
+        >
           {isArabic ? 'تم الإنشاء في' : 'Généré le'} {timestamp}
         </div>
       </div>
     );
   }
 );
+
+/** Small helper for label:value rows */
+function InfoRow({ label, value, isArabic }: { label: string; value: string; isArabic: boolean }) {
+  return (
+    <div style={{ fontSize: '11px', marginBottom: '4px', display: 'flex', gap: '6px' }}
+      dir={isArabic ? 'rtl' : undefined}
+    >
+      <span style={{ color: '#6b7280', minWidth: '70px' }}>{label}:</span>
+      <span style={{ fontWeight: 500, color: '#1a1a1a' }}>{value}</span>
+    </div>
+  );
+}
 
 InvoiceTemplate.displayName = 'InvoiceTemplate';
 
