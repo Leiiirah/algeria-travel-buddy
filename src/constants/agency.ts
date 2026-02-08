@@ -1,13 +1,14 @@
- // Agency information for official documents
- export const AGENCY_INFO = {
-   name: 'Al Hikma Voyages',
-   legalName: 'EL HIKMA TOURISME ET VOYAGE',
-   address: 'Blida – Algérie',
-   phone: '025 XX XX XX',
-   email: 'info@alhikma.dz',
-   rc: '09/00-1234567',
-   nif: '001234567890123',
- };
+// Agency information for official documents (used as fallback when API is unavailable)
+export const AGENCY_INFO = {
+  name: 'Al Hikma Voyages',
+  legalName: 'EL HIKMA TOURISME ET VOYAGE',
+  address: '02 rue de kolea zaban blida .09001',
+  phone: '020475949',
+  email: 'elhikmatours@gmail.com',
+  rc: '09/00-0807686B12',
+  nif: '001209080768687',
+  nis: '001209010018958',
+};
  
  // Travel class options
  export const TRAVEL_CLASSES = [

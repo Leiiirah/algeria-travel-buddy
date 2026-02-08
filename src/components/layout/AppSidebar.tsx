@@ -15,6 +15,7 @@ import {
   Receipt,
   ClipboardCheck,
   FileText,
+  Phone,
 } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
 import { Button } from '@/components/ui/button';
@@ -128,6 +129,11 @@ export function AppSidebar() {
       titleKey: 'navigation.expenses',
       url: '/depenses',
       icon: Receipt,
+    },
+    {
+      titleKey: 'navigation.contact',
+      url: '/contact',
+      icon: Phone,
     },
   ];
 

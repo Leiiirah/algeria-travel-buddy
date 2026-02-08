@@ -58,6 +58,7 @@ import { ErrorState } from '@/components/ui/error-state';
 import { EmptyState } from '@/components/ui/empty-state';
 import { generateClientInvoicePdf } from '@/utils/invoiceGenerator';
 import { format } from 'date-fns';
+import { useAgencySettings } from '@/hooks/useAgencySettings';
 
 const CommandsPage = () => {
   const navigate = useNavigate();
@@ -106,6 +107,7 @@ const CommandsPage = () => {
   const createCommand = useCreateCommand();
   const updateCommand = useUpdateCommand();
   const deleteCommand = useDeleteCommand();
+  const { data: agencySettings } = useAgencySettings();
 
   const commands = commandsData?.data ?? [];
 
@@ -397,6 +399,7 @@ const CommandsPage = () => {
       validityHours: 48,
       status: command.status,
       language: (localStorage.getItem('i18nextLng') || 'fr') as 'fr' | 'ar',
+      agencyInfo: agencySettings || undefined,
     });
   };
 

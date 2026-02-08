@@ -277,6 +277,16 @@ function formatDateShort(dateString: string): string {
 
 // ==================== CLIENT INVOICE PDF ====================
 
+export interface AgencyInfoParam {
+  legalName?: string;
+  address?: string;
+  phone?: string;
+  email?: string;
+  rc?: string;
+  nif?: string;
+  nis?: string;
+}
+
 interface ClientInvoicePdfData {
   invoiceNumber: string;
   invoiceType: 'proforma' | 'finale';
@@ -301,6 +311,7 @@ interface ClientInvoicePdfData {
   validityHours: number;
   status: string;
   language: 'fr' | 'ar';
+  agencyInfo?: AgencyInfoParam;
 }
 
 export async function generateClientInvoicePdf(data: ClientInvoicePdfData): Promise<void> {
@@ -319,25 +330,34 @@ export async function generateClientInvoicePdf(data: ClientInvoicePdfData): Prom
   }
 
   // ===== AGENCY HEADER =====
+  // Merge dynamic agency info with fallback constants
+  const info = {
+    legalName: data.agencyInfo?.legalName || AGENCY_INFO.legalName,
+    address: data.agencyInfo?.address || AGENCY_INFO.address,
+    phone: data.agencyInfo?.phone || AGENCY_INFO.phone,
+    email: data.agencyInfo?.email || AGENCY_INFO.email,
+    rc: data.agencyInfo?.rc || AGENCY_INFO.rc,
+    nif: data.agencyInfo?.nif || AGENCY_INFO.nif,
+    nis: data.agencyInfo?.nis || AGENCY_INFO.nis,
+  };
+
   let currentY = 38;
   doc.setFontSize(14);
   doc.setFont('helvetica', 'bold');
-  doc.text(AGENCY_INFO.legalName, pageWidth / 2, currentY, { align: 'center' });
+  doc.text(info.legalName, pageWidth / 2, currentY, { align: 'center' });
 
   currentY += 6;
   doc.setFontSize(9);
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(80, 80, 80);
-  doc.text(`${isArabic ? 'العنوان' : 'Adresse'}: ${AGENCY_INFO.address}`, pageWidth / 2, currentY, { align: 'center' });
+  doc.text(`${isArabic ? 'العنوان' : 'Adresse'}: ${info.address}`, pageWidth / 2, currentY, { align: 'center' });
   
   currentY += 5;
-  doc.text(`${isArabic ? 'الهاتف' : 'Tel'}: ${AGENCY_INFO.phone} | Email: ${AGENCY_INFO.email}`, pageWidth / 2, currentY, { align: 'center' });
+  doc.text(`${isArabic ? 'الهاتف' : 'Tel'}: ${info.phone} | Email: ${info.email}`, pageWidth / 2, currentY, { align: 'center' });
   
-  // Only show RC and NIF for final invoices
-  if (!isProforma) {
-    currentY += 5;
-    doc.text(`RC: ${AGENCY_INFO.rc} | NIF: ${AGENCY_INFO.nif}`, pageWidth / 2, currentY, { align: 'center' });
-  }
+  // Always show RC, NIF and NIS
+  currentY += 5;
+  doc.text(`RC: ${info.rc} | NIF: ${info.nif} | NIS: ${info.nis}`, pageWidth / 2, currentY, { align: 'center' });
   
   doc.setTextColor(0, 0, 0);
 

@@ -13,7 +13,8 @@
     "serviceTypes": "Types de services",
     "expenses": "Dépenses",
     "internalTasks": "Missions Internes",
-    "invoices": "Factures"
+    "invoices": "Factures",
+    "contact": "Contact"
   },
   "groups": {
     "main": "Principal",
@@ -128,5 +129,21 @@
   "balanceBySupplier": "Solde par fournisseur",
   "noTransactions": "Aucune transaction",
   "supplierBalancesAppearHere": "Les soldes fournisseurs apparaîtront ici",
-  "transactionsAppearHere": "Les transactions apparaîtront ici"
+  "transactionsAppearHere": "Les transactions apparaîtront ici",
+  "contact": {
+    "title": "Coordonnées de l'agence",
+    "description": "Modifiez les informations affichées dans les PDF générés",
+    "agencyInfo": "Informations de l'agence",
+    "agencyInfoDesc": "Ces informations apparaissent dans l'en-tête des factures PDF",
+    "saved": "Coordonnées enregistrées avec succès",
+    "fields": {
+      "legalName": "Raison sociale",
+      "address": "Adresse",
+      "phone": "Téléphone",
+      "email": "Email",
+      "nif": "NIF",
+      "nis": "NIS",
+      "rc": "RC"
+    }
+  }
 }

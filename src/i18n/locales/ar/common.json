@@ -13,7 +13,8 @@
     "serviceTypes": "أنواع الخدمات",
     "expenses": "المصروفات",
     "internalTasks": "المهام الداخلية",
-    "invoices": "الفواتير"
+    "invoices": "الفواتير",
+    "contact": "معلومات الاتصال"
   },
   "groups": {
     "main": "الرئيسية",
@@ -128,5 +129,21 @@
   "balanceBySupplier": "الرصيد حسب المورد",
   "noTransactions": "لا توجد معاملات",
   "supplierBalancesAppearHere": "ستظهر أرصدة الموردين هنا",
-  "transactionsAppearHere": "ستظهر المعاملات هنا"
+  "transactionsAppearHere": "ستظهر المعاملات هنا",
+  "contact": {
+    "title": "معلومات الوكالة",
+    "description": "تعديل المعلومات المعروضة في ملفات PDF",
+    "agencyInfo": "معلومات الوكالة",
+    "agencyInfoDesc": "تظهر هذه المعلومات في رأس الفواتير",
+    "saved": "تم حفظ المعلومات بنجاح",
+    "fields": {
+      "legalName": "الاسم القانوني",
+      "address": "العنوان",
+      "phone": "الهاتف",
+      "email": "البريد الإلكتروني",
+      "nif": "رقم التعريف الجبائي",
+      "nis": "رقم التعريف الإحصائي",
+      "rc": "السجل التجاري"
+    }
+  }
 }

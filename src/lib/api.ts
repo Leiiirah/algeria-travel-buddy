@@ -1406,6 +1406,17 @@ class ApiClient {
 
   deleteClientInvoice = (id: string): Promise<void> =>
     this.request(`/client-invoices/${id}`, { method: 'DELETE' });
+
+  // ==================== AGENCY SETTINGS ====================
+
+  getAgencySettings = (): Promise<Record<string, string>> =>
+    this.request('/agency-settings');
+
+  updateAgencySettings = (settings: Record<string, string>): Promise<Record<string, string>> =>
+    this.request('/agency-settings', {
+      method: 'PUT',
+      body: JSON.stringify({ settings }),
+    });
 }
 
 export const api = new ApiClient();
