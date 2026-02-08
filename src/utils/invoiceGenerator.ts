@@ -21,6 +21,7 @@ interface InvoiceData {
   company?: string;
   supplier?: string;
   language: 'fr' | 'ar';
+  agencyInfo?: AgencyInfoParam;
 }
 
 export interface AgencyInfoParam {
@@ -133,17 +134,15 @@ function drawArabicFooter(doc: jsPDF, info: ReturnType<typeof mergeAgencyInfo>, 
   doc.setLineWidth(0.6);
   doc.roundedRect(footerX, footerY, footerW, footerHeight, 2, 2, 'FD');
 
-  // Use Tajawal for Arabic text if available
+  const centerX = pageWidth / 2;
+  let y = footerY + 8;
+
+  // Line 1: Arabic name (always Tajawal)
   if (hasTajawal) {
     doc.setFont('Tajawal', 'bold');
   } else {
     doc.setFont('helvetica', 'bold');
   }
-
-  const centerX = pageWidth / 2;
-  let y = footerY + 8;
-
-  // Line 1: Arabic name
   doc.setFontSize(10);
   doc.setTextColor(80, 60, 30);
   doc.text(info.arabicName, centerX, y, { align: 'center' });
@@ -169,13 +168,15 @@ function drawArabicFooter(doc: jsPDF, info: ReturnType<typeof mergeAgencyInfo>, 
   doc.setFontSize(7);
   doc.text(legalParts.join('  |  '), centerX, y, { align: 'center' });
 
-  // Line 4: Phone numbers
+  // Line 4: Phone numbers (Arabic labels in Tajawal)
   y += 6;
   const phoneParts: string[] = [];
   if (info.phone) phoneParts.push(`المكتب: ${info.phone}`);
   if (info.mobilePhone) phoneParts.push(`الجوال: ${info.mobilePhone}`);
   if (hasTajawal) {
     doc.setFont('Tajawal', 'normal');
+  } else {
+    doc.setFont('helvetica', 'normal');
   }
   doc.setFontSize(7);
   doc.text(phoneParts.join('  |  '), centerX, y, { align: 'center' });
@@ -194,7 +195,7 @@ export async function generateInvoicePdf(data: InvoiceData): Promise<void> {
 
   // Register Tajawal
   const hasTajawal = await registerTajawalFont(doc);
-  const info = mergeAgencyInfo();
+  const info = mergeAgencyInfo(data.agencyInfo);
 
   try {
     const logoBase64 = await getLogoBase64();
@@ -203,10 +204,15 @@ export async function generateInvoicePdf(data: InvoiceData): Promise<void> {
     console.warn('Could not load logo:', error);
   }
 
-  // Company name
+  // Company name (Tajawal for branding)
   doc.setFontSize(18);
-  doc.setFont('helvetica', 'bold');
+  if (hasTajawal) {
+    doc.setFont('Tajawal', 'bold');
+  } else {
+    doc.setFont('helvetica', 'bold');
+  }
   doc.text(info.legalName, pageWidth / 2, 50, { align: 'center' });
+  doc.setFont('helvetica', 'normal');
 
   // Invoice title
   doc.setFontSize(14);
@@ -389,8 +395,13 @@ export async function generateClientInvoicePdf(data: ClientInvoicePdfData): Prom
   // ===== AGENCY HEADER (centered underneath logo) =====
   let currentY = 38;
   doc.setFontSize(14);
-  doc.setFont('helvetica', 'bold');
+  if (hasTajawal) {
+    doc.setFont('Tajawal', 'bold');
+  } else {
+    doc.setFont('helvetica', 'bold');
+  }
   doc.text(info.legalName, pageWidth / 2, currentY, { align: 'center' });
+  doc.setFont('helvetica', 'normal');
 
   currentY += 6;
   doc.setFontSize(9);
@@ -409,30 +420,31 @@ export async function generateClientInvoicePdf(data: ClientInvoicePdfData): Prom
 
   doc.setTextColor(0, 0, 0);
 
-  // ===== INVOICE TITLE =====
-  currentY += 10;
-  doc.setDrawColor(180, 180, 180);
-  doc.setLineWidth(0.8);
-  doc.line(14, currentY, pageWidth - 14, currentY);
-
-  currentY += 10;
-  doc.setFontSize(16);
-  doc.setFont('helvetica', 'bold');
+  // ===== INVOICE TITLE BANNER =====
+  currentY += 8;
+  const bannerHeight = 14;
   if (isProforma) {
-    doc.setTextColor(59, 130, 246);
-    doc.text(isArabic ? 'فاتورة مبدئية' : 'FACTURE PROFORMA', pageWidth / 2, currentY, { align: 'center' });
+    doc.setFillColor(59, 130, 246); // Blue #3B82F6
   } else {
-    doc.setTextColor(34, 100, 80);
-    doc.text(isArabic ? 'فاتورة نهائية' : 'FACTURE DÉFINITIVE', pageWidth / 2, currentY, { align: 'center' });
+    doc.setFillColor(34, 100, 74); // Green #22644A
   }
+  doc.roundedRect(14, currentY, pageWidth - 28, bannerHeight, 2, 2, 'F');
+
+  doc.setFontSize(14);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(255, 255, 255);
+  const titleText = isProforma
+    ? (isArabic ? 'فاتورة مبدئية' : 'FACTURE PROFORMA')
+    : (isArabic ? 'فاتورة نهائية' : 'FACTURE DÉFINITIVE');
+  doc.text(titleText, pageWidth / 2, currentY + 10, { align: 'center' });
   doc.setTextColor(0, 0, 0);
 
-  currentY += 8;
+  currentY += bannerHeight + 6;
   doc.setFontSize(11);
   doc.setFont('helvetica', 'normal');
   doc.text(`N° ${data.invoiceNumber}`, pageWidth / 2, currentY, { align: 'center' });
 
-  currentY += 10;
+  currentY += 6;
   doc.setDrawColor(180, 180, 180);
   doc.setLineWidth(0.5);
   doc.line(14, currentY, pageWidth - 14, currentY);
@@ -441,7 +453,7 @@ export async function generateClientInvoicePdf(data: ClientInvoicePdfData): Prom
   currentY += 10;
   doc.setFontSize(11);
   doc.setFont('helvetica', 'bold');
-  doc.setTextColor(59, 130, 246);
+  doc.setTextColor(51, 51, 51); // #333333 dark gray
   doc.text(isArabic ? 'العميل' : 'CLIENT', 14, currentY);
   doc.setFont('helvetica', 'normal');
   doc.text(`${isArabic ? 'التاريخ' : 'Date'}: ${data.invoiceDate}`, pageWidth - 14, currentY, { align: 'right' });
@@ -459,7 +471,7 @@ export async function generateClientInvoicePdf(data: ClientInvoicePdfData): Prom
   currentY += 14;
   doc.setFontSize(11);
   doc.setFont('helvetica', 'bold');
-  doc.setTextColor(59, 130, 246);
+  doc.setTextColor(51, 51, 51); // #333333 dark gray
   doc.text(isArabic ? 'الخدمة' : 'PRESTATION', 14, currentY);
   doc.setTextColor(0, 0, 0);
 
@@ -512,7 +524,7 @@ export async function generateClientInvoicePdf(data: ClientInvoicePdfData): Prom
   currentY += 14;
   doc.setFontSize(11);
   doc.setFont('helvetica', 'bold');
-  doc.setTextColor(59, 130, 246);
+  doc.setTextColor(51, 51, 51); // #333333 dark gray
   doc.text(isArabic ? 'التفاصيل المالية' : 'DÉTAILS FINANCIERS', 14, currentY);
   doc.setTextColor(0, 0, 0);
 
