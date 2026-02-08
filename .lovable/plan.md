@@ -1,69 +1,77 @@
 
 
-# Add Search and Advanced Filters to Internal Tasks Page
+# Unify Commands PDF to Match Factures Design
 
-## Overview
-Add a search bar with advanced filtering capabilities to the Internal Tasks (Missions Internes) page, reusing the existing `AdvancedFilter` component already used across other pages (Commands, Employees, Suppliers, etc.).
+## What Changes
 
-## Current State
-- The page only has basic `Tabs` (All / In Progress / Completed) for status filtering
-- No text search capability exists
-- No filtering by employee, priority, visibility, or date
+The "Print Invoice" action from the Commands three-dots menu currently calls `generateInvoicePdf()` which produces an older, blue-accented layout. This plan will switch it to call `generateClientInvoicePdf()` -- the same function used by the Factures tab -- so both produce identical PDF designs.
 
-## What Will Change
+## How It Works
 
-### New Filter Capabilities
-- **Text search**: Search tasks by title and description
-- **Status filter**: In Progress / Completed (replaces the current Tabs approach)
-- **Priority filter**: Urgent / Normal / Critical
-- **Employee filter** (admin only): Filter by assigned employee
-- **Visibility filter**: Clear / Unreadable
-- **Due date filter**: Filter by due date
+The Commands table already has all the data needed (client name, service, destination, prices, etc.). The change maps Command fields to the same data structure that the Factures PDF generator expects:
 
-### User Experience
-The current status `Tabs` component will be replaced with the `AdvancedFilter` bar that includes:
-1. A search input field (searches across task title and description)
-2. A "Filters" button that opens a popover with dropdowns for status, priority, employee, visibility, and a date picker for due date
-3. A badge showing the count of active filters
-4. A reset button to clear all filters
-
----
+- **Client Name** from `command.data.clientFullName`
+- **Service Name** from the linked service record
+- **Destination** from `command.destination`
+- **Total Amount** from `command.sellingPrice`
+- **Paid Amount** from `command.amountPaid`
+- **Company** from `command.data.company` (for ticket services)
+- **Invoice Number** auto-generated from the command ID (e.g., `CMD-A1B2C3`)
+- **Invoice Type** defaults to `proforma` (since commands are quick prints, not official accounting documents)
 
 ## Technical Details
 
-### File: `src/pages/InternalTasksPage.tsx`
+### File: `src/pages/CommandsPage.tsx`
 
-**Changes:**
-1. Import `AdvancedFilter` and `FilterConfig` from `@/components/search/AdvancedFilter`
-2. Import `useDebounce` for search query debouncing
-3. Replace `statusFilter` state with:
-   - `searchQuery` (string) for text search
-   - `filters` (Record) for advanced filters (status, priority, assignedTo, visibility, dueDate)
-4. Build `filterConfig` array with translated labels using `useTranslation`:
-   - Status: select with In Progress / Completed options
-   - Priority: select with Urgent / Normal / Critical options
-   - Employee: select populated from `employees` list (admin only)
-   - Visibility: select with Clear / Unreadable options
-   - Due Date: date-range picker
-5. Update `filteredTasks` logic to apply all filters + debounced search query
-6. Replace the `Tabs` component (lines 294-300) with the `AdvancedFilter` component placed between the stats section and the task list card
+**Update the `handlePrintInvoice` function (lines 373-393):**
 
-**Filtering logic (client-side):**
-- Text search matches against `task.title` and `task.description` (case-insensitive)
-- Status filter matches `task.status`
-- Priority filter matches `task.priority`
-- Employee filter matches `task.assignedTo`
-- Visibility filter matches `task.visibility`
-- Due date filter matches tasks on or before the selected date
+Replace the call to `generateInvoicePdf(...)` with `generateClientInvoicePdf(...)`, mapping command data to the `ClientInvoicePdfData` interface:
 
-### Translation Files
+```typescript
+const handlePrintInvoice = async (command: any) => {
+  const service = services?.find((s) => s.id === command.serviceId);
+  const supplier = suppliers?.find((s) => s.id === command.supplierId);
 
-**`src/i18n/locales/fr/internalTasks.json`** - Add keys:
-- `"searchPlaceholder": "Rechercher une tâche..."`
+  await generateClientInvoicePdf({
+    invoiceNumber: `CMD-${command.id.substring(0, 6).toUpperCase()}`,
+    invoiceType: 'proforma',
+    clientName: command.data.clientFullName || '',
+    clientPhone: command.data.phone || '',
+    clientPassport: '',
+    invoiceDate: format(new Date(command.createdAt), 'dd/MM/yyyy'),
+    totalAmount: Number(command.sellingPrice),
+    paidAmount: Number(command.amountPaid),
+    remaining: Number(command.sellingPrice) - Number(command.amountPaid),
+    serviceName: service?.name || '',
+    serviceType: service?.type || '',
+    destination: command.destination || '',
+    companyName: command.data.company || '',
+    departureDate: '',
+    returnDate: '',
+    travelClass: '',
+    pnr: '',
+    ticketPrice: 0,
+    agencyFees: 0,
+    paymentMethod: '',
+    validityHours: 48,
+    status: command.status,
+    language: (localStorage.getItem('i18nextLng') || 'fr') as 'fr' | 'ar',
+  });
+};
+```
 
-**`src/i18n/locales/ar/internalTasks.json`** - Add keys:
-- `"searchPlaceholder": "البحث عن مهمة..."`
+**Update the import (line 59):**
 
-### No Backend Changes Required
-All filtering is done client-side since tasks are already fully loaded via the existing `useInternalTasks` hook.
+Change from importing `generateInvoicePdf` to `generateClientInvoicePdf`:
 
+```typescript
+import { generateClientInvoicePdf } from '@/utils/invoiceGenerator';
+```
+
+### Summary
+
+| File | Change |
+|------|--------|
+| `src/pages/CommandsPage.tsx` | Switch `handlePrintInvoice` from `generateInvoicePdf` to `generateClientInvoicePdf` with field mapping; update import |
+
+No new files, no backend changes. The old `generateInvoicePdf` function remains in the codebase (it can be cleaned up later if no longer used elsewhere).
