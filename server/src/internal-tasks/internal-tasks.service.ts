@@ -116,7 +116,7 @@ export class InternalTasksService {
 
     const task = this.taskRepository.create({
       ...dto,
-      dueDate: dto.dueDate ? new Date(dto.dueDate) : null,
+      dueDate: dto.dueDate ? new Date(dto.dueDate) : undefined,
       createdBy,
     });
 
