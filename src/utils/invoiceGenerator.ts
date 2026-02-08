@@ -185,25 +185,25 @@ export async function generateClientInvoicePdf(data: ClientInvoicePdfData): Prom
   doc.text(info.legalName, pageWidth / 2, currentY, { align: 'center' });
   doc.setFont('helvetica', 'normal');
 
-  currentY += 6;
+  currentY += 5;
   doc.setFontSize(9);
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(80, 80, 80);
   doc.text(`${isArabic ? 'العنوان' : 'Adresse'}: ${info.address}`, pageWidth / 2, currentY, { align: 'center' });
 
-  currentY += 5;
+  currentY += 4;
   const phoneText = info.mobilePhone
     ? `${isArabic ? 'الهاتف' : 'Tél'}: ${info.phone} / ${info.mobilePhone} | Email: ${info.email}`
     : `${isArabic ? 'الهاتف' : 'Tél'}: ${info.phone} | Email: ${info.email}`;
   doc.text(phoneText, pageWidth / 2, currentY, { align: 'center' });
 
-  currentY += 5;
+  currentY += 4;
   doc.text(`RC: ${info.rc} | NIF: ${info.nif} | NIS: ${info.nis}`, pageWidth / 2, currentY, { align: 'center' });
 
   doc.setTextColor(0, 0, 0);
 
   // ===== INVOICE TITLE BANNER =====
-  currentY += 8;
+  currentY += 6;
   const bannerHeight = 14;
   if (isProforma) {
     doc.setFillColor(59, 130, 246); // Blue #3B82F6
@@ -221,18 +221,18 @@ export async function generateClientInvoicePdf(data: ClientInvoicePdfData): Prom
   doc.text(titleText, pageWidth / 2, currentY + 10, { align: 'center' });
   doc.setTextColor(0, 0, 0);
 
-  currentY += bannerHeight + 6;
+  currentY += bannerHeight + 4;
   doc.setFontSize(11);
   doc.setFont('helvetica', 'normal');
   doc.text(`N° ${data.invoiceNumber}`, pageWidth / 2, currentY, { align: 'center' });
 
-  currentY += 6;
+  currentY += 4;
   doc.setDrawColor(180, 180, 180);
   doc.setLineWidth(0.5);
   doc.line(14, currentY, pageWidth - 14, currentY);
 
   // ===== CLIENT SECTION =====
-  currentY += 10;
+  currentY += 7;
   doc.setFontSize(11);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(51, 51, 51); // #333333 dark gray
@@ -250,7 +250,7 @@ export async function generateClientInvoicePdf(data: ClientInvoicePdfData): Prom
   }
 
   // ===== SERVICE/PRESTATION SECTION =====
-  currentY += 14;
+  currentY += 10;
   doc.setFontSize(11);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(51, 51, 51); // #333333 dark gray
@@ -263,19 +263,19 @@ export async function generateClientInvoicePdf(data: ClientInvoicePdfData): Prom
   doc.text(`${data.serviceName}`, 14, currentY);
 
   if (data.destination) {
-    currentY += 6;
+    currentY += 5;
     const arrow = isArabic ? '←' : '✈';
     const formattedDestination = data.destination.replace(/-/g, ` ${arrow} `);
     doc.text(`${isArabic ? 'المسار' : 'Itinéraire'}: ${formattedDestination}`, 14, currentY);
   }
 
   if (data.companyName) {
-    currentY += 6;
+    currentY += 5;
     doc.text(`${isArabic ? 'الشركة' : 'Compagnie'}: ${data.companyName}`, 14, currentY);
   }
 
   if (data.departureDate) {
-    currentY += 6;
+    currentY += 5;
     const departureLbl = isArabic ? 'تاريخ المغادرة' : 'Date de départ';
     doc.text(`${departureLbl}: ${data.departureDate}`, 14, currentY);
     if (data.returnDate) {
@@ -284,7 +284,7 @@ export async function generateClientInvoicePdf(data: ClientInvoicePdfData): Prom
   }
 
   if (data.travelClass) {
-    currentY += 6;
+    currentY += 5;
     const classLabels: Record<string, { fr: string; ar: string }> = {
       economique: { fr: 'Économique', ar: 'اقتصادية' },
       affaires: { fr: 'Affaires', ar: 'رجال أعمال' },
@@ -303,7 +303,7 @@ export async function generateClientInvoicePdf(data: ClientInvoicePdfData): Prom
   }
 
   // ===== FINANCIAL SECTION =====
-  currentY += 14;
+  currentY += 10;
   doc.setFontSize(11);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(51, 51, 51); // #333333 dark gray
@@ -316,10 +316,11 @@ export async function generateClientInvoicePdf(data: ClientInvoicePdfData): Prom
   const boxWidth = pageWidth - 28;
   const hasBreakdown = data.ticketPrice > 0 || data.agencyFees > 0;
   const boxHeight = hasBreakdown ? 52 : 36;
+  const boxStartY = currentY - 2;
 
   doc.setDrawColor(200, 200, 200);
   doc.setFillColor(250, 250, 250);
-  doc.roundedRect(boxX, currentY - 2, boxWidth, boxHeight, 3, 3, 'FD');
+  doc.roundedRect(boxX, boxStartY, boxWidth, boxHeight, 3, 3, 'FD');
 
   doc.setFontSize(10);
   doc.setFont('helvetica', 'normal');
@@ -365,10 +366,10 @@ export async function generateClientInvoicePdf(data: ClientInvoicePdfData): Prom
   doc.setFontSize(10);
   doc.setTextColor(0, 0, 0);
 
-  currentY += boxHeight - (hasBreakdown ? 42 : 26);
+  currentY = boxStartY + boxHeight;
 
   // ===== REGLEMENT SECTION =====
-  currentY += 12;
+  currentY += 8;
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(10);
   doc.text(isArabic ? 'الدفع' : 'RÈGLEMENT', 14, currentY);
@@ -376,7 +377,7 @@ export async function generateClientInvoicePdf(data: ClientInvoicePdfData): Prom
   doc.setFontSize(9);
 
   if (data.paymentMethod) {
-    currentY += 6;
+    currentY += 5;
     const paymentLabels: Record<string, { fr: string; ar: string }> = {
       especes: { fr: 'Espèces', ar: 'نقدي' },
       virement: { fr: 'Virement', ar: 'تحويل بنكي' },
@@ -388,14 +389,14 @@ export async function generateClientInvoicePdf(data: ClientInvoicePdfData): Prom
   }
 
   if (info.bankName || info.bankAccount) {
-    currentY += 6;
-    doc.text(`Banque: ${info.bankName || '—'}`, 14, currentY);
     currentY += 5;
+    doc.text(`Banque: ${info.bankName || '—'}`, 14, currentY);
+    currentY += 4;
     doc.text(`Compte: ${info.bankAccount || '—'}`, 14, currentY);
   }
 
   // Amount in words
-  currentY += 8;
+  currentY += 6;
   const amountWords = numberToWords(data.totalAmount);
   const docType = isProforma ? 'proforma' : 'définitive';
   doc.setFont('helvetica', 'italic');
@@ -408,18 +409,18 @@ export async function generateClientInvoicePdf(data: ClientInvoicePdfData): Prom
 
   // ===== CONDITIONS (Proforma) or PAYMENT INFO (Finale) =====
   if (isProforma) {
-    currentY += 6;
+    currentY += 5;
     doc.setFontSize(10);
     doc.setFont('helvetica', 'bold');
     doc.text(isArabic ? 'الشروط:' : 'Conditions:', 14, currentY);
     doc.setFont('helvetica', 'normal');
-    currentY += 6;
+    currentY += 5;
     doc.text(`• ${isArabic ? 'الدفع قبل إصدار التذكرة' : 'Paiement avant émission du billet'}`, 18, currentY);
-    currentY += 6;
+    currentY += 5;
     doc.text(`• ${isArabic ? 'صلاحية العرض' : "Validité de l'offre"}: ${data.validityHours} ${isArabic ? 'ساعة' : 'heures'}`, 18, currentY);
 
     // Proforma warning
-    currentY += 12;
+    currentY += 10;
     doc.setFillColor(255, 248, 220);
     doc.setDrawColor(255, 200, 50);
     doc.roundedRect(14, currentY - 4, pageWidth - 28, 14, 2, 2, 'FD');
@@ -433,18 +434,25 @@ export async function generateClientInvoicePdf(data: ClientInvoicePdfData): Prom
       { align: 'center' }
     );
     doc.setTextColor(0, 0, 0);
-    currentY += 14;
+    currentY += 10;
   } else {
     // Final invoice - note
-    currentY += 8;
+    currentY += 6;
     doc.setFont('helvetica', 'bold');
     doc.text(isArabic ? 'تذكرة صادرة وغير قابلة للاسترداد' : 'Billet émis et non remboursable', 14, currentY);
     doc.setFont('helvetica', 'normal');
-    currentY += 12;
+    currentY += 8;
+  }
+
+  // ===== OVERFLOW SAFETY CHECK =====
+  const footerZoneStart = pageHeight - 60;
+  if (currentY > footerZoneStart) {
+    doc.addPage();
+    currentY = 20;
   }
 
   // ===== STAMP & SIGNATURE SECTION =====
-  currentY += 8;
+  currentY += 4;
   doc.setFontSize(10);
   doc.setFont('helvetica', 'bold');
   doc.text(isArabic ? 'الختم والتوقيع' : 'Cachet et Signature', pageWidth / 2, currentY, { align: 'center' });
@@ -453,7 +461,7 @@ export async function generateClientInvoicePdf(data: ClientInvoicePdfData): Prom
   currentY += 6;
   doc.setDrawColor(180, 180, 180);
   doc.setFillColor(255, 255, 255);
-  doc.roundedRect(pageWidth / 2 - 40, currentY, 80, 35, 2, 2, 'FD');
+  doc.roundedRect(pageWidth / 2 - 40, currentY, 80, 25, 2, 2, 'FD');
 
   // ===== ARABIC FOOTER =====
   drawArabicFooter(doc, info, hasTajawal);
