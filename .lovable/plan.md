@@ -1,153 +1,226 @@
 
-# Programme Omra -- New Tab for Group Pilgrimage Package Management
+
+# Caisse Reset & Settlement System for Employee Cash Registers
 
 ## Overview
-Add a dedicated "Programme Omra" tab (4th tab) to the Omra module that allows admins to create and manage group pilgrimage packages with structured room pricing. Employees see a read-only dashboard with real-time spot availability (confirmed vs. remaining). The existing order form's "Selectionner un Programme" dropdown is updated to pull from this new entity instead of hotels, and selecting a program + room type auto-fills the selling price.
+Add a full "Reset and Adjustment" system to the Caisses tab in the Accounting module. This allows admins to settle employee cash registers by recording the current totals into a permanent audit log, then resetting the active balance window. The Caisses table will only show activity **since the last reset** for each employee, while preserving a complete history of all past settlements.
 
 ## What Changes
 
-### 1. New Program Entity (Backend)
-A new `omra_programs` database table stores group pilgrimage packages:
-- **name** -- Program name (e.g., "Omra Ramadan 2026")
-- **periodFrom / periodTo** -- Date range for the pilgrimage
-- **totalPlaces** -- Maximum number of spots
-- **hotelId** -- Link to an existing Omra hotel
-- **pricing** -- JSONB object with prices for each room configuration:
-  `{ chambre_1: 250000, chambre_2: 200000, chambre_3: 180000, chambre_4: 160000, chambre_5: 150000, suite: 400000 }`
-- **isActive** -- Toggle to show/hide from selectors
-- **createdBy** -- Creator user reference
+### 1. Caisse Settlement History (Backend)
+A new `caisse_history` database table stores every settlement event with full audit details: the employee's totals at the time of reset, who performed it, and any notes. The Caisses calculation logic is updated to only sum records created **after** each employee's most recent reset date.
 
-### 2. Programme Omra Tab (Frontend)
-A new 4th tab in the Omra page:
-- **Admin View**: Full CRUD -- create/edit/delete programs with a form containing name, date range, total places, hotel selector, and a pricing grid (6 room types + suite)
-- **Employee View**: Read-only list showing program details with real-time inventory:
-  - **Places Confirmees** (green): Count of orders linked to this program with status "confirme"
-  - **Places Restantes** (red): totalPlaces minus confirmed count
+### 2. "Regler la Caisse" Button (Per Employee)
+Each employee row in the Caisses table gets a "Settle" action button. Clicking it opens a dialog showing the employee's current Caisse, Impayes, and Benefices. The admin can input a "New Starting Balance" (defaults to 0) and add notes before confirming. On confirmation, the current totals are saved to the history table.
 
-### 3. Order Form Integration
-- The "Selectionner un Programme" dropdown in the order form now lists programs from the new entity (instead of hotels)
-- When both a program AND a room type are selected, the "Prix de vente" auto-fills with the corresponding price from the program's pricing object
-- The `programId` foreign key on `omra_orders` now references `omra_programs` instead of `omra_hotels`
+### 3. Settlement History Viewer
+A "Historique" icon next to each employee name opens a modal displaying all past settlements in a chronological table: date, caisse amount at settlement, admin notes, and a running cumulative total.
 
-### 4. Role-Based Access
-- Admins can create, edit, delete programs
-- Employees can only view the list (read-only)
-- The "Create Program" button is hidden for employees
+### 4. Updated KPI Calculations
+The Caisse column and Global Summary Row only reflect "active" totals -- amounts recorded since each employee's last reset. This ensures the dashboard always shows the current unsettled period.
 
 ---
 
 ## Technical Details
 
 ### Database Migration
-New migration file: `server/src/database/migrations/1770900000000-AddOmraPrograms.ts`
+New migration file: `server/src/database/migrations/1771000000000-AddCaisseHistory.ts`
 
-Creates the `omra_programs` table:
+Creates the `caisse_history` table:
 
 | Column | Type | Default | Description |
 |--------|------|---------|-------------|
 | id | uuid (PK) | auto | Primary key |
-| name | varchar | required | Program name |
-| periodFrom | date | required | Start date |
-| periodTo | date | required | End date |
-| totalPlaces | int | required | Max spots |
-| hotelId | uuid (FK to omra_hotels) | nullable | Linked hotel |
-| pricing | jsonb | {} | Room type prices |
-| isActive | boolean | true | Visibility toggle |
-| createdBy | uuid (FK to users) | required | Creator |
-| createdAt | timestamp | auto | Created timestamp |
-| updatedAt | timestamp | auto | Updated timestamp |
-
-Also updates the `omra_orders.programId` FK to reference `omra_programs` instead of `omra_hotels`.
+| employeeId | uuid (FK to users) | required | The employee whose caisse was settled |
+| caisseAmount | decimal(12,2) | required | Caisse total at time of settlement |
+| impayesAmount | decimal(12,2) | required | Impayes total at time of settlement |
+| beneficesAmount | decimal(12,2) | required | Benefices total at time of settlement |
+| commandCount | int | required | Number of commands at time of settlement |
+| newBalance | decimal(12,2) | 0 | The new starting balance after reset |
+| adminId | uuid (FK to users) | required | Admin who performed the settlement |
+| notes | text (nullable) | null | Settlement notes |
+| resetDate | timestamp | now() | When the settlement was performed |
+| createdAt | timestamp | auto | Record creation timestamp |
 
 ### Backend Files
 
-**New: `server/src/omra/entities/omra-program.entity.ts`**
-- Entity class with columns matching the table above
-- ManyToOne relations to OmraHotel and User
+**New: `server/src/caisse-history/entities/caisse-history.entity.ts`**
+- Entity class with all columns from the table above
+- ManyToOne relations to User for both employeeId and adminId
 
-**New: `server/src/omra/dto/create-omra-program.dto.ts`**
-- Validation: name (required string), periodFrom/periodTo (date strings), totalPlaces (number), hotelId (optional UUID), pricing (optional object with numeric values for each room type)
+**New: `server/src/caisse-history/dto/create-caisse-settlement.dto.ts`**
+- Validation: employeeId (required UUID), newBalance (optional number, default 0), notes (optional string, max 500 chars)
 
-**New: `server/src/omra/dto/update-omra-program.dto.ts`**
-- PartialType of CreateOmraProgramDto + isActive boolean
+**New: `server/src/caisse-history/caisse-history.service.ts`**
+- `createSettlement(dto, adminId)`: Fetches current caisse stats for the employee (reusing analytics logic), saves a snapshot row, returns the created record
+- `getSettlementsByEmployee(employeeId)`: Returns all settlements ordered by resetDate DESC
+- `getLastResetDate(employeeId)`: Returns the most recent resetDate for an employee (or null if never reset)
+- `getAllLastResetDates()`: Returns a map of employeeId to their last resetDate for bulk lookups
 
-**Modified: `server/src/omra/omra.module.ts`**
-- Register OmraProgram entity in TypeOrmModule.forFeature
+**New: `server/src/caisse-history/caisse-history.controller.ts`**
+- `POST /caisse-history/settle` -- Create a settlement (admin only)
+- `GET /caisse-history/employee/:id` -- Get settlement history for an employee (admin only)
+- `GET /caisse-history/last-resets` -- Get all employees' last reset dates (admin only)
 
-**Modified: `server/src/omra/omra.service.ts`**
-- Add program CRUD methods: findAllPrograms, findActivePrograms, findProgramById, createProgram, updateProgram, deleteProgram
-- Add getProgramStats method that counts confirmed orders per program to return inventory data
-- Prevent deletion of programs linked to active orders
+**New: `server/src/caisse-history/caisse-history.module.ts`**
+- Register CaisseHistory entity, import User entity
+- Import AnalyticsModule or directly inject the required repositories (Command, OmraOrder, OmraVisa)
 
-**Modified: `server/src/omra/omra.controller.ts`**
-- Add program REST endpoints under `/omra/programs/*`:
-  - GET `/programs` -- list all
-  - GET `/programs/active` -- list active only
-  - GET `/programs/:id` -- get by ID
-  - POST `/programs` -- create (admin)
-  - PATCH `/programs/:id` -- update (admin)
-  - DELETE `/programs/:id` -- delete (admin)
-  - GET `/programs/inventory` -- get spot counts per program
+**Modified: `server/src/app.module.ts`**
+- Import CaisseHistoryModule
 
-**Modified: `server/src/omra/entities/omra-order.entity.ts`**
-- Change the `program` ManyToOne relation from OmraHotel to OmraProgram
+**Modified: `server/src/analytics/analytics.service.ts` > `getEmployeeCaisseStats()`**
+- Accept an optional `lastResetDates: Record<string, Date>` parameter
+- When calculating totals for each employee, filter commands/omraOrders/omraVisas to only include records with `createdAt > lastResetDate` for that employee
+- If no reset date exists for an employee, include all their records (current behavior)
+- The controller will fetch last reset dates from the caisse-history service and pass them in
+
+**Modified: `server/src/analytics/analytics.module.ts`**
+- Import CaisseHistory entity (or inject CaisseHistoryService)
+
+**Modified: `server/src/analytics/analytics.controller.ts`**
+- Inject CaisseHistoryService to fetch last reset dates before calling getEmployeeCaisseStats
 
 ### Frontend Files
 
-**New: `src/components/omra/OmraProgramsTab.tsx`**
-- Admin: table with program list + create/edit dialog containing:
-  - Name, Date range, Total places, Hotel selector
-  - Pricing grid: 6 input fields for chambre_1 through chambre_5 + suite, each with a label and DZD price input
-- Employee: read-only table with columns: Name, Period, Hotel, Total Places, Places Confirmees (green badge), Places Restantes (red badge)
-- Both views show real-time inventory from the `/programs/inventory` endpoint
-
-**Modified: `src/types/index.ts`**
-- Add `OmraProgram` interface with all fields including pricing object
-- Add `OmraProgramPricing` type: `Record<OmraRoomType, number>`
-- Add `OmraProgramInventory` interface: `{ programId, confirmed, remaining }`
-
 **Modified: `src/lib/api.ts`**
-- Add program DTOs: CreateOmraProgramDto, UpdateOmraProgramDto
-- Add API methods: getOmraPrograms, getActiveOmraPrograms, createOmraProgram, updateOmraProgram, deleteOmraProgram, getOmraProgramInventory
+- Add DTOs: `CreateCaisseSettlementDto` (employeeId, newBalance, notes)
+- Add `CaisseSettlement` response type (id, employeeId, caisseAmount, impayesAmount, beneficesAmount, commandCount, newBalance, adminId, notes, resetDate)
+- Add API methods:
+  - `createCaisseSettlement(dto)`: POST /caisse-history/settle
+  - `getCaisseSettlements(employeeId)`: GET /caisse-history/employee/:id
+  - `getCaisseLastResets()`: GET /caisse-history/last-resets
 
-**Modified: `src/hooks/useOmra.ts`**
-- Add hooks: useOmraPrograms, useActiveOmraPrograms, useCreateOmraProgram, useUpdateOmraProgram, useDeleteOmraProgram, useOmraProgramInventory
+**New: `src/hooks/useCaisseHistory.ts`**
+- `useCaisseSettlements(employeeId)`: React Query hook for settlement history
+- `useCreateCaisseSettlement()`: Mutation hook that invalidates both `['analytics', 'employee-caisses']` and `['caisse-history']` query keys
+- `useCaisseLastResets()`: Hook for fetching all last reset dates
 
-**Modified: `src/pages/OmraPage.tsx`**
-- Add 4th tab trigger "Programmes" with Calendar icon
-- Update TabsList to grid-cols-4
-- Add TabsContent for programs tab rendering OmraProgramsTab
+**Modified: `src/components/accounting/EmployeeCaisseTable.tsx`**
+Major changes:
+- Add a new "Actions" column header to the table
+- Per employee row: Add two icon buttons:
+  - **Settle button** (Banknote icon): Opens the settlement dialog
+  - **History button** (History icon): Opens the history modal
+- **Settlement Dialog** (new inline component or separate):
+  - Shows current employee name, Caisse (green), Impayes (red), Benefices (blue)
+  - Input for "Nouveau solde" (New Balance) defaulting to 0
+  - Textarea for notes (placeholder: "Caisse reglée pour fevrier 2026...")
+  - Confirm/Cancel buttons
+  - On confirm: calls createCaisseSettlement mutation
+- **History Modal** (new inline component or separate):
+  - Table with columns: Date, Caisse (green), Impayes (red), Benefices (blue), Dossiers, Notes
+  - Shows all past settlements for the selected employee
+  - Bottom row shows cumulative totals across all settlements
+  - Empty state if no history exists
 
-**Modified: `src/components/omra/OmraOrdersTab.tsx`**
-- Import useActiveOmraPrograms hook
-- Replace hotels-based program dropdown with programs-based dropdown (listing active programs by name + period)
-- Add auto-fill logic: when both programId and roomType are set, look up the program's pricing for that room type and set sellingPrice accordingly
-- Keep manual override possible (user can still change the price after auto-fill)
+**Modified: `src/i18n/locales/fr/accounting.json`**
+Add under `caisses`:
+```
+"actions": "Actions",
+"settle": "Régler la caisse",
+"history": "Historique des règlements",
+"settleDialog": {
+  "title": "Règlement de caisse",
+  "subtitle": "Enregistrer un règlement pour {{name}}",
+  "currentCaisse": "Caisse actuelle",
+  "currentImpayes": "Impayés actuels",
+  "currentBenefices": "Bénéfices actuels",
+  "newBalance": "Nouveau solde",
+  "notes": "Notes",
+  "notesPlaceholder": "Caisse réglée pour...",
+  "confirm": "Confirmer le règlement",
+  "saving": "Enregistrement..."
+},
+"historyDialog": {
+  "title": "Historique des règlements",
+  "subtitle": "Tous les règlements passés pour {{name}}",
+  "table": {
+    "date": "Date",
+    "caisse": "Caisse",
+    "impayes": "Impayés",
+    "benefices": "Bénéfices",
+    "commands": "Dossiers",
+    "notes": "Notes"
+  },
+  "cumulative": "Total cumulé",
+  "empty": {
+    "title": "Aucun règlement",
+    "description": "Aucun règlement n'a été effectué pour cet employé"
+  }
+}
+```
 
-**Modified: `src/i18n/locales/fr/omra.json`**
-- Add `tabs.programs: "Programmes"`
-- Add `programs` section with: title, count, newProgram, empty state, table headers (name, period, hotel, totalPlaces, confirmed, remaining, status, actions), form labels (programName, periodFrom, periodTo, totalPlaces, hotel, pricing, pricingDescription), confirm delete, inventory labels
+**Modified: `src/i18n/locales/ar/accounting.json`**
+Arabic equivalents for all new keys:
+```
+"actions": "إجراءات",
+"settle": "تسوية الصندوق",
+"history": "سجل التسويات",
+"settleDialog": {
+  "title": "تسوية الصندوق",
+  "subtitle": "تسجيل تسوية لـ {{name}}",
+  "currentCaisse": "الصندوق الحالي",
+  "currentImpayes": "غير المدفوع الحالي",
+  "currentBenefices": "الأرباح الحالية",
+  "newBalance": "الرصيد الجديد",
+  "notes": "ملاحظات",
+  "notesPlaceholder": "تسوية الصندوق لشهر...",
+  "confirm": "تأكيد التسوية",
+  "saving": "جاري الحفظ..."
+},
+"historyDialog": {
+  "title": "سجل التسويات",
+  "subtitle": "جميع التسويات السابقة لـ {{name}}",
+  "table": {
+    "date": "التاريخ",
+    "caisse": "الصندوق",
+    "impayes": "غير المدفوع",
+    "benefices": "الأرباح",
+    "commands": "الملفات",
+    "notes": "ملاحظات"
+  },
+  "cumulative": "الإجمالي التراكمي",
+  "empty": {
+    "title": "لا توجد تسويات",
+    "description": "لم يتم إجراء أي تسوية لهذا الموظف"
+  }
+}
+```
 
-**Modified: `src/i18n/locales/ar/omra.json`**
-- Arabic equivalents for all new program translation keys
+### Key Logic: Active Balance Calculation
+
+The core change to `getEmployeeCaisseStats()` in the backend service:
+
+```text
+For each employee:
+  1. Look up their last reset date from caisse_history
+  2. If a reset date exists:
+     - Only sum commands/omraOrders/omraVisas where createdAt > lastResetDate
+     - Add the "newBalance" from the last settlement as a starting offset
+  3. If no reset date exists:
+     - Sum all records (current behavior, no change)
+```
+
+This ensures the Caisse column always shows the "active" unsettled period, while the history modal preserves the full audit trail.
 
 ### Files Summary
 
 | File | Action | Description |
 |------|--------|-------------|
-| `server/src/database/migrations/1770900000000-AddOmraPrograms.ts` | Create | Migration for omra_programs table + update FK |
-| `server/src/omra/entities/omra-program.entity.ts` | Create | Program entity with pricing JSONB |
-| `server/src/omra/dto/create-omra-program.dto.ts` | Create | Create DTO with validation |
-| `server/src/omra/dto/update-omra-program.dto.ts` | Create | Update DTO (partial) |
-| `server/src/omra/omra.module.ts` | Modify | Register OmraProgram entity |
-| `server/src/omra/omra.service.ts` | Modify | Add program CRUD + inventory methods |
-| `server/src/omra/omra.controller.ts` | Modify | Add program REST endpoints |
-| `server/src/omra/entities/omra-order.entity.ts` | Modify | Change program FK to OmraProgram |
-| `src/components/omra/OmraProgramsTab.tsx` | Create | New tab component with admin CRUD + employee read-only view |
-| `src/types/index.ts` | Modify | Add OmraProgram, OmraProgramPricing types |
-| `src/lib/api.ts` | Modify | Add program API methods and DTOs |
-| `src/hooks/useOmra.ts` | Modify | Add program React Query hooks |
-| `src/pages/OmraPage.tsx` | Modify | Add 4th tab |
-| `src/components/omra/OmraOrdersTab.tsx` | Modify | Use programs in dropdown + auto-fill pricing |
-| `src/i18n/locales/fr/omra.json` | Modify | French translations |
-| `src/i18n/locales/ar/omra.json` | Modify | Arabic translations |
+| `server/src/database/migrations/1771000000000-AddCaisseHistory.ts` | Create | Migration for caisse_history table |
+| `server/src/caisse-history/entities/caisse-history.entity.ts` | Create | CaisseHistory entity |
+| `server/src/caisse-history/dto/create-caisse-settlement.dto.ts` | Create | Settlement DTO with validation |
+| `server/src/caisse-history/caisse-history.service.ts` | Create | Settlement CRUD + last reset date logic |
+| `server/src/caisse-history/caisse-history.controller.ts` | Create | REST endpoints (admin only) |
+| `server/src/caisse-history/caisse-history.module.ts` | Create | Module registration |
+| `server/src/app.module.ts` | Modify | Import CaisseHistoryModule |
+| `server/src/analytics/analytics.service.ts` | Modify | Filter records by last reset date |
+| `server/src/analytics/analytics.module.ts` | Modify | Import CaisseHistory dependencies |
+| `server/src/analytics/analytics.controller.ts` | Modify | Inject CaisseHistoryService for reset dates |
+| `src/lib/api.ts` | Modify | Add settlement DTOs and API methods |
+| `src/hooks/useCaisseHistory.ts` | Create | React Query hooks for settlements |
+| `src/components/accounting/EmployeeCaisseTable.tsx` | Modify | Add Actions column, settle dialog, history modal |
+| `src/i18n/locales/fr/accounting.json` | Modify | French translations for settlement UI |
+| `src/i18n/locales/ar/accounting.json` | Modify | Arabic translations for settlement UI |
+
