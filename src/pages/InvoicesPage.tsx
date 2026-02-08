@@ -68,6 +68,7 @@ import { generateClientInvoicePdf } from '@/utils/invoiceGenerator';
 import { ClientInvoice, ClientInvoiceType, ClientInvoiceStatus } from '@/types';
 import { CreateClientInvoiceDto, UpdateClientInvoiceDto, ClientInvoiceFilters } from '@/lib/api';
 import { TRAVEL_CLASSES, PAYMENT_METHODS } from '@/constants/agency';
+import { useAgencySettings } from '@/hooks/useAgencySettings';
 
 export default function InvoicesPage() {
   const { t, i18n } = useTranslation(['invoices', 'common']);
@@ -101,6 +102,7 @@ export default function InvoicesPage() {
   const createMutation = useCreateClientInvoice();
   const updateMutation = useUpdateClientInvoice();
   const deleteMutation = useDeleteClientInvoice();
+  const { data: agencySettings } = useAgencySettings();
 
   // Filter handlers
   const handleFilterChange = (key: keyof ClientInvoiceFilters, value: string) => {
@@ -202,6 +204,7 @@ export default function InvoicesPage() {
       validityHours: invoice.validityHours || 48,
       status: invoice.status,
       language: i18n.language as 'fr' | 'ar',
+      agencyInfo: agencySettings || undefined,
     });
   };
 
