@@ -1,226 +1,139 @@
 
 
-# Caisse Reset & Settlement System for Employee Cash Registers
+# Refactor Invoice PDF Generation: HTML-to-PDF Approach
 
 ## Overview
-Add a full "Reset and Adjustment" system to the Caisses tab in the Accounting module. This allows admins to settle employee cash registers by recording the current totals into a permanent audit log, then resetting the active balance window. The Caisses table will only show activity **since the last reset** for each employee, while preserving a complete history of all past settlements.
+Replace the current imperative jsPDF coordinate-based invoice generation (~480 lines of manual layout math) with a React component-based approach. Invoices will be designed as styled HTML templates, rendered off-screen, captured with `html2canvas`, and converted to PDF with `jsPDF`. This eliminates all manual `currentY` tracking, font fetching, and Arabic reshaping complexity -- Arabic/RTL will work natively through CSS `direction: rtl` and the Tajawal font already loaded via Google Fonts CSS in `index.css`.
 
 ## What Changes
 
-### 1. Caisse Settlement History (Backend)
-A new `caisse_history` database table stores every settlement event with full audit details: the employee's totals at the time of reset, who performed it, and any notes. The Caisses calculation logic is updated to only sum records created **after** each employee's most recent reset date.
+### 1. New Dependency
+Install `html2canvas` -- the library that captures a DOM element as a rasterized canvas image.
 
-### 2. "Regler la Caisse" Button (Per Employee)
-Each employee row in the Caisses table gets a "Settle" action button. Clicking it opens a dialog showing the employee's current Caisse, Impayes, and Benefices. The admin can input a "New Starting Balance" (defaults to 0) and add notes before confirming. On confirmation, the current totals are saved to the history table.
+### 2. Invoice HTML Template Component
+A new React component (`InvoiceTemplate`) that renders the exact same invoice layout currently produced by the jsPDF code, but using standard HTML/CSS with Tailwind utility classes. This component is never shown to the user -- it is rendered off-screen solely for PDF capture.
 
-### 3. Settlement History Viewer
-A "Historique" icon next to each employee name opens a modal displaying all past settlements in a chronological table: date, caisse amount at settlement, admin notes, and a running cumulative total.
+### 3. Simplified PDF Generator
+The new `generateClientInvoicePdf` function will:
+1. Create a temporary off-screen container
+2. Render the `InvoiceTemplate` React component into it
+3. Capture it with `html2canvas` at 2x scale for crisp output
+4. Insert the canvas image into a jsPDF A4 document
+5. Clean up the temporary DOM element
+6. Save the PDF file
 
-### 4. Updated KPI Calculations
-The Caisse column and Global Summary Row only reflect "active" totals -- amounts recorded since each employee's last reset. This ensures the dashboard always shows the current unsettled period.
+### 4. Removal of Arabic Workarounds
+Since HTML natively supports RTL text and the Tajawal font is already loaded via the Google Fonts CSS import in `index.css`, there is no longer any need for:
+- The `arabic-reshaper` library calls in the invoice generator
+- The `registerTajawalFont` async font-fetching logic for invoice rendering
+- Manual `isInputRtl` jsPDF options
+
+The `arabicReshaper.ts` and `tajawalFont.ts` utilities remain in the project because `pdfGenerator.ts` (expenses PDF) still uses jsPDF directly. Only the invoice generator is refactored.
 
 ---
 
 ## Technical Details
 
-### Database Migration
-New migration file: `server/src/database/migrations/1771000000000-AddCaisseHistory.ts`
-
-Creates the `caisse_history` table:
-
-| Column | Type | Default | Description |
-|--------|------|---------|-------------|
-| id | uuid (PK) | auto | Primary key |
-| employeeId | uuid (FK to users) | required | The employee whose caisse was settled |
-| caisseAmount | decimal(12,2) | required | Caisse total at time of settlement |
-| impayesAmount | decimal(12,2) | required | Impayes total at time of settlement |
-| beneficesAmount | decimal(12,2) | required | Benefices total at time of settlement |
-| commandCount | int | required | Number of commands at time of settlement |
-| newBalance | decimal(12,2) | 0 | The new starting balance after reset |
-| adminId | uuid (FK to users) | required | Admin who performed the settlement |
-| notes | text (nullable) | null | Settlement notes |
-| resetDate | timestamp | now() | When the settlement was performed |
-| createdAt | timestamp | auto | Record creation timestamp |
-
-### Backend Files
-
-**New: `server/src/caisse-history/entities/caisse-history.entity.ts`**
-- Entity class with all columns from the table above
-- ManyToOne relations to User for both employeeId and adminId
-
-**New: `server/src/caisse-history/dto/create-caisse-settlement.dto.ts`**
-- Validation: employeeId (required UUID), newBalance (optional number, default 0), notes (optional string, max 500 chars)
-
-**New: `server/src/caisse-history/caisse-history.service.ts`**
-- `createSettlement(dto, adminId)`: Fetches current caisse stats for the employee (reusing analytics logic), saves a snapshot row, returns the created record
-- `getSettlementsByEmployee(employeeId)`: Returns all settlements ordered by resetDate DESC
-- `getLastResetDate(employeeId)`: Returns the most recent resetDate for an employee (or null if never reset)
-- `getAllLastResetDates()`: Returns a map of employeeId to their last resetDate for bulk lookups
-
-**New: `server/src/caisse-history/caisse-history.controller.ts`**
-- `POST /caisse-history/settle` -- Create a settlement (admin only)
-- `GET /caisse-history/employee/:id` -- Get settlement history for an employee (admin only)
-- `GET /caisse-history/last-resets` -- Get all employees' last reset dates (admin only)
-
-**New: `server/src/caisse-history/caisse-history.module.ts`**
-- Register CaisseHistory entity, import User entity
-- Import AnalyticsModule or directly inject the required repositories (Command, OmraOrder, OmraVisa)
-
-**Modified: `server/src/app.module.ts`**
-- Import CaisseHistoryModule
-
-**Modified: `server/src/analytics/analytics.service.ts` > `getEmployeeCaisseStats()`**
-- Accept an optional `lastResetDates: Record<string, Date>` parameter
-- When calculating totals for each employee, filter commands/omraOrders/omraVisas to only include records with `createdAt > lastResetDate` for that employee
-- If no reset date exists for an employee, include all their records (current behavior)
-- The controller will fetch last reset dates from the caisse-history service and pass them in
-
-**Modified: `server/src/analytics/analytics.module.ts`**
-- Import CaisseHistory entity (or inject CaisseHistoryService)
-
-**Modified: `server/src/analytics/analytics.controller.ts`**
-- Inject CaisseHistoryService to fetch last reset dates before calling getEmployeeCaisseStats
-
-### Frontend Files
-
-**Modified: `src/lib/api.ts`**
-- Add DTOs: `CreateCaisseSettlementDto` (employeeId, newBalance, notes)
-- Add `CaisseSettlement` response type (id, employeeId, caisseAmount, impayesAmount, beneficesAmount, commandCount, newBalance, adminId, notes, resetDate)
-- Add API methods:
-  - `createCaisseSettlement(dto)`: POST /caisse-history/settle
-  - `getCaisseSettlements(employeeId)`: GET /caisse-history/employee/:id
-  - `getCaisseLastResets()`: GET /caisse-history/last-resets
-
-**New: `src/hooks/useCaisseHistory.ts`**
-- `useCaisseSettlements(employeeId)`: React Query hook for settlement history
-- `useCreateCaisseSettlement()`: Mutation hook that invalidates both `['analytics', 'employee-caisses']` and `['caisse-history']` query keys
-- `useCaisseLastResets()`: Hook for fetching all last reset dates
-
-**Modified: `src/components/accounting/EmployeeCaisseTable.tsx`**
-Major changes:
-- Add a new "Actions" column header to the table
-- Per employee row: Add two icon buttons:
-  - **Settle button** (Banknote icon): Opens the settlement dialog
-  - **History button** (History icon): Opens the history modal
-- **Settlement Dialog** (new inline component or separate):
-  - Shows current employee name, Caisse (green), Impayes (red), Benefices (blue)
-  - Input for "Nouveau solde" (New Balance) defaulting to 0
-  - Textarea for notes (placeholder: "Caisse reglée pour fevrier 2026...")
-  - Confirm/Cancel buttons
-  - On confirm: calls createCaisseSettlement mutation
-- **History Modal** (new inline component or separate):
-  - Table with columns: Date, Caisse (green), Impayes (red), Benefices (blue), Dossiers, Notes
-  - Shows all past settlements for the selected employee
-  - Bottom row shows cumulative totals across all settlements
-  - Empty state if no history exists
-
-**Modified: `src/i18n/locales/fr/accounting.json`**
-Add under `caisses`:
+### New Dependency
 ```
-"actions": "Actions",
-"settle": "Régler la caisse",
-"history": "Historique des règlements",
-"settleDialog": {
-  "title": "Règlement de caisse",
-  "subtitle": "Enregistrer un règlement pour {{name}}",
-  "currentCaisse": "Caisse actuelle",
-  "currentImpayes": "Impayés actuels",
-  "currentBenefices": "Bénéfices actuels",
-  "newBalance": "Nouveau solde",
-  "notes": "Notes",
-  "notesPlaceholder": "Caisse réglée pour...",
-  "confirm": "Confirmer le règlement",
-  "saving": "Enregistrement..."
-},
-"historyDialog": {
-  "title": "Historique des règlements",
-  "subtitle": "Tous les règlements passés pour {{name}}",
-  "table": {
-    "date": "Date",
-    "caisse": "Caisse",
-    "impayes": "Impayés",
-    "benefices": "Bénéfices",
-    "commands": "Dossiers",
-    "notes": "Notes"
-  },
-  "cumulative": "Total cumulé",
-  "empty": {
-    "title": "Aucun règlement",
-    "description": "Aucun règlement n'a été effectué pour cet employé"
-  }
+html2canvas (latest)
+```
+
+### New File: `src/components/invoice/InvoiceTemplate.tsx`
+
+A pure React component that accepts the same `ClientInvoicePdfData` interface and renders a pixel-perfect A4 invoice layout. The component uses:
+
+- **Container**: Fixed 794px width (A4 at 96dpi), `font-family: 'Tajawal', sans-serif` for full Arabic support
+- **Header**: Centered logo image, agency legal name, address, phone/email, RC/NIF/NIS
+- **Title Banner**: Full-width rounded div with blue (#3B82F6) for proforma or green (#22644A) for finale, white text
+- **Invoice Number**: Centered below banner with a subtle separator line
+- **Client Section**: Bold "CLIENT" / "العميل" header with date aligned right; client name and passport below
+- **Prestation Section**: Service name, itinerary (with plane icon), company, dates, travel class, PNR (finale only)
+- **Financial Details Box**: Light gray rounded box showing ticket price, agency fees, separator, Total HT / TVA / Total TTC (finale) or just Total (proforma)
+- **Payment + Signature Side-by-Side**: Left column shows payment method, bank details, amount in words (French). Right column shows "Cachet et Signature" header with empty space below
+- **Conditions**: Proforma shows validity/payment terms + yellow warning banner. Finale shows "non-remboursable" note
+- **Arabic Footer**: 5 centered lines using Tajawal font -- Arabic agency name (bold), Arabic address, RC/NIF/Article Fiscal labels, NIS/License labels, phone numbers
+- **Timestamp**: Small gray generation date at bottom-right
+
+All Arabic text uses native HTML `dir="rtl"` attributes -- no reshaping needed.
+
+The component accepts a `forwardRef` to expose the root div for `html2canvas` capture.
+
+### Modified File: `src/utils/invoiceGenerator.ts`
+
+Complete rewrite. The file keeps the same exported interface (`ClientInvoicePdfData`, `AgencyInfoParam`, `generateClientInvoicePdf`) for backward compatibility. The implementation changes to:
+
+```typescript
+import html2canvas from 'html2canvas';
+import jsPDF from 'jspdf';
+import { createRoot } from 'react-dom/client';
+import { InvoiceTemplate } from '@/components/invoice/InvoiceTemplate';
+
+export async function generateClientInvoicePdf(data: ClientInvoicePdfData): Promise<void> {
+  // 1. Create off-screen container
+  const container = document.createElement('div');
+  container.style.position = 'fixed';
+  container.style.left = '-9999px';
+  container.style.top = '0';
+  document.body.appendChild(container);
+
+  // 2. Render the React template
+  const root = createRoot(container);
+  root.render(<InvoiceTemplate data={data} />);
+  
+  // Wait for render + images to load
+  await new Promise(resolve => setTimeout(resolve, 500));
+
+  // 3. Capture with html2canvas
+  const templateEl = container.firstElementChild as HTMLElement;
+  const canvas = await html2canvas(templateEl, {
+    scale: 2,
+    useCORS: true,
+    backgroundColor: '#ffffff',
+  });
+
+  // 4. Create PDF
+  const pdf = new jsPDF('p', 'mm', 'a4');
+  const pageWidth = pdf.internal.pageSize.getWidth();
+  const pageHeight = pdf.internal.pageSize.getHeight();
+  const imgData = canvas.toDataURL('image/png');
+  pdf.addImage(imgData, 'PNG', 0, 0, pageWidth, pageHeight);
+  
+  // 5. Save
+  pdf.save(`${data.invoiceType === 'proforma' ? 'proforma' : 'facture'}_${data.invoiceNumber}_${new Date().toISOString().split('T')[0]}.pdf`);
+
+  // 6. Cleanup
+  root.unmount();
+  document.body.removeChild(container);
 }
 ```
 
-**Modified: `src/i18n/locales/ar/accounting.json`**
-Arabic equivalents for all new keys:
-```
-"actions": "إجراءات",
-"settle": "تسوية الصندوق",
-"history": "سجل التسويات",
-"settleDialog": {
-  "title": "تسوية الصندوق",
-  "subtitle": "تسجيل تسوية لـ {{name}}",
-  "currentCaisse": "الصندوق الحالي",
-  "currentImpayes": "غير المدفوع الحالي",
-  "currentBenefices": "الأرباح الحالية",
-  "newBalance": "الرصيد الجديد",
-  "notes": "ملاحظات",
-  "notesPlaceholder": "تسوية الصندوق لشهر...",
-  "confirm": "تأكيد التسوية",
-  "saving": "جاري الحفظ..."
-},
-"historyDialog": {
-  "title": "سجل التسويات",
-  "subtitle": "جميع التسويات السابقة لـ {{name}}",
-  "table": {
-    "date": "التاريخ",
-    "caisse": "الصندوق",
-    "impayes": "غير المدفوع",
-    "benefices": "الأرباح",
-    "commands": "الملفات",
-    "notes": "ملاحظات"
-  },
-  "cumulative": "الإجمالي التراكمي",
-  "empty": {
-    "title": "لا توجد تسويات",
-    "description": "لم يتم إجراء أي تسوية لهذا الموظف"
-  }
-}
-```
-
-### Key Logic: Active Balance Calculation
-
-The core change to `getEmployeeCaisseStats()` in the backend service:
-
-```text
-For each employee:
-  1. Look up their last reset date from caisse_history
-  2. If a reset date exists:
-     - Only sum commands/omraOrders/omraVisas where createdAt > lastResetDate
-     - Add the "newBalance" from the last settlement as a starting offset
-  3. If no reset date exists:
-     - Sum all records (current behavior, no change)
-```
-
-This ensures the Caisse column always shows the "active" unsettled period, while the history modal preserves the full audit trail.
+### Unchanged Files
+- `src/utils/pdfGenerator.ts` -- Expenses PDF stays as-is (uses jsPDF + autoTable, which is the right tool for tabular data)
+- `src/utils/arabicReshaper.ts` -- Kept for potential use by other modules
+- `src/utils/tajawalFont.ts` -- Kept for potential use by expenses PDF if Arabic support is added later
+- `src/utils/numberToWords.ts` -- Still used by the invoice template for amount-in-words
+- `src/pages/InvoicesPage.tsx` -- No changes needed, same `generateClientInvoicePdf` call
+- `src/pages/CommandsPage.tsx` -- No changes needed, same `generateClientInvoicePdf` call
+- `src/constants/agency.ts` -- Unchanged
 
 ### Files Summary
 
 | File | Action | Description |
 |------|--------|-------------|
-| `server/src/database/migrations/1771000000000-AddCaisseHistory.ts` | Create | Migration for caisse_history table |
-| `server/src/caisse-history/entities/caisse-history.entity.ts` | Create | CaisseHistory entity |
-| `server/src/caisse-history/dto/create-caisse-settlement.dto.ts` | Create | Settlement DTO with validation |
-| `server/src/caisse-history/caisse-history.service.ts` | Create | Settlement CRUD + last reset date logic |
-| `server/src/caisse-history/caisse-history.controller.ts` | Create | REST endpoints (admin only) |
-| `server/src/caisse-history/caisse-history.module.ts` | Create | Module registration |
-| `server/src/app.module.ts` | Modify | Import CaisseHistoryModule |
-| `server/src/analytics/analytics.service.ts` | Modify | Filter records by last reset date |
-| `server/src/analytics/analytics.module.ts` | Modify | Import CaisseHistory dependencies |
-| `server/src/analytics/analytics.controller.ts` | Modify | Inject CaisseHistoryService for reset dates |
-| `src/lib/api.ts` | Modify | Add settlement DTOs and API methods |
-| `src/hooks/useCaisseHistory.ts` | Create | React Query hooks for settlements |
-| `src/components/accounting/EmployeeCaisseTable.tsx` | Modify | Add Actions column, settle dialog, history modal |
-| `src/i18n/locales/fr/accounting.json` | Modify | French translations for settlement UI |
-| `src/i18n/locales/ar/accounting.json` | Modify | Arabic translations for settlement UI |
+| `package.json` | Modify | Add `html2canvas` dependency |
+| `src/components/invoice/InvoiceTemplate.tsx` | Create | React component rendering the full A4 invoice layout with Tailwind + inline styles |
+| `src/utils/invoiceGenerator.ts` | Rewrite | Replace ~480 lines of imperative jsPDF with ~60 lines using html2canvas + React rendering |
+
+### Key Benefits
+- **Native Arabic/RTL**: No more `arabic-reshaper` or font-fetching for invoices. HTML handles BiDi text natively with the Tajawal font already loaded
+- **CSS-based Layout**: Use flexbox, padding, margins -- no manual coordinate math
+- **Easy to Modify**: Adding fields or rearranging sections is just editing JSX/Tailwind classes
+- **Visual Debugging**: The template component can be temporarily rendered on-screen to preview exactly what the PDF will look like
+- **Same API Surface**: Callers (`InvoicesPage`, `CommandsPage`) need zero changes
+
+### Trade-offs
+- **Rasterized Text**: PDF text will be an image (not selectable/searchable). This is acceptable for official invoices that are typically printed or shared as-is
+- **Slightly Larger File Size**: PNG-based PDFs are ~200-400KB vs ~50KB for vector jsPDF. Acceptable for single-page invoices
+- **Render Delay**: ~500ms wait for React render + html2canvas capture. Imperceptible to users compared to the current font-fetching delay
 
