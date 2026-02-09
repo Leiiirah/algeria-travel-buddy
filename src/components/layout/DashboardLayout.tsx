@@ -33,9 +33,9 @@ export function DashboardLayout({ children, title, subtitle }: DashboardLayoutPr
     <SidebarProvider>
       <div className="flex min-h-screen w-full">
         <AppSidebar />
-        <SidebarInset className="flex flex-1 flex-col">
+        <SidebarInset className="flex flex-1 flex-col min-w-0 overflow-hidden">
           <AppHeader title={title} subtitle={subtitle} />
-          <main className="flex-1 overflow-x-hidden overflow-y-auto bg-background p-3 sm:p-6">
+          <main className="flex-1 min-w-0 overflow-x-hidden overflow-y-auto bg-background p-3 sm:p-6">
             {children}
           </main>
         </SidebarInset>
