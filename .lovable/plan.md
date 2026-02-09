@@ -1,166 +1,118 @@
 
 
-# Professional Invoice Template Redesign
+# Companies Management for Commands
 
 ## Overview
-Completely redesign the `InvoiceTemplate.tsx` component to create a polished, modern, and professional invoice layout. The new design uses a structured grid system, refined typography hierarchy, elegant color accents, and clear visual separation between sections -- all while preserving every existing data field and the bilingual (French/Arabic) support.
+Add admin-managed "Companies" (compagnies de transport) that employees select from when creating ticket-type commands. Currently the company field is a free-text input -- this changes it to a dropdown populated from a backend-managed list. Only admins can add/edit/delete companies; employees can only select from the existing list.
 
-## Design Philosophy
-- **Clean whitespace**: Generous spacing between sections for readability
-- **Strong visual hierarchy**: Clear section headers with subtle accent bars
-- **Professional color palette**: Deep green (#1B4332) as primary accent for finale, blue (#1E3A5F) for proforma -- used sparingly for headers and borders
-- **Structured data display**: Travel details in a clean 2-column grid layout instead of stacked text lines
-- **Prominent financial table**: Proper table with alternating row styling and a bold highlighted total row
-- **Signature area**: Bordered dotted-line box for a professional stamp/signature zone
-- **Dual-language header**: French name on one side, Arabic name on the other, with logo centered -- creating an official bilingual letterhead
+## What Changes
 
-## What the New Layout Looks Like
+### 1. Backend: New Companies Module (NestJS)
 
-### Top Section: Bilingual Letterhead
+**New entity**: `server/src/companies/entities/company.entity.ts`
+- `id` (UUID, primary key)
+- `name` (string, e.g. "Air Algerie", "Turkish Airlines")
+- `isActive` (boolean, default true)
+- `createdAt`, `updatedAt` (timestamps)
+
+**New DTO files**:
+- `create-company.dto.ts`: name (required string)
+- `update-company.dto.ts`: name (optional), isActive (optional)
+
+**New service**: `server/src/companies/companies.service.ts`
+- `findAll()` -- returns all companies ordered by name
+- `findActive()` -- returns only active companies (for employee dropdown)
+- `create(dto)` -- admin only
+- `update(id, dto)` -- admin only
+- `remove(id)` -- admin only
+
+**New controller**: `server/src/companies/companies.controller.ts`
+- `GET /companies` -- all users (returns active only for employees, all for admins)
+- `POST /companies` -- admin only (guarded with `@Roles('admin')`)
+- `PATCH /companies/:id` -- admin only
+- `DELETE /companies/:id` -- admin only
+
+**New module**: `server/src/companies/companies.module.ts`
+- Register in `app.module.ts`
+
+**New migration**: `server/src/database/migrations/1771100000000-AddCompanies.ts`
+- Creates `companies` table
+- Seeds initial data from existing supplier airline names (Air Algerie, Turkish Airlines, etc.)
+
+### 2. Frontend: API Layer
+
+**`src/lib/api.ts`**: Add new endpoints:
+- `getCompanies()` -- GET /companies
+- `createCompany(data)` -- POST /companies
+- `updateCompany(id, data)` -- PATCH /companies/:id
+- `deleteCompany(id)` -- DELETE /companies/:id
+
+**New types in `src/types/index.ts`**:
 ```text
-+------------------------------------------------------------------+
-|  EL HIKMA TOURISME ET VOYAGE    [LOGO]    الحكمة للسياحة و الاسفار |
-|  02 rue de kolea...                       02، طريق القليعة...      |
-|  Tel: 025 17 29 68 / 0540 40 00 80  |  elhikmatours@gmail.com     |
-|  RC: ... | NIF: ... | NIS: ...                                    |
-+------------------------------------------------------------------+
+Company {
+  id: string
+  name: string
+  isActive: boolean
+  createdAt: Date
+  updatedAt: Date
+}
 ```
 
-### Title Banner
-Full-width colored bar with invoice type, number, and date aligned in a single row.
+**New hook**: `src/hooks/useCompanies.ts`
+- `useCompanies()` -- fetch all companies
+- `useCreateCompany()` -- mutation
+- `useUpdateCompany()` -- mutation
+- `useDeleteCompany()` -- mutation
 
-### Two-Column Info Cards
-```text
-+-------------------------------+  +-------------------------------+
-|  CLIENT                       |  |  PRESTATION                   |
-|  Nom: Ahmed Benali            |  |  Billet d'avion               |
-|  Passeport: A12345678         |  |  Alger -> Istanbul -> Alger   |
-|  Tel: 0555 12 34 56           |  |  Air Algerie | Economique     |
-+-------------------------------+  |  Depart: 15/03/2026           |
-                                   |  Retour: 22/03/2026           |
-                                   |  PNR: ABC123                  |
-                                   +-------------------------------+
-```
+### 3. Frontend: Commands Page Changes
 
-### Financial Details Table
-```text
-+------------------------------------------------------------------+
-|  Designation                              |  Montant              |
-|-------------------------------------------|---------------------- |
-|  Prix du billet                            |  85 000 DA            |
-|  Frais agence                             |  15 000 DA            |
-|-------------------------------------------|---------------------- |
-|  Total HT                                 |  100 000 DA           |
-|  TVA (0%)                                 |  0 DA                 |
-|===========================================#======================|
-|  TOTAL TTC                                |  100 000 DA           |
-+------------------------------------------------------------------+
-```
+**`src/pages/CommandsPage.tsx`**:
+- For ticket-type commands, replace the free-text `<Input>` for company with a `<Select>` dropdown populated from `useCompanies()`
+- Admins see the dropdown + a small "+" button next to it to quickly add a new company inline (opens a small dialog)
+- Employees see only the dropdown (no add button)
+- The selected value stored in `formData.company` remains a string (the company name) for backward compatibility with existing commands
 
-### Bottom: Payment + Signature Side by Side
-```text
-+-------------------------------+  +-------------------------------+
-|  REGLEMENT                    |  |                               |
-|  Mode: Especes                |  |    Cachet et Signature        |
-|  Banque: CCP                  |  |                               |
-|  Compte: 00799...             |  |    ..................         |
-|                               |  |                               |
-|  Arrete la presente facture   |  |                               |
-|  a la somme de: Cent mille    |  |                               |
-|  Dinars Algeriens             |  |                               |
-+-------------------------------+  +-------------------------------+
-```
+### 4. Frontend: Admin Companies Management
 
-### Footer
-Centered Arabic legal details with license and fiscal identifiers.
+**New page**: `src/pages/CompaniesPage.tsx` (admin only)
+- Simple table listing all companies with name and active status
+- Add/Edit/Delete actions
+- Toggle active/inactive
+- Accessible from the sidebar (admin only)
 
----
+**`src/components/layout/AppSidebar.tsx`**: Add "Compagnies" link in the admin section of the sidebar
 
-## Technical Details
+**`src/App.tsx`**: Add route `/companies` wrapped in ProtectedRoute (admin only)
 
-### File Changed
+### 5. Translations
+
+Add entries in both `fr` and `ar` locale files for:
+- "Compagnies" / "الشركات"
+- "Ajouter une compagnie" / "إضافة شركة"
+- Form labels, success/error messages
+
+## Files Summary
 
 | File | Action | Description |
 |------|--------|-------------|
-| `src/components/invoice/InvoiceTemplate.tsx` | Rewrite | Complete visual redesign with new layout structure |
+| `server/src/companies/entities/company.entity.ts` | Create | Company entity |
+| `server/src/companies/dto/create-company.dto.ts` | Create | Create DTO |
+| `server/src/companies/dto/update-company.dto.ts` | Create | Update DTO |
+| `server/src/companies/companies.service.ts` | Create | CRUD service |
+| `server/src/companies/companies.controller.ts` | Create | REST controller with role guards |
+| `server/src/companies/companies.module.ts` | Create | NestJS module |
+| `server/src/app.module.ts` | Modify | Register CompaniesModule |
+| `server/src/database/migrations/1771100000000-AddCompanies.ts` | Create | Migration + seed data |
+| `src/types/index.ts` | Modify | Add Company interface |
+| `src/lib/api.ts` | Modify | Add company API methods |
+| `src/hooks/useCompanies.ts` | Create | React Query hooks |
+| `src/pages/CompaniesPage.tsx` | Create | Admin management page |
+| `src/pages/CommandsPage.tsx` | Modify | Replace Input with Select for company field |
+| `src/components/layout/AppSidebar.tsx` | Modify | Add sidebar link (admin) |
+| `src/App.tsx` | Modify | Add /companies route |
+| `src/i18n/locales/fr/common.json` | Modify | Add translations |
+| `src/i18n/locales/ar/common.json` | Modify | Add translations |
 
-No other files change. The `invoiceGenerator.ts`, data interfaces, `ClientInvoicePdfData`, `AgencyInfoParam` -- all remain identical. The component still accepts the exact same props.
-
-### Design Specifications
-
-**Colors:**
-- Finale accent: `#1B4332` (deep forest green) for headers, borders, and total row
-- Proforma accent: `#1E3A5F` (deep navy blue)
-- Section headers: White text on accent-colored background strips
-- Financial table total row: Accent background with white bold text
-- Body text: `#1a1a1a` (near-black) for maximum readability
-- Secondary text: `#4a5568` (medium gray)
-- Table borders: `#e2e8f0` (light gray)
-- Background: Pure white `#ffffff`
-
-**Typography (all Tajawal):**
-- Agency name: 18px Bold
-- Section headers: 12px Bold, uppercase, letter-spacing 1px
-- Body text: 12px Regular
-- Financial table values: 12px, right-aligned
-- Total TTC row: 14px Bold
-- Footer Arabic: 11px Bold (name), 9px Regular (details)
-- Amount in words: 10px Italic
-
-**Layout Structure:**
-- A4 container: 794px x 1123px with 32px padding all sides
-- Letterhead: 3-column flexbox (French left, logo center, Arabic right)
-- Title banner: Full-width, 44px height, border-radius 4px
-- Info cards: 2-column grid with 16px gap, each card has a 3px left border in accent color
-- Financial table: Full-width HTML table with proper `thead`/`tbody` styling
-- Payment/Signature: 2-column flex, signature box has dashed border
-- Footer: Centered block with horizontal rule separator above
-
-**Key UX Improvements:**
-1. **Client phone displayed**: The current template ignores `clientPhone` -- the redesign includes it
-2. **Paid/Remaining shown on finale**: For finale invoices, show "Montant paye" and "Reste a payer" with semantic colors (green for paid, red for remaining > 0)
-3. **Status badge**: Small colored pill showing invoice status (Payee, Partielle, En attente)
-4. **Clear visual hierarchy**: Section headers use colored accent bars instead of plain bold text
-5. **Better date formatting**: Date displayed prominently in the title banner row alongside invoice number
-6. **Professional signature area**: Dotted-line bordered box instead of empty whitespace
-7. **Proforma validity**: Displayed as a highlighted info box with clock icon (text-based)
-8. **Proper table for financials**: Replaces the current flex-based rows with a real HTML table that has clear column headers
-
-### Section-by-Section Implementation
-
-**1. Letterhead (replaces current centered header)**
-- Three-column layout: French info left-aligned, logo centered (100px), Arabic info right-aligned RTL
-- Agency legal identifiers (RC, NIF, NIS) in a single row below, centered, smaller font
-- Thin horizontal line separator below
-
-**2. Title Banner (replaces current banner + invoice number)**
-- Single row: Invoice type label on left, "N deg X" centered, date on right
-- All in white text on accent-colored background
-- Slightly taller (44px) with rounded corners
-
-**3. Client + Service Cards (replaces current stacked sections)**
-- Two side-by-side cards with subtle left border accent
-- Client card: Name, passport, phone (new!), all with label:value format
-- Service card: Service name, itinerary with arrow, company, class, dates (departure/return on same line), PNR badge (finale only)
-
-**4. Financial Table (replaces current flex-based box)**
-- Proper HTML table with "Designation" and "Montant (DA)" column headers
-- Rows: ticket price, agency fees (if breakdown exists), then separator
-- Sub-total rows: Total HT, TVA (0%), then highlighted Total TTC row
-- For finale: Additional rows showing "Montant paye" (green) and "Reste a payer" (red/green based on value)
-
-**5. Payment + Signature (enhanced version of current)**
-- Left side: Payment details in a light-background card with accent border
-- Right side: "Cachet et Signature" in a dashed-border box (100px height) for professional look
-- Amount in words below payment details in italic
-
-**6. Conditions (enhanced)**
-- Proforma: Light blue info box with bullet points for validity and payment terms
-- Finale: Simple bold statement "Billet emis et non remboursable"
-- Proforma warning: Yellow banner (kept from current design, slightly refined)
-
-**7. Footer (streamlined)**
-- Thin horizontal rule separator
-- Centered Arabic details (same 5 lines as current but with cleaner spacing)
-- Generation timestamp bottom-right, very small and light gray
+## Backward Compatibility
+Existing commands with free-text company names will continue to display correctly. The company field in `command.data.company` remains a string. When editing old commands, if the stored company name matches an existing company in the list, it will be pre-selected; otherwise it shows as-is.
 
