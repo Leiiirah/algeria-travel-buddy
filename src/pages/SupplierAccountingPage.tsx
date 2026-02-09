@@ -543,7 +543,7 @@ const SupplierAccountingPage = () => {
 
         {/* Tabs */}
         <Tabs defaultValue="situation" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 lg:grid-cols-5">
             <TabsTrigger value="situation">{t('accounting.tabs.situation')}</TabsTrigger>
             <TabsTrigger value="historique">{t('accounting.tabs.history')}</TabsTrigger>
             <TabsTrigger value="commandes">{t('accounting.tabs.orders')}</TabsTrigger>
@@ -565,6 +565,7 @@ const SupplierAccountingPage = () => {
                     icon={Wallet}
                   />
                 ) : (
+                  <div className="overflow-x-auto">
                   <Table>
                     <TableHeader>
                       <TableRow>
@@ -606,6 +607,7 @@ const SupplierAccountingPage = () => {
                       ))}
                     </TableBody>
                   </Table>
+                  </div>
                 )}
               </CardContent>
             </Card>
@@ -625,6 +627,7 @@ const SupplierAccountingPage = () => {
                     icon={Wallet}
                   />
                 ) : (
+                  <div className="overflow-x-auto">
                   <Table>
                     <TableHeader>
                       <TableRow>
@@ -689,6 +692,7 @@ const SupplierAccountingPage = () => {
                       ))}
                     </TableBody>
                   </Table>
+                  </div>
                 )}
               </CardContent>
             </Card>

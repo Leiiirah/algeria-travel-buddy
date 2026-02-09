@@ -271,7 +271,7 @@ const ServicesPage = () => {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4 pt-2 border-t">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t">
                 <div className="space-y-2">
                   <Label htmlFor="defaultSupplier">{t('form.defaultSupplier')}</Label>
                   <Select

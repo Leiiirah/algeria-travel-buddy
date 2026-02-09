@@ -210,6 +210,7 @@ export const OmraProgramsTab = () => {
               }
             />
           ) : (
+            <div className="overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -297,6 +298,7 @@ export const OmraProgramsTab = () => {
                 })}
               </TableBody>
             </Table>
+            </div>
           )}
         </CardContent>
       </Card>
@@ -328,7 +330,7 @@ export const OmraProgramsTab = () => {
               </div>
 
               {/* Dates */}
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="periodFrom">{t('programs.form.periodFrom')} *</Label>
                   <Input
@@ -350,7 +352,7 @@ export const OmraProgramsTab = () => {
               </div>
 
               {/* Total Places + Hotel */}
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="totalPlaces">{t('programs.form.totalPlaces')} *</Label>
                   <Input
@@ -392,7 +394,7 @@ export const OmraProgramsTab = () => {
                   <Label className="text-base font-semibold">{t('programs.form.pricing')}</Label>
                   <p className="text-sm text-muted-foreground">{t('programs.form.pricingDescription')}</p>
                 </div>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {roomTypes.map((type) => (
                     <div key={type} className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
                       <Label className="min-w-[140px] text-sm">{t(`roomTypes.${type}`)}</Label>

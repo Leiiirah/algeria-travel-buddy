@@ -307,7 +307,7 @@ export default function ExpensesPage() {
                 </DialogTitle>
               </DialogHeader>
               <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label>{t('form.category')}</Label>
                     <Select
@@ -358,7 +358,7 @@ export default function ExpensesPage() {
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label>{t('form.amount')}</Label>
                     <Input
@@ -454,7 +454,7 @@ export default function ExpensesPage() {
 
         {/* Tabs */}
         <Tabs defaultValue="list">
-          <TabsList>
+          <TabsList className="w-full sm:w-auto">
             <TabsTrigger value="list">{t('tabs.list')}</TabsTrigger>
             <TabsTrigger value="stats">{t('tabs.stats')}</TabsTrigger>
           </TabsList>
@@ -470,6 +470,7 @@ export default function ExpensesPage() {
                   filterConfig={filterConfig}
                   placeholder={tCommon('search.placeholder')}
                 />
+                <div className="overflow-x-auto">
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -557,6 +558,7 @@ export default function ExpensesPage() {
                     )}
                   </TableBody>
                 </Table>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>

@@ -131,6 +131,7 @@ export const OmraHotelsTab = () => {
               }}
             />
           ) : (
+            <div className="overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -180,6 +181,7 @@ export const OmraHotelsTab = () => {
                 ))}
               </TableBody>
             </Table>
+            </div>
           )}
         </CardContent>
       </Card>

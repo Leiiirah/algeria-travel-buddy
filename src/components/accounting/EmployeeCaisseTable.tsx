@@ -129,6 +129,7 @@ const EmployeeCaisseTable = () => {
           <CardDescription>{t('caisses.subtitle')}</CardDescription>
         </CardHeader>
         <CardContent>
+          <div className="overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
@@ -234,6 +235,7 @@ const EmployeeCaisseTable = () => {
               </TableRow>
             </TableBody>
           </Table>
+          </div>
         </CardContent>
       </Card>
 

@@ -238,6 +238,7 @@ export const OmraVisasTab = () => {
               }}
             />
           ) : (
+            <div className="overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -319,6 +320,7 @@ export const OmraVisasTab = () => {
                 ))}
               </TableBody>
             </Table>
+            </div>
           )}
         </CardContent>
       </Card>
@@ -336,7 +338,7 @@ export const OmraVisasTab = () => {
           </DialogHeader>
           <div className="space-y-4 py-4">
             {/* Client Info */}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="clientName">{t('visas.form.clientName')} *</Label>
                 <Input
@@ -358,7 +360,7 @@ export const OmraVisasTab = () => {
             </div>
 
             {/* Dates */}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="visaDate">{t('visas.form.visaDate')} *</Label>
                 <Input
@@ -400,7 +402,7 @@ export const OmraVisasTab = () => {
             </div>
 
             {/* Prices */}
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="sellingPrice">{t('visas.form.sellingPrice')}</Label>
                 <Input
@@ -437,7 +439,7 @@ export const OmraVisasTab = () => {
             </div>
 
             {/* Summary */}
-            <div className="grid grid-cols-2 gap-4 p-4 bg-muted rounded-lg">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 bg-muted rounded-lg">
               <div>
                 <p className="text-sm text-muted-foreground">{t('calculations.remaining')}</p>
                 <p className="text-lg font-bold">
