@@ -35,7 +35,6 @@ const queryClient = new QueryClient({
   },
 });
 
-
 const AppRoutes = () => {
   const { user, isLoading } = useAuth();
   
