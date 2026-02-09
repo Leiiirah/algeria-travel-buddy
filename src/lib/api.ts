@@ -617,7 +617,7 @@ class ApiClient {
     return this.refreshPromise;
   }
 
-  private async request<T>(endpoint: string, options: RequestInit = {}, isRetry = false): Promise<T> {
+  private async request<T>(endpoint: string, options: RequestInit = {}, isRetry = false, skipAuthRetry = false): Promise<T> {
     const headers: HeadersInit = {
       'Content-Type': 'application/json',
       ...(this.token && { Authorization: `Bearer ${this.token}` }),
@@ -636,7 +636,7 @@ class ApiClient {
     }
 
     if (!response.ok) {
-      if (response.status === 401 && !isRetry) {
+      if (response.status === 401 && !isRetry && !skipAuthRetry) {
         // Try to refresh the token
         const refreshed = await this.attemptRefresh();
         if (refreshed) {
@@ -708,7 +708,7 @@ class ApiClient {
     this.request<LoginResponse>('/auth/login', {
       method: 'POST',
       body: JSON.stringify(data),
-    });
+    }, false, true);
 
   refreshToken = (): Promise<{ accessToken: string; refreshToken: string }> =>
     this.request('/auth/refresh', {
