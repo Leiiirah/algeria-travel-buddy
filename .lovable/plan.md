@@ -1,44 +1,68 @@
 
 
-# Fix Commands Page Horizontal Overflow -- Root Cause
+# Replace "Nouveau solde" with Individual Reset Fields
 
-## Problem
+## What Changes
 
-The `overflow-x-hidden` on the inner `<main>` element is not effective because the parent `SidebarInset` component (which is also a `<main>` element) is a flex child with `flex-1` but **no `min-w-0` or `overflow-hidden`**. In CSS flexbox, a flex child's minimum width defaults to `auto` (the size of its content), so wide content like the commands table pushes the entire `SidebarInset` wider than the viewport, causing horizontal scroll on the whole page -- including the header.
+Currently when settling an employee's caisse, the admin sees a single "Nouveau solde" (new balance) input field. This will be replaced with three editable fields pre-filled with current values, allowing the admin to set new starting values for each metric independently:
 
-## Solution
+- **Caisse** (amount collected)
+- **Impayes** (unpaid amount)
+- **Benefices** (profits)
 
-Two changes are needed:
+The current read-only stat cards showing these values will become editable input fields instead.
 
-### 1. `src/components/layout/DashboardLayout.tsx` -- Add `min-w-0 overflow-hidden` to `SidebarInset`
+## Files to Change
 
-On line 36, change:
-```
-<SidebarInset className="flex flex-1 flex-col">
-```
-to:
-```
-<SidebarInset className="flex flex-1 flex-col min-w-0 overflow-hidden">
-```
+### 1. Frontend -- `src/components/accounting/CaisseSettleDialog.tsx`
 
-This constrains the `SidebarInset` flex child so its content cannot push the layout wider. The `min-w-0` allows the flex item to shrink below its content size, and `overflow-hidden` clips anything that overflows.
+- Remove the single `newBalance` state, replace with three states: `newCaisse`, `newImpayes`, `newBenefices` -- each pre-filled with the employee's current values when the dialog opens
+- Replace the read-only stat cards with editable Input fields for Caisse, Impayes, and Benefices
+- Keep the "Dossiers" (commands count) card as read-only since it cannot be manually set
+- Send `newCaisse`, `newImpayes`, `newBenefices` instead of `newBalance` in the mutation payload
 
-### 2. `src/components/layout/DashboardLayout.tsx` -- Ensure `<main>` also constrains
+### 2. Frontend -- `src/hooks/useCaisseHistory.ts`
 
-Keep the existing `overflow-x-hidden overflow-y-auto` on the inner main (line 38), but also add `min-w-0` for safety:
-```
-<main className="flex-1 min-w-0 overflow-x-hidden overflow-y-auto bg-background p-3 sm:p-6">
-```
+- Update the mutation type to send `{ employeeId, newCaisse, newImpayes, newBenefices, notes }` instead of `{ employeeId, newBalance, notes }`
 
-## Why previous fixes didn't work
+### 3. Frontend -- `src/lib/api.ts`
 
-The `overflow-x-hidden` was applied to the inner `<main>` element, but the outer flex container (`SidebarInset`) had no width constraint. In flexbox, a child's content can push the parent wider unless `min-w-0` is set on the flex item. The table content was pushing `SidebarInset` wider, which in turn pushed the entire page wider, making the header scroll too.
+- Update `createCaisseSettlement` method signature to accept the three new fields instead of `newBalance`
 
-## Files changed
+### 4. Frontend -- `src/types/index.ts`
 
-| File | Change |
-|------|--------|
-| `src/components/layout/DashboardLayout.tsx` | Add `min-w-0 overflow-hidden` to `SidebarInset`, add `min-w-0` to inner `<main>` |
+- Update `CaisseSettlement` type: replace `newBalance` with `newCaisse`, `newImpayes`, `newBenefices`
 
-This is a 2-line change that fixes the root cause for ALL pages, not just Commands.
+### 5. Frontend -- `src/components/accounting/CaisseHistoryDialog.tsx`
+
+- Update history table to show the three new columns instead of the single "Nouveau solde" column
+
+### 6. Frontend -- Translation files (`fr/accounting.json`, `ar/accounting.json`)
+
+- Add labels for the new fields: `newCaisse`, `newImpayes`, `newBenefices`
+- Remove or keep `newBalance` label for backwards display
+
+### 7. Backend -- `server/src/caisse-history/dto/create-caisse-settlement.dto.ts`
+
+- Replace `newBalance` with three optional numeric fields: `newCaisse`, `newImpayes`, `newBenefices`
+
+### 8. Backend -- `server/src/caisse-history/entities/caisse-history.entity.ts`
+
+- Replace `newBalance` column with three new decimal columns: `newCaisse`, `newImpayes`, `newBenefices`
+
+### 9. Backend -- `server/src/caisse-history/caisse-history.service.ts`
+
+- Update `createSettlement` to save the three new fields instead of `newBalance`
+- Update `getAllLastResetDates` to return `newCaisse`, `newImpayes`, `newBenefices` instead of `newBalance`
+
+### 10. Backend -- New migration file
+
+- Add migration to:
+  - Add columns `newCaisse`, `newImpayes`, `newBenefices` (decimal 12,2, default 0)
+  - Migrate existing `newBalance` data into `newCaisse` (for backwards compatibility)
+  - Drop `newBalance` column
+
+### 11. Backend -- Analytics service adjustment
+
+- If `getAllLastResetDates` result is used to offset displayed stats, update the consumer to use the three separate values instead of a single `newBalance`
 
