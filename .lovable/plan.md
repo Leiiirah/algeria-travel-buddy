@@ -1,32 +1,50 @@
 
 
-# Fix Commands Page Responsive Design
+# Fix Commands Page Responsive Design (Complete)
 
-## Issues Found
+## Root Cause
 
-1. **Table has 11 columns** -- even with `overflow-x-auto`, the table is very wide and hard to use on mobile. Some columns should be hidden on small screens.
-2. **Details dialog** (line 1158) uses `max-w-2xl` without mobile override -- should be `max-w-[95vw] sm:max-w-2xl`.
-3. **Visa-specific fields in details** (line 1199) still uses `grid-cols-2` without responsive prefix.
-4. **Destination/Supplier grid in details** (line 1236) still uses `grid-cols-2` without responsive prefix.
-5. **Financial summary in details** (line 1305) uses `grid-cols-2 md:grid-cols-4` -- OK but could use `grid-cols-1 sm:grid-cols-2`.
-6. **Stats card text** -- `text-2xl` amounts can overflow on very small screens.
-7. **Status dropdown** in table has fixed `w-[160px]` which takes too much space on mobile.
-8. **Create dialog** (line 788) uses `max-w-lg` without mobile viewport override.
+The Commands page content overflows horizontally, which pushes the entire page wider -- including the header. This is why scrolling is needed to reach the language switcher, even though the header component itself is the same one used by the Dashboard (which works fine). The Dashboard doesn't have a wide table, so it doesn't trigger overflow.
 
 ## Changes
 
-### `src/pages/CommandsPage.tsx`
+### 1. `src/components/layout/DashboardLayout.tsx` -- Constrain main content
 
-| Line | Current | Change |
-|------|---------|--------|
-| 788 | `max-w-lg max-h-[90vh]` | `max-w-[95vw] sm:max-w-lg max-h-[90vh]` |
-| 1017-1029 | All 11 table headers visible | Hide `destination`, `buyingPrice`, `profit`, `supplier` columns on small screens with `hidden md:table-cell` |
-| 1058, 1066-1068, 1070 | Corresponding table cells always visible | Same `hidden md:table-cell` classes |
-| 1078 | Status SelectTrigger `w-[160px]` | `w-[120px] sm:w-[160px]` |
-| 1158 | Details dialog `max-w-2xl` | `max-w-[95vw] sm:max-w-2xl` |
-| 1199 | `grid-cols-2 gap-4` | `grid-cols-1 sm:grid-cols-2 gap-4` |
-| 1236 | `grid-cols-2 gap-4` | `grid-cols-1 sm:grid-cols-2 gap-4` |
-| 1305 | `grid-cols-2 md:grid-cols-4` | `grid-cols-1 sm:grid-cols-2 md:grid-cols-4` |
+Add `overflow-x-hidden` to the main element so page content can never push the layout wider than the viewport. This fixes the header scroll issue for ALL pages.
 
-This keeps the table usable on mobile by showing the most important columns (service, client, price, payment, remaining, status, actions) and hiding secondary ones (destination, buying price, profit, supplier) below the `md` breakpoint.
+- Line 40, change `<main className="flex-1 overflow-auto bg-background p-3 sm:p-6">` to `<main className="flex-1 overflow-x-hidden overflow-y-auto bg-background p-3 sm:p-6">`
+
+### 2. `src/pages/CommandsPage.tsx` -- Multiple fixes
+
+**a) Stats cards (lines 680-721):**
+- Already using `grid-cols-1 sm:grid-cols-2 md:grid-cols-3` -- OK
+- Add `overflow-hidden` to each Card to prevent long DZD amounts from overflowing
+
+**b) Filter/action header (lines 726-731):**
+- Already `flex-col gap-4 sm:flex-row` -- OK but the "New command" button text can be long
+- Shorten button text on mobile: hide text, show only icon on very small screens, or wrap the button area with `flex-wrap`
+
+**c) Table container (line 1015):**
+- Add `min-w-0` to the Card wrapping the table to prevent flex overflow
+- Ensure the `-mx-4 sm:mx-0` negative margin approach works with a proper `overflow-x-auto` wrapper
+
+**d) Status select in table (line 1078):**
+- Already `w-[120px] sm:w-[160px]` -- further reduce to `w-[100px] sm:w-[160px]`
+
+**e) Action dropdown in table rows:**
+- Ensure `DropdownMenuContent` has `align="end"` to prevent it from overflowing off-screen on mobile
+
+### 3. `src/components/search/GlobalSearch.tsx` -- Dialog mobile fix
+
+- Line 76: Change `max-w-[650px]` to `max-w-[95vw] sm:max-w-[650px]` so the search dialog fits on mobile
+
+## Summary of files changed
+
+| File | What changes |
+|------|-------------|
+| `src/components/layout/DashboardLayout.tsx` | Add `overflow-x-hidden` to main element |
+| `src/pages/CommandsPage.tsx` | Add `overflow-hidden` on stat cards, `min-w-0` on table card, reduce status select width, add `flex-wrap` to button area |
+| `src/components/search/GlobalSearch.tsx` | Make search dialog responsive with `max-w-[95vw]` |
+
+These changes will prevent the horizontal overflow that causes the header to scroll on mobile, and ensure cards and table content fit within the screen.
 
