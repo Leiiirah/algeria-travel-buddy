@@ -175,7 +175,7 @@ export class AnalyticsService {
     };
   }
 
-  async getEmployeeCaisseStats(lastResetDates?: Record<string, { resetDate: Date; newBalance: number }>) {
+  async getEmployeeCaisseStats(lastResetDates?: Record<string, { resetDate: Date; newCaisse: number; newImpayes: number; newBenefices: number }>) {
     // Fetch all active employees
     const employees = await this.usersRepo.find({ where: { isActive: true } });
     

@@ -10,7 +10,9 @@ export interface CaisseSettlement {
   impayesAmount: number;
   beneficesAmount: number;
   commandCount: number;
-  newBalance: number;
+  newCaisse: number;
+  newImpayes: number;
+  newBenefices: number;
   adminId: string;
   admin?: { firstName: string; lastName: string };
   notes: string | null;

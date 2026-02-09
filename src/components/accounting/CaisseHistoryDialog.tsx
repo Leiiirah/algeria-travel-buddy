@@ -78,7 +78,9 @@ const CaisseHistoryDialog = ({ employeeId, employeeName, open, onOpenChange }: C
                 <TableHead className="text-destructive">{t('caisses.historyDialog.table.impayes')}</TableHead>
                 <TableHead className="text-blue-600">{t('caisses.historyDialog.table.benefices')}</TableHead>
                 <TableHead>{t('caisses.historyDialog.table.commands')}</TableHead>
-                <TableHead>{t('caisses.historyDialog.table.newBalance')}</TableHead>
+                <TableHead className="text-green-600">{t('caisses.historyDialog.table.newCaisse')}</TableHead>
+                <TableHead className="text-destructive">{t('caisses.historyDialog.table.newImpayes')}</TableHead>
+                <TableHead className="text-blue-600">{t('caisses.historyDialog.table.newBenefices')}</TableHead>
                 <TableHead>{t('caisses.historyDialog.table.notes')}</TableHead>
               </TableRow>
             </TableHeader>
@@ -98,7 +100,9 @@ const CaisseHistoryDialog = ({ employeeId, employeeName, open, onOpenChange }: C
                     {formatDZD(Number(s.beneficesAmount))}
                   </TableCell>
                   <TableCell className="text-muted-foreground">{s.commandCount}</TableCell>
-                  <TableCell className="font-medium">{formatDZD(Number(s.newBalance))}</TableCell>
+                  <TableCell className="font-medium text-green-600">{formatDZD(Number(s.newCaisse))}</TableCell>
+                  <TableCell className="font-medium text-destructive">{formatDZD(Number(s.newImpayes))}</TableCell>
+                  <TableCell className="font-medium text-blue-600">{formatDZD(Number(s.newBenefices))}</TableCell>
                   <TableCell className="max-w-[200px] truncate text-sm text-muted-foreground">
                     {s.notes || '—'}
                   </TableCell>
@@ -111,7 +115,7 @@ const CaisseHistoryDialog = ({ employeeId, employeeName, open, onOpenChange }: C
                 <TableCell className="font-bold text-destructive">{formatDZD(cumulative.impayes)}</TableCell>
                 <TableCell className="font-bold text-blue-600">{formatDZD(cumulative.benefices)}</TableCell>
                 <TableCell className="font-bold text-muted-foreground">{cumulative.commands}</TableCell>
-                <TableCell colSpan={2} />
+                <TableCell colSpan={4} />
               </TableRow>
             </TableBody>
           </Table>

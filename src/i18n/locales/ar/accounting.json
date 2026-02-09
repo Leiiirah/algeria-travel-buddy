@@ -127,7 +127,9 @@
         "impayes": "غير المدفوع",
         "benefices": "الأرباح",
         "commands": "الملفات",
-        "newBalance": "الرصيد الجديد",
+        "newCaisse": "الصندوق الجديد",
+        "newImpayes": "غير المدفوع الجديد",
+        "newBenefices": "الأرباح الجديدة",
         "notes": "ملاحظات"
       },
       "cumulative": "الإجمالي التراكمي",
