@@ -250,7 +250,7 @@ const DashboardPage = () => {
                   return (
                     <div
                       key={command.id}
-                      className="flex items-center justify-between rounded-lg border bg-card p-4"
+                      className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-lg border bg-card p-4"
                     >
                       <div className="flex items-center gap-4">
                         <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
@@ -263,7 +263,7 @@ const DashboardPage = () => {
                           </p>
                         </div>
                       </div>
-                      <div className="flex items-center gap-4">
+                      <div className="flex items-center gap-4 sm:justify-end">
                         {command.assignee && (
                           <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
                             {t('recentCommands.by')} {command.assignee.firstName}

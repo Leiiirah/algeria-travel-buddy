@@ -267,6 +267,7 @@ export function SupplierInvoicesTab({ suppliers }: SupplierInvoicesTabProps) {
               icon={FileText}
             />
           ) : (
+            <div className="overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -329,6 +330,7 @@ export function SupplierInvoicesTab({ suppliers }: SupplierInvoicesTabProps) {
                 ))}
               </TableBody>
             </Table>
+            </div>
           )}
         </CardContent>
       </Card>

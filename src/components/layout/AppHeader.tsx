@@ -23,11 +23,11 @@ export function AppHeader({ title, subtitle }: AppHeaderProps) {
   const { t } = useTranslation();
   
   return (
-    <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-card px-6 rtl:flex-row-reverse">
+    <header className="sticky top-0 z-30 flex h-16 items-center gap-2 sm:gap-4 border-b bg-card px-3 sm:px-6 rtl:flex-row-reverse">
       <SidebarTrigger className="text-muted-foreground hover:text-foreground" />
 
       <div className="flex flex-1 items-center gap-4">
-        <div>
+        <div className="hidden sm:block">
           <h1 className="text-lg font-semibold text-foreground">{title}</h1>
           {subtitle && (
             <p className="text-sm text-muted-foreground">{subtitle}</p>
@@ -35,7 +35,7 @@ export function AppHeader({ title, subtitle }: AppHeaderProps) {
         </div>
       </div>
 
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2 sm:gap-3">
         <GlobalSearch />
         
         <LanguageSwitcher />

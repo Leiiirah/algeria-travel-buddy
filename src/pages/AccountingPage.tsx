@@ -214,7 +214,7 @@ const AccountingPage = () => {
       </div>
 
       <Tabs defaultValue="payments" className="mt-6">
-        <TabsList className="bg-muted">
+        <TabsList className="bg-muted w-full overflow-x-auto justify-start">
           <TabsTrigger value="payments">{t('tabs.payments')}</TabsTrigger>
           <TabsTrigger value="unpaid">{t('tabs.unpaid')}</TabsTrigger>
           <TabsTrigger value="reports">{t('tabs.reports')}</TabsTrigger>
@@ -314,7 +314,7 @@ const AccountingPage = () => {
                             </SelectContent>
                           </Select>
                         </div>
-                        <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                           <div className="space-y-2">
                             <Label>{t('dialog.form.amount')}</Label>
                             <Input
@@ -378,6 +378,7 @@ const AccountingPage = () => {
                   icon={Receipt}
                 />
               ) : (
+                <div className="overflow-x-auto">
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -416,6 +417,7 @@ const AccountingPage = () => {
                     ))}
                   </TableBody>
                 </Table>
+                </div>
               )}
             </CardContent>
           </Card>

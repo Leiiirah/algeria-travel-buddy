@@ -316,6 +316,7 @@ export const OmraOrdersTab = () => {
               }}
             />
           ) : (
+            <div className="overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -416,6 +417,7 @@ export const OmraOrdersTab = () => {
                 ))}
               </TableBody>
             </Table>
+            </div>
           )}
         </CardContent>
       </Card>

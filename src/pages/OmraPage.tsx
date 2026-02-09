@@ -87,7 +87,7 @@ const OmraPage = () => {
 
       {/* Tabs */}
       <Tabs defaultValue="orders" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4 lg:w-[550px]">
+        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 lg:w-[550px]">
           <TabsTrigger value="orders" className="gap-2">
             <Package className="h-4 w-4" />
             {t('tabs.orders')}

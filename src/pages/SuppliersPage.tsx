@@ -260,7 +260,7 @@ const SuppliersPage = () => {
                         <h4 className="font-medium text-sm text-muted-foreground uppercase tracking-wide">
                           {t('form.sections.general')}
                         </h4>
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                           <div className="space-y-2">
                             <Label>{t('form.companyName')} *</Label>
                             <Input
@@ -295,7 +295,7 @@ const SuppliersPage = () => {
                         <h4 className="font-medium text-sm text-muted-foreground uppercase tracking-wide">
                           {t('form.sections.location')}
                         </h4>
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                           <div className="space-y-2">
                             <Label>{t('form.country')}</Label>
                             <Input
@@ -320,7 +320,7 @@ const SuppliersPage = () => {
                         <h4 className="font-medium text-sm text-muted-foreground uppercase tracking-wide">
                           {t('form.sections.contact')}
                         </h4>
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                           <div className="space-y-2">
                             <Label>{t('form.phone')}</Label>
                             <Input
@@ -354,7 +354,7 @@ const SuppliersPage = () => {
                         <h4 className="font-medium text-sm text-muted-foreground uppercase tracking-wide">
                           {t('form.sections.banking')}
                         </h4>
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                           <div className="space-y-2">
                             <Label>{t('form.currency')}</Label>
                             <Select
@@ -406,6 +406,7 @@ const SuppliersPage = () => {
               icon={Building2}
             />
           ) : (
+            <div className="overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -504,6 +505,7 @@ const SuppliersPage = () => {
                 })}
               </TableBody>
             </Table>
+            </div>
           )}
         </CardContent>
       </Card>

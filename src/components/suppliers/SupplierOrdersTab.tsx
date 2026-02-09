@@ -230,6 +230,7 @@ export function SupplierOrdersTab({ suppliers }: SupplierOrdersTabProps) {
               icon={Package}
             />
           ) : (
+            <div className="overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -272,6 +273,7 @@ export function SupplierOrdersTab({ suppliers }: SupplierOrdersTabProps) {
                 ))}
               </TableBody>
             </Table>
+            </div>
           )}
         </CardContent>
       </Card>

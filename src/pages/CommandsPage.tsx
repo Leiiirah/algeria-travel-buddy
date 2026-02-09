@@ -458,7 +458,7 @@ const CommandsPage = () => {
       case 'visa':
         return (
           <>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>{t('form.firstName')}</Label>
                 <Input
@@ -877,7 +877,7 @@ const CommandsPage = () => {
                         <div className="border-t pt-4 mt-4">
                           <h4 className="font-medium mb-3">{t('form.accountingInfo')}</h4>
 
-                          <div className="grid grid-cols-2 gap-4">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div className="space-y-2">
                               <Label>{t('form.sellingPrice')}</Label>
                               <Input
@@ -898,7 +898,7 @@ const CommandsPage = () => {
                             </div>
                           </div>
 
-                          <div className="grid grid-cols-2 gap-4 mt-4">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
                             <div className="space-y-2">
                               <Label>{t('form.buyingPrice')}</Label>
                               <Input
@@ -1169,7 +1169,7 @@ const CommandsPage = () => {
             return (
               <div className="space-y-6">
                 {/* Service and Date Info */}
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <Label className="text-muted-foreground text-xs">{t('details.service')}</Label>
                     <p className="font-medium">{viewService?.name || '-'}</p>
@@ -1182,7 +1182,7 @@ const CommandsPage = () => {
 
                 {/* Client Information */}
                 <div className="border-t pt-4">
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <Label className="text-muted-foreground text-xs">{t('table.client')}</Label>
                       <p className="font-medium">{viewingCommand.data.clientFullName}</p>

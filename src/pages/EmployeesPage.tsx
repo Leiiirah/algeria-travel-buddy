@@ -227,7 +227,7 @@ const EmployeesPage = () => {
                       </DialogDescription>
                     </DialogHeader>
                     <div className="space-y-4 py-4">
-                      <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div className="space-y-2">
                           <Label htmlFor="firstName">{t('form.firstName')}</Label>
                           <Input
@@ -314,7 +314,7 @@ const EmployeesPage = () => {
                     </DialogDescription>
                   </DialogHeader>
                   <div className="space-y-4 py-4">
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <Label htmlFor="edit-firstName">{t('form.firstName')}</Label>
                         <Input
@@ -401,6 +401,7 @@ const EmployeesPage = () => {
               icon={Users}
             />
           ) : (
+            <div className="overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -477,6 +478,7 @@ const EmployeesPage = () => {
                 ))}
               </TableBody>
             </Table>
+            </div>
           )}
         </CardContent>
       </Card>

@@ -98,6 +98,7 @@ const CompaniesPage = () => {
           </Button>
         </CardHeader>
         <CardContent>
+          <div className="overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
@@ -163,6 +164,7 @@ const CompaniesPage = () => {
               )}
             </TableBody>
           </Table>
+          </div>
         </CardContent>
       </Card>
 
