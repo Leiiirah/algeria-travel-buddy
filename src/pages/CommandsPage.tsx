@@ -677,16 +677,16 @@ const CommandsPage = () => {
   return (
     <DashboardLayout title={t('title')} subtitle={t('subtitle')}>
       {/* Summary Cards */}
-      <div className="grid gap-4 md:grid-cols-3 mb-6">
+      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 mb-6">
         <Card className="border-none shadow-sm bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950/50 dark:to-blue-900/30">
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
-              <div>
+              <div className="min-w-0 flex-1">
                 <p className="text-sm font-medium text-muted-foreground">{t('stats.totalPayments')}</p>
-                <p className="text-2xl font-bold text-blue-700 dark:text-blue-400">{formatDZD(totals.totalPaid)}</p>
+                <p className="text-lg sm:text-2xl font-bold text-blue-700 dark:text-blue-400 truncate">{formatDZD(totals.totalPaid)}</p>
               </div>
-              <div className="h-12 w-12 rounded-full bg-blue-200/50 dark:bg-blue-800/50 flex items-center justify-center">
-                <Banknote className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+              <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-full bg-blue-200/50 dark:bg-blue-800/50 flex items-center justify-center shrink-0 ml-3">
+                <Banknote className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600 dark:text-blue-400" />
               </div>
             </div>
           </CardContent>
@@ -695,12 +695,12 @@ const CommandsPage = () => {
         <Card className="border-none shadow-sm bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-950/50 dark:to-orange-900/30">
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
-              <div>
+              <div className="min-w-0 flex-1">
                 <p className="text-sm font-medium text-muted-foreground">{t('stats.totalCredit')}</p>
-                <p className="text-2xl font-bold text-orange-700 dark:text-orange-400">{formatDZD(totals.totalRemaining)}</p>
+                <p className="text-lg sm:text-2xl font-bold text-orange-700 dark:text-orange-400 truncate">{formatDZD(totals.totalRemaining)}</p>
               </div>
-              <div className="h-12 w-12 rounded-full bg-orange-200/50 dark:bg-orange-800/50 flex items-center justify-center">
-                <CreditCard className="h-6 w-6 text-orange-600 dark:text-orange-400" />
+              <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-full bg-orange-200/50 dark:bg-orange-800/50 flex items-center justify-center shrink-0 ml-3">
+                <CreditCard className="h-5 w-5 sm:h-6 sm:w-6 text-orange-600 dark:text-orange-400" />
               </div>
             </div>
           </CardContent>
@@ -709,12 +709,12 @@ const CommandsPage = () => {
         <Card className="border-none shadow-sm bg-gradient-to-br from-green-50 to-green-100 dark:from-green-950/50 dark:to-green-900/30">
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
-              <div>
+              <div className="min-w-0 flex-1">
                 <p className="text-sm font-medium text-muted-foreground">{t('stats.totalProfit')}</p>
-                <p className="text-2xl font-bold text-green-700 dark:text-green-400">{formatDZD(totals.totalProfit)}</p>
+                <p className="text-lg sm:text-2xl font-bold text-green-700 dark:text-green-400 truncate">{formatDZD(totals.totalProfit)}</p>
               </div>
-              <div className="h-12 w-12 rounded-full bg-green-200/50 dark:bg-green-800/50 flex items-center justify-center">
-                <TrendingUp className="h-6 w-6 text-green-600 dark:text-green-400" />
+              <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-full bg-green-200/50 dark:bg-green-800/50 flex items-center justify-center shrink-0 ml-3">
+                <TrendingUp className="h-5 w-5 sm:h-6 sm:w-6 text-green-600 dark:text-green-400" />
               </div>
             </div>
           </CardContent>
@@ -728,8 +728,8 @@ const CommandsPage = () => {
               <CardTitle>{t('list.title')}</CardTitle>
               <CardDescription>{t('list.count', { count: commandsData?.total ?? 0 })}</CardDescription>
             </div>
-            <div className="flex flex-wrap gap-3">
-              <div className="flex-1">
+            <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+              <div className="w-full sm:flex-1 sm:min-w-[200px]">
                 <AdvancedFilter
                   searchQuery={searchQuery}
                   onSearchChange={setSearchQuery}
@@ -1012,16 +1012,16 @@ const CommandsPage = () => {
               icon={CreditCard}
             />
           ) : (
-            <div className="overflow-x-auto">
-              <Table>
+            <div className="overflow-x-auto -mx-4 sm:mx-0">
+              <Table className="text-xs sm:text-sm">
                 <TableHeader>
                   <TableRow>
                     <TableHead>{t('table.service')}</TableHead>
                     <TableHead>{t('table.client')}</TableHead>
                     <TableHead className="hidden md:table-cell">{t('table.destination')}</TableHead>
                     <TableHead className="text-right">{t('table.price')}</TableHead>
-                    <TableHead className="text-right">{t('table.payment')}</TableHead>
-                    <TableHead className="text-right">{t('table.remaining')}</TableHead>
+                    <TableHead className="text-right hidden sm:table-cell">{t('table.payment')}</TableHead>
+                    <TableHead className="text-right hidden sm:table-cell">{t('table.remaining')}</TableHead>
                     <TableHead className="text-right hidden md:table-cell">{t('table.buyingPrice')}</TableHead>
                     <TableHead className="text-right hidden md:table-cell">{t('table.profit')}</TableHead>
                     <TableHead className="hidden md:table-cell">{t('table.supplier')}</TableHead>
@@ -1057,8 +1057,8 @@ const CommandsPage = () => {
                         </TableCell>
                         <TableCell className="font-medium hidden md:table-cell">{command.destination}</TableCell>
                         <TableCell className="text-right font-medium">{formatDZD(command.sellingPrice)}</TableCell>
-                        <TableCell className="text-right">{formatDZD(command.amountPaid)}</TableCell>
-                        <TableCell className="text-right">
+                        <TableCell className="text-right hidden sm:table-cell">{formatDZD(command.amountPaid)}</TableCell>
+                        <TableCell className="text-right hidden sm:table-cell">
                           <span className={remaining > 0 ? 'text-red-600 font-bold' : 'text-green-600 font-semibold'}>
                             {formatDZD(remaining)}
                           </span>
