@@ -678,7 +678,7 @@ const CommandsPage = () => {
     <DashboardLayout title={t('title')} subtitle={t('subtitle')}>
       {/* Summary Cards */}
       <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 mb-6">
-        <Card className="border-none shadow-sm bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950/50 dark:to-blue-900/30">
+        <Card className="overflow-hidden border-none shadow-sm bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950/50 dark:to-blue-900/30">
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div className="min-w-0 flex-1">
@@ -692,7 +692,7 @@ const CommandsPage = () => {
           </CardContent>
         </Card>
 
-        <Card className="border-none shadow-sm bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-950/50 dark:to-orange-900/30">
+        <Card className="overflow-hidden border-none shadow-sm bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-950/50 dark:to-orange-900/30">
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div className="min-w-0 flex-1">
@@ -706,7 +706,7 @@ const CommandsPage = () => {
           </CardContent>
         </Card>
 
-        <Card className="border-none shadow-sm bg-gradient-to-br from-green-50 to-green-100 dark:from-green-950/50 dark:to-green-900/30">
+        <Card className="overflow-hidden border-none shadow-sm bg-gradient-to-br from-green-50 to-green-100 dark:from-green-950/50 dark:to-green-900/30">
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div className="min-w-0 flex-1">
@@ -721,7 +721,7 @@ const CommandsPage = () => {
         </Card>
       </div>
 
-      <Card className="border-none shadow-sm">
+      <Card className="min-w-0 border-none shadow-sm">
         <CardHeader>
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
@@ -1075,7 +1075,7 @@ const CommandsPage = () => {
                                 value={command.status}
                                 onValueChange={(value) => handleStatusChange(command.id, value)}
                               >
-                                <SelectTrigger className="w-[120px] sm:w-[160px] h-8">
+                                <SelectTrigger className="w-[100px] sm:w-[160px] h-8">
                                   <SelectValue>
                                     <Badge variant={getStatusVariant(command.status)} className="text-xs">
                                       {getStatusLabel(command.status)}
