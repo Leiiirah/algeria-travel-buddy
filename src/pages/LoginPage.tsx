@@ -24,6 +24,7 @@ const LoginPage = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
+  const [loginError, setLoginError] = useState<string | null>(null);
   const { login } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -59,16 +60,14 @@ const LoginPage = () => {
   // Clear field error when user starts typing
   const handleEmailChange = (value: string) => {
     setEmail(value);
-    if (fieldErrors.email) {
-      setFieldErrors(prev => ({ ...prev, email: undefined }));
-    }
+    if (fieldErrors.email) setFieldErrors(prev => ({ ...prev, email: undefined }));
+    if (loginError) setLoginError(null);
   };
 
   const handlePasswordChange = (value: string) => {
     setPassword(value);
-    if (fieldErrors.password) {
-      setFieldErrors(prev => ({ ...prev, password: undefined }));
-    }
+    if (fieldErrors.password) setFieldErrors(prev => ({ ...prev, password: undefined }));
+    if (loginError) setLoginError(null);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -91,10 +90,11 @@ const LoginPage = () => {
         });
         navigate('/dashboard');
       } else {
-        // Show specific error message from the login result
+        const errorMsg = result.error?.message || tCommon('errors.generic');
+        setLoginError(errorMsg);
         toast({
           title: t('login.error'),
-          description: result.error?.message || tCommon('errors.generic'),
+          description: errorMsg,
           variant: 'destructive',
         });
       }
@@ -135,6 +135,12 @@ const LoginPage = () => {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
+            {loginError && (
+              <div className="flex items-center gap-2 rounded-lg border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
+                <AlertCircle className="h-4 w-4 shrink-0" />
+                <span>{loginError}</span>
+              </div>
+            )}
             <div className="space-y-2">
               <Label htmlFor="email">{t('login.email')}</Label>
               <Input
