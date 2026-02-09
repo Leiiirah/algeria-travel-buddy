@@ -22,6 +22,7 @@ import ServiceTypesPage from "./pages/ServiceTypesPage";
 import InternalTasksPage from "./pages/InternalTasksPage";
 import InvoicesPage from "./pages/InvoicesPage";
 import ContactPage from "./pages/ContactPage";
+import CompaniesPage from "./pages/CompaniesPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient({
@@ -166,6 +167,14 @@ const AppRoutes = () => {
         element={
           <ProtectedRoute adminOnly>
             <ContactPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/compagnies"
+        element={
+          <ProtectedRoute adminOnly>
+            <CompaniesPage />
           </ProtectedRoute>
         }
       />
