@@ -1,50 +1,44 @@
 
 
-# Fix Commands Page Responsive Design (Complete)
+# Fix Commands Page Horizontal Overflow -- Root Cause
 
-## Root Cause
+## Problem
 
-The Commands page content overflows horizontally, which pushes the entire page wider -- including the header. This is why scrolling is needed to reach the language switcher, even though the header component itself is the same one used by the Dashboard (which works fine). The Dashboard doesn't have a wide table, so it doesn't trigger overflow.
+The `overflow-x-hidden` on the inner `<main>` element is not effective because the parent `SidebarInset` component (which is also a `<main>` element) is a flex child with `flex-1` but **no `min-w-0` or `overflow-hidden`**. In CSS flexbox, a flex child's minimum width defaults to `auto` (the size of its content), so wide content like the commands table pushes the entire `SidebarInset` wider than the viewport, causing horizontal scroll on the whole page -- including the header.
 
-## Changes
+## Solution
 
-### 1. `src/components/layout/DashboardLayout.tsx` -- Constrain main content
+Two changes are needed:
 
-Add `overflow-x-hidden` to the main element so page content can never push the layout wider than the viewport. This fixes the header scroll issue for ALL pages.
+### 1. `src/components/layout/DashboardLayout.tsx` -- Add `min-w-0 overflow-hidden` to `SidebarInset`
 
-- Line 40, change `<main className="flex-1 overflow-auto bg-background p-3 sm:p-6">` to `<main className="flex-1 overflow-x-hidden overflow-y-auto bg-background p-3 sm:p-6">`
+On line 36, change:
+```
+<SidebarInset className="flex flex-1 flex-col">
+```
+to:
+```
+<SidebarInset className="flex flex-1 flex-col min-w-0 overflow-hidden">
+```
 
-### 2. `src/pages/CommandsPage.tsx` -- Multiple fixes
+This constrains the `SidebarInset` flex child so its content cannot push the layout wider. The `min-w-0` allows the flex item to shrink below its content size, and `overflow-hidden` clips anything that overflows.
 
-**a) Stats cards (lines 680-721):**
-- Already using `grid-cols-1 sm:grid-cols-2 md:grid-cols-3` -- OK
-- Add `overflow-hidden` to each Card to prevent long DZD amounts from overflowing
+### 2. `src/components/layout/DashboardLayout.tsx` -- Ensure `<main>` also constrains
 
-**b) Filter/action header (lines 726-731):**
-- Already `flex-col gap-4 sm:flex-row` -- OK but the "New command" button text can be long
-- Shorten button text on mobile: hide text, show only icon on very small screens, or wrap the button area with `flex-wrap`
+Keep the existing `overflow-x-hidden overflow-y-auto` on the inner main (line 38), but also add `min-w-0` for safety:
+```
+<main className="flex-1 min-w-0 overflow-x-hidden overflow-y-auto bg-background p-3 sm:p-6">
+```
 
-**c) Table container (line 1015):**
-- Add `min-w-0` to the Card wrapping the table to prevent flex overflow
-- Ensure the `-mx-4 sm:mx-0` negative margin approach works with a proper `overflow-x-auto` wrapper
+## Why previous fixes didn't work
 
-**d) Status select in table (line 1078):**
-- Already `w-[120px] sm:w-[160px]` -- further reduce to `w-[100px] sm:w-[160px]`
+The `overflow-x-hidden` was applied to the inner `<main>` element, but the outer flex container (`SidebarInset`) had no width constraint. In flexbox, a child's content can push the parent wider unless `min-w-0` is set on the flex item. The table content was pushing `SidebarInset` wider, which in turn pushed the entire page wider, making the header scroll too.
 
-**e) Action dropdown in table rows:**
-- Ensure `DropdownMenuContent` has `align="end"` to prevent it from overflowing off-screen on mobile
+## Files changed
 
-### 3. `src/components/search/GlobalSearch.tsx` -- Dialog mobile fix
+| File | Change |
+|------|--------|
+| `src/components/layout/DashboardLayout.tsx` | Add `min-w-0 overflow-hidden` to `SidebarInset`, add `min-w-0` to inner `<main>` |
 
-- Line 76: Change `max-w-[650px]` to `max-w-[95vw] sm:max-w-[650px]` so the search dialog fits on mobile
-
-## Summary of files changed
-
-| File | What changes |
-|------|-------------|
-| `src/components/layout/DashboardLayout.tsx` | Add `overflow-x-hidden` to main element |
-| `src/pages/CommandsPage.tsx` | Add `overflow-hidden` on stat cards, `min-w-0` on table card, reduce status select width, add `flex-wrap` to button area |
-| `src/components/search/GlobalSearch.tsx` | Make search dialog responsive with `max-w-[95vw]` |
-
-These changes will prevent the horizontal overflow that causes the header to scroll on mobile, and ensure cards and table content fit within the screen.
+This is a 2-line change that fixes the root cause for ALL pages, not just Commands.
 
