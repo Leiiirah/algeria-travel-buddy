@@ -466,7 +466,7 @@ export default function EmployeeAccountingPage() {
 
         {/* Tabs */}
         <Tabs defaultValue="balances">
-          <TabsList>
+          <TabsList className="w-full sm:w-auto">
             <TabsTrigger value="balances">{t('accounting.tabs.balances')}</TabsTrigger>
             <TabsTrigger value="history">{t('accounting.tabs.history')}</TabsTrigger>
           </TabsList>
@@ -474,6 +474,7 @@ export default function EmployeeAccountingPage() {
           <TabsContent value="balances" className="mt-4">
             <Card>
               <CardContent className="pt-6">
+                <div className="overflow-x-auto">
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -523,6 +524,7 @@ export default function EmployeeAccountingPage() {
                     )}
                   </TableBody>
                 </Table>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
@@ -548,6 +550,7 @@ export default function EmployeeAccountingPage() {
                   ) : myCommands.length === 0 ? (
                     <p className="text-center text-muted-foreground py-8">{t('accounting.commandHistory.empty')}</p>
                   ) : (
+                    <div className="overflow-x-auto">
                     <Table>
                       <TableHeader>
                         <TableRow>
@@ -603,6 +606,7 @@ export default function EmployeeAccountingPage() {
                         })}
                       </TableBody>
                     </Table>
+                    </div>
                   )}
                 </CardContent>
               </Card>
@@ -622,6 +626,7 @@ export default function EmployeeAccountingPage() {
                   filterConfig={filterConfig}
                   placeholder={tCommon('search.placeholder')}
                 />
+                <div className="overflow-x-auto">
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -692,6 +697,7 @@ export default function EmployeeAccountingPage() {
                     )}
                   </TableBody>
                 </Table>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
@@ -704,7 +710,7 @@ export default function EmployeeAccountingPage() {
             setEmployeeDetailTab('sales');
           }
         }}>
-          <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
+          <DialogContent className="max-w-[95vw] sm:max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
             <DialogHeader>
               <DialogTitle>
                 {selectedEmployee ? `${selectedEmployee.firstName} ${selectedEmployee.lastName}` : t('accounting.table.employee')}
@@ -765,6 +771,7 @@ export default function EmployeeAccountingPage() {
                 ) : employeeCommands.length === 0 ? (
                   <p className="text-center text-muted-foreground py-8">{t('accounting.employeeDetails.noSales')}</p>
                 ) : (
+                  <div className="overflow-x-auto">
                   <Table>
                     <TableHeader>
                       <TableRow>
@@ -818,10 +825,12 @@ export default function EmployeeAccountingPage() {
                       })}
                     </TableBody>
                   </Table>
+                  </div>
                 )}
               </TabsContent>
 
               <TabsContent value="transactions" className="flex-1 overflow-y-auto mt-2">
+                <div className="overflow-x-auto">
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -859,6 +868,7 @@ export default function EmployeeAccountingPage() {
                     )}
                   </TableBody>
                 </Table>
+                </div>
               </TabsContent>
             </Tabs>
           </DialogContent>

@@ -79,7 +79,7 @@ const CaisseSettleDialog = ({ employee, open, onOpenChange }: CaisseSettleDialog
 
         <div className="space-y-4 py-4">
           {/* Current stats display */}
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="rounded-lg border p-3">
               <p className="text-xs text-muted-foreground">{t('caisses.settleDialog.currentCaisse')}</p>
               <p className="text-lg font-bold text-green-600">{formatDZD(employee.totalCaisse)}</p>
