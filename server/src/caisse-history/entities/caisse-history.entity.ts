@@ -33,7 +33,13 @@ export class CaisseHistory {
   commandCount: number;
 
   @Column({ type: 'decimal', precision: 12, scale: 2, default: 0 })
-  newBalance: number;
+  newCaisse: number;
+
+  @Column({ type: 'decimal', precision: 12, scale: 2, default: 0 })
+  newImpayes: number;
+
+  @Column({ type: 'decimal', precision: 12, scale: 2, default: 0 })
+  newBenefices: number;
 
   @Column({ type: 'uuid' })
   adminId: string;

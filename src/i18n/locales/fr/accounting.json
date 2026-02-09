@@ -127,7 +127,9 @@
         "impayes": "Impayés",
         "benefices": "Bénéfices",
         "commands": "Dossiers",
-        "newBalance": "Nouveau solde",
+        "newCaisse": "Nouvelle caisse",
+        "newImpayes": "Nouveaux impayés",
+        "newBenefices": "Nouveaux bénéfices",
         "notes": "Notes"
       },
       "cumulative": "Total cumulé",

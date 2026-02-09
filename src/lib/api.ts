@@ -1105,7 +1105,7 @@ class ApiClient {
 
   // ==================== CAISSE HISTORY ====================
 
-  createCaisseSettlement = (data: { employeeId: string; newBalance?: number; notes?: string }): Promise<CaisseSettlement> =>
+  createCaisseSettlement = (data: { employeeId: string; newCaisse?: number; newImpayes?: number; newBenefices?: number; notes?: string }): Promise<CaisseSettlement> =>
     this.request('/caisse-history/settle', {
       method: 'POST',
       body: JSON.stringify(data),

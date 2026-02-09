@@ -6,7 +6,15 @@ export class CreateCaisseSettlementDto {
 
   @IsOptional()
   @IsNumber()
-  newBalance?: number = 0;
+  newCaisse?: number = 0;
+
+  @IsOptional()
+  @IsNumber()
+  newImpayes?: number = 0;
+
+  @IsOptional()
+  @IsNumber()
+  newBenefices?: number = 0;
 
   @IsOptional()
   @IsString()

@@ -16,7 +16,7 @@ export const useCreateCaisseSettlement = () => {
   const { t } = useTranslation('common');
 
   return useMutation({
-    mutationFn: (data: { employeeId: string; newBalance?: number; notes?: string }) =>
+    mutationFn: (data: { employeeId: string; newCaisse?: number; newImpayes?: number; newBenefices?: number; notes?: string }) =>
       api.createCaisseSettlement(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['analytics', 'employee-caisses'] });

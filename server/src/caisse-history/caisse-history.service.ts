@@ -35,7 +35,9 @@ export class CaisseHistoryService {
       impayesAmount: stats.totalImpayes,
       beneficesAmount: stats.totalBenefices,
       commandCount: stats.commandCount,
-      newBalance: dto.newBalance || 0,
+      newCaisse: dto.newCaisse || 0,
+      newImpayes: dto.newImpayes || 0,
+      newBenefices: dto.newBenefices || 0,
       adminId,
       notes: dto.notes || null,
       resetDate: new Date(),
@@ -67,18 +69,19 @@ export class CaisseHistoryService {
     });
   }
 
-  async getAllLastResetDates(): Promise<Record<string, { resetDate: Date; newBalance: number }>> {
-    // Get the latest settlement for each employee using a subquery approach
+  async getAllLastResetDates(): Promise<Record<string, { resetDate: Date; newCaisse: number; newImpayes: number; newBenefices: number }>> {
     const allSettlements = await this.historyRepo.find({
       order: { resetDate: 'DESC' },
     });
 
-    const result: Record<string, { resetDate: Date; newBalance: number }> = {};
+    const result: Record<string, { resetDate: Date; newCaisse: number; newImpayes: number; newBenefices: number }> = {};
     for (const s of allSettlements) {
       if (!result[s.employeeId]) {
         result[s.employeeId] = {
           resetDate: s.resetDate,
-          newBalance: Number(s.newBalance),
+          newCaisse: Number(s.newCaisse),
+          newImpayes: Number(s.newImpayes),
+          newBenefices: Number(s.newBenefices),
         };
       }
     }
