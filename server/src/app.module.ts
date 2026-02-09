@@ -25,6 +25,7 @@ import { InternalTasksModule } from './internal-tasks/internal-tasks.module';
 import { ClientInvoicesModule } from './client-invoices/client-invoices.module';
 import { AgencySettingsModule } from './agency-settings/agency-settings.module';
 import { CaisseHistoryModule } from './caisse-history/caisse-history.module';
+import { CompaniesModule } from './companies/companies.module';
 
 
 @Module({
@@ -76,6 +77,7 @@ import { CaisseHistoryModule } from './caisse-history/caisse-history.module';
     ClientInvoicesModule,
     AgencySettingsModule,
     CaisseHistoryModule,
+    CompaniesModule,
   ],
   providers: [
     {

@@ -555,3 +555,13 @@ export const clientInvoiceStatusLabels: Record<ClientInvoiceStatus, string> = {
   payee: 'Payée',
   annulee: 'Annulée',
 };
+
+// ==================== COMPANIES TYPES ====================
+
+export interface Company {
+  id: string;
+  name: string;
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}

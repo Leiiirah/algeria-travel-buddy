@@ -16,6 +16,7 @@ import {
   ClipboardCheck,
   FileText,
   Phone,
+  Plane,
 } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
 import { Button } from '@/components/ui/button';
@@ -134,6 +135,11 @@ export function AppSidebar() {
       titleKey: 'navigation.contact',
       url: '/contact',
       icon: Phone,
+    },
+    {
+      titleKey: 'navigation.companies',
+      url: '/compagnies',
+      icon: Plane,
     },
   ];
 

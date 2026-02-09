@@ -14,7 +14,8 @@
     "expenses": "Dépenses",
     "internalTasks": "Missions Internes",
     "invoices": "Factures",
-    "contact": "Contact"
+    "contact": "Contact",
+    "companies": "Compagnies"
   },
   "groups": {
     "main": "Principal",
@@ -130,6 +131,16 @@
   "noTransactions": "Aucune transaction",
   "supplierBalancesAppearHere": "Les soldes fournisseurs apparaîtront ici",
   "transactionsAppearHere": "Les transactions apparaîtront ici",
+  "companies": {
+    "subtitle": "Gérer les compagnies de transport",
+    "add": "Ajouter une compagnie",
+    "edit": "Modifier la compagnie",
+    "name": "Nom de la compagnie",
+    "namePlaceholder": "Ex: Air Algérie",
+    "status": "Statut",
+    "activate": "Activer",
+    "deactivate": "Désactiver"
+  },
   "contact": {
     "title": "Coordonnées de l'agence",
     "description": "Modifiez les informations affichées dans les PDF générés",

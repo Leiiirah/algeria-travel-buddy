@@ -14,7 +14,8 @@
     "expenses": "المصروفات",
     "internalTasks": "المهام الداخلية",
     "invoices": "الفواتير",
-    "contact": "معلومات الاتصال"
+    "contact": "معلومات الاتصال",
+    "companies": "الشركات"
   },
   "groups": {
     "main": "الرئيسية",
@@ -130,6 +131,16 @@
   "noTransactions": "لا توجد معاملات",
   "supplierBalancesAppearHere": "ستظهر أرصدة الموردين هنا",
   "transactionsAppearHere": "ستظهر المعاملات هنا",
+  "companies": {
+    "subtitle": "إدارة شركات النقل",
+    "add": "إضافة شركة",
+    "edit": "تعديل الشركة",
+    "name": "اسم الشركة",
+    "namePlaceholder": "مثال: الخطوط الجوية الجزائرية",
+    "status": "الحالة",
+    "activate": "تفعيل",
+    "deactivate": "تعطيل"
+  },
   "contact": {
     "title": "معلومات الوكالة",
     "description": "تعديل المعلومات المعروضة في ملفات PDF",

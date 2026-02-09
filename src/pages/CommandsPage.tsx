@@ -52,6 +52,7 @@ import { useCommands, useCommandStats, useCreateCommand, useUpdateCommand, useDe
 import { useActiveServices } from '@/hooks/useServices';
 import { useSuppliers } from '@/hooks/useSuppliers';
 import { useActiveEmployees } from '@/hooks/useUsers';
+import { useCompanies, useCreateCompany } from '@/hooks/useCompanies';
 import { useDebounce } from '@/hooks/useDebounce';
 import { CommandsSkeleton } from '@/components/skeletons/CommandsSkeleton';
 import { ErrorState } from '@/components/ui/error-state';
@@ -62,7 +63,7 @@ import { useAgencySettings } from '@/hooks/useAgencySettings';
 
 const CommandsPage = () => {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
   const { t } = useTranslation('commands');
   const { t: tCommon } = useTranslation('common');
   const [searchQuery, setSearchQuery] = useState('');
@@ -76,6 +77,9 @@ const CommandsPage = () => {
   const [passportBlobUrl, setPassportBlobUrl] = useState<string | null>(null);
   const [isLoadingPassport, setIsLoadingPassport] = useState(false);
   const [isPassportExpanded, setIsPassportExpanded] = useState(false);
+  // Inline add company dialog (admin only)
+  const [isAddCompanyOpen, setIsAddCompanyOpen] = useState(false);
+  const [newCompanyName, setNewCompanyName] = useState('');
   // Form states
   const [formData, setFormData] = useState({
     clientFullName: '',
@@ -104,6 +108,8 @@ const CommandsPage = () => {
   const { data: services } = useActiveServices();
   const { data: suppliers } = useSuppliers();
   const { data: employees } = useActiveEmployees();
+  const { data: companies } = useCompanies();
+  const createCompanyMutation = useCreateCompany();
   const createCommand = useCreateCommand();
   const updateCommand = useUpdateCommand();
   const deleteCommand = useDeleteCommand();
@@ -526,12 +532,91 @@ const CommandsPage = () => {
             </div>
             <div className="space-y-2">
               <Label>{t('form.company')}</Label>
-              <Input
-                value={formData.company}
-                onChange={(e) => setFormData({ ...formData, company: e.target.value })}
-                placeholder={t('form.companyPlaceholder')}
-              />
+              <div className="flex gap-2">
+                <Select
+                  value={formData.company}
+                  onValueChange={(value) => setFormData({ ...formData, company: value })}
+                >
+                  <SelectTrigger className="flex-1">
+                    <SelectValue placeholder={t('form.companyPlaceholder')} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {companies?.map((c) => (
+                      <SelectItem key={c.id} value={c.name}>
+                        {c.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {isAdmin && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    onClick={() => setIsAddCompanyOpen(true)}
+                    title={tCommon('companies.add')}
+                  >
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                )}
+              </div>
             </div>
+
+            {/* Inline Add Company Dialog */}
+            <Dialog open={isAddCompanyOpen} onOpenChange={setIsAddCompanyOpen}>
+              <DialogContent className="sm:max-w-[400px]">
+                <DialogHeader>
+                  <DialogTitle>{tCommon('companies.add')}</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label>{tCommon('companies.name')}</Label>
+                    <Input
+                      value={newCompanyName}
+                      onChange={(e) => setNewCompanyName(e.target.value)}
+                      placeholder={tCommon('companies.namePlaceholder')}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && newCompanyName.trim()) {
+                          createCompanyMutation.mutate(
+                            { name: newCompanyName.trim() },
+                            {
+                              onSuccess: (company) => {
+                                setFormData({ ...formData, company: company.name });
+                                setNewCompanyName('');
+                                setIsAddCompanyOpen(false);
+                              },
+                            }
+                          );
+                        }
+                      }}
+                    />
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => { setIsAddCompanyOpen(false); setNewCompanyName(''); }}>
+                    {tCommon('actions.cancel')}
+                  </Button>
+                  <Button
+                    onClick={() => {
+                      if (!newCompanyName.trim()) return;
+                      createCompanyMutation.mutate(
+                        { name: newCompanyName.trim() },
+                        {
+                          onSuccess: (company) => {
+                            setFormData({ ...formData, company: company.name });
+                            setNewCompanyName('');
+                            setIsAddCompanyOpen(false);
+                          },
+                        }
+                      );
+                    }}
+                    disabled={!newCompanyName.trim() || createCompanyMutation.isPending}
+                  >
+                    {tCommon('actions.save')}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
           </>
         );
 
