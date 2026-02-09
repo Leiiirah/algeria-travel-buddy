@@ -69,6 +69,7 @@ const CaisseHistoryDialog = ({ employeeId, employeeName, open, onOpenChange }: C
             />
           </div>
         ) : (
+          <div className="overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
@@ -114,6 +115,7 @@ const CaisseHistoryDialog = ({ employeeId, employeeName, open, onOpenChange }: C
               </TableRow>
             </TableBody>
           </Table>
+          </div>
         )}
       </DialogContent>
     </Dialog>
