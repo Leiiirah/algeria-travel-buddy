@@ -213,25 +213,6 @@ const InvoiceTemplate = forwardRef<HTMLDivElement, InvoiceTemplateProps>(
           </span>
         </div>
 
-        {/* ===== STATUS BADGE (finale only) ===== */}
-        {!isProforma && (
-          <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '8px' }}>
-            <span
-              style={{
-                display: 'inline-block',
-                fontSize: '10px',
-                fontWeight: 700,
-                color: statusInfo.color,
-                backgroundColor: statusInfo.bg,
-                padding: '3px 12px',
-                borderRadius: '12px',
-                letterSpacing: '0.5px',
-              }}
-            >
-              {statusInfo[lang]}
-            </span>
-          </div>
-        )}
 
         {/* ===== TWO-COLUMN INFO CARDS ===== */}
         <div style={{ display: 'flex', gap: '16px', marginBottom: '14px' }}>
@@ -368,9 +349,9 @@ const InvoiceTemplate = forwardRef<HTMLDivElement, InvoiceTemplateProps>(
                   </tr>
                   <tr style={{ borderBottom: '1px solid #e2e8f0' }}>
                     <td style={{ padding: '7px 12px' }} dir={isArabic ? 'rtl' : undefined}>
-                      {isArabic ? 'ضريبة (0%)' : 'TVA (0%)'}
+                      {isArabic ? 'ضريبة (9%)' : 'TVA (9%)'}
                     </td>
-                    <td style={{ padding: '7px 12px', textAlign: 'right' }}>0 DA</td>
+                    <td style={{ padding: '7px 12px', textAlign: 'right' }}>{fmt(Math.round(data.totalAmount * 0.09))} DA</td>
                   </tr>
                   {/* Total TTC highlighted row */}
                   <tr style={{ backgroundColor: accent }}>
@@ -380,7 +361,7 @@ const InvoiceTemplate = forwardRef<HTMLDivElement, InvoiceTemplateProps>(
                       {isArabic ? 'المجموع الكلي' : 'TOTAL TTC'}
                     </td>
                     <td style={{ padding: '9px 12px', textAlign: 'right', fontWeight: 700, color: '#ffffff', fontSize: '13px' }}>
-                      {fmt(data.totalAmount)} DA
+                      {fmt(data.totalAmount + Math.round(data.totalAmount * 0.09))} DA
                     </td>
                   </tr>
                   {/* Payment status rows */}
