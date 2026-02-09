@@ -785,7 +785,7 @@ const CommandsPage = () => {
                     {t('dialog.createTitle')}
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="bg-card max-w-lg max-h-[90vh] overflow-y-auto">
+                <DialogContent className="bg-card max-w-[95vw] sm:max-w-lg max-h-[90vh] overflow-y-auto">
                   <DialogHeader>
                     <DialogTitle>{editingCommandId ? t('dialog.editTitle') : t('dialog.createTitle')}</DialogTitle>
                     <DialogDescription>
@@ -1018,13 +1018,13 @@ const CommandsPage = () => {
                   <TableRow>
                     <TableHead>{t('table.service')}</TableHead>
                     <TableHead>{t('table.client')}</TableHead>
-                    <TableHead>{t('table.destination')}</TableHead>
+                    <TableHead className="hidden md:table-cell">{t('table.destination')}</TableHead>
                     <TableHead className="text-right">{t('table.price')}</TableHead>
                     <TableHead className="text-right">{t('table.payment')}</TableHead>
                     <TableHead className="text-right">{t('table.remaining')}</TableHead>
-                    <TableHead className="text-right">{t('table.buyingPrice')}</TableHead>
-                    <TableHead className="text-right">{t('table.profit')}</TableHead>
-                    <TableHead>{t('table.supplier')}</TableHead>
+                    <TableHead className="text-right hidden md:table-cell">{t('table.buyingPrice')}</TableHead>
+                    <TableHead className="text-right hidden md:table-cell">{t('table.profit')}</TableHead>
+                    <TableHead className="hidden md:table-cell">{t('table.supplier')}</TableHead>
                     <TableHead>{t('table.status')}</TableHead>
                     <TableHead className="text-right">{t('table.actions')}</TableHead>
                   </TableRow>
@@ -1055,7 +1055,7 @@ const CommandsPage = () => {
                             )}
                           </div>
                         </TableCell>
-                        <TableCell className="font-medium">{command.destination}</TableCell>
+                        <TableCell className="font-medium hidden md:table-cell">{command.destination}</TableCell>
                         <TableCell className="text-right font-medium">{formatDZD(command.sellingPrice)}</TableCell>
                         <TableCell className="text-right">{formatDZD(command.amountPaid)}</TableCell>
                         <TableCell className="text-right">
@@ -1063,11 +1063,11 @@ const CommandsPage = () => {
                             {formatDZD(remaining)}
                           </span>
                         </TableCell>
-                        <TableCell className="text-right text-muted-foreground">{formatDZD(command.buyingPrice)}</TableCell>
-                        <TableCell className="text-right">
+                        <TableCell className="text-right text-muted-foreground hidden md:table-cell">{formatDZD(command.buyingPrice)}</TableCell>
+                        <TableCell className="text-right hidden md:table-cell">
                           <span className="text-green-600 font-semibold">{formatDZD(profit)}</span>
                         </TableCell>
-                        <TableCell className="text-muted-foreground">{getSupplierName(command.supplierId)}</TableCell>
+                        <TableCell className="text-muted-foreground hidden md:table-cell">{getSupplierName(command.supplierId)}</TableCell>
                         <TableCell>
                           <div className="flex flex-col gap-1">
                             {user?.role === 'admin' ? (
@@ -1075,7 +1075,7 @@ const CommandsPage = () => {
                                 value={command.status}
                                 onValueChange={(value) => handleStatusChange(command.id, value)}
                               >
-                                <SelectTrigger className="w-[160px] h-8">
+                                <SelectTrigger className="w-[120px] sm:w-[160px] h-8">
                                   <SelectValue>
                                     <Badge variant={getStatusVariant(command.status)} className="text-xs">
                                       {getStatusLabel(command.status)}
@@ -1155,7 +1155,7 @@ const CommandsPage = () => {
       <Dialog open={!!viewingCommand} onOpenChange={(open) => {
         if (!open) closeDetailsDialog();
       }}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-[95vw] sm:max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{t('details.title')}</DialogTitle>
           </DialogHeader>
@@ -1196,7 +1196,7 @@ const CommandsPage = () => {
 
                 {/* Visa-specific fields */}
                 {viewingCommand.data.type === 'visa' && (
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <Label className="text-muted-foreground text-xs">{t('form.firstName')}</Label>
                       <p className="font-medium">{(viewingCommand.data as any).firstName || '-'}</p>
@@ -1233,7 +1233,7 @@ const CommandsPage = () => {
                 )}
 
                 {/* Destination and Supplier */}
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <Label className="text-muted-foreground text-xs">{t('form.destination')}</Label>
                     <p className="font-medium">{viewingCommand.destination || '-'}</p>
@@ -1302,7 +1302,7 @@ const CommandsPage = () => {
                 {/* Financial Information */}
                 <div className="border-t pt-4">
                   <h4 className="font-medium mb-3">{t('form.accountingInfo')}</h4>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
                     <div>
                       <Label className="text-muted-foreground text-xs">{t('table.sellingPrice')}</Label>
                       <p className="font-medium">{formatDZD(viewingCommand.sellingPrice)}</p>
