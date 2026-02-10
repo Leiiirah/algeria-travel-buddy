@@ -1,68 +1,56 @@
 
 
-# Replace "Nouveau solde" with Individual Reset Fields
+# Redesign Expenses PDF to Match Invoice Template Style
 
-## What Changes
+## Overview
 
-Currently when settling an employee's caisse, the admin sees a single "Nouveau solde" (new balance) input field. This will be replaced with three editable fields pre-filled with current values, allowing the admin to set new starting values for each metric independently:
+Replace the current plain jsPDF-based expenses PDF with an HTML-to-PDF approach identical to how invoices are generated. This means creating a React template component (`ExpensesReportTemplate.tsx`) that mirrors the invoice design (bilingual letterhead, accent colors, professional layout, Arabic footer), then rendering it off-screen and capturing via `html2canvas` into a jsPDF A4 document.
 
-- **Caisse** (amount collected)
-- **Impayes** (unpaid amount)
-- **Benefices** (profits)
+## Design Details
 
-The current read-only stat cards showing these values will become editable input fields instead.
+The expenses report PDF will feature:
+- **Bilingual letterhead** (French left, logo center, Arabic right) -- same as invoices
+- **Legal identifiers row** (RC, NIF, NIS, Art. Fiscal)
+- **Gradient separator line**
+- **Title banner** with accent color background: "RAPPORT DES DEPENSES" / "تقرير المصروفات"
+- **Summary cards** in a 3-column layout showing: Ce Mois, Cette Annee, Total Global
+- **Expenses table** styled as an HTML table with header accent color, alternating rows
+- **Total row** at the bottom of the table with the accent-colored highlight
+- **Arabic footer** with agency details (same as invoice footer)
+- **Timestamp** at bottom right
+- Accent color: a distinct color like `#1B4332` (Forest Green) to match the professional feel
 
-## Files to Change
+## Files to Create / Modify
 
-### 1. Frontend -- `src/components/accounting/CaisseSettleDialog.tsx`
+### 1. NEW: `src/components/expenses/ExpensesReportTemplate.tsx`
 
-- Remove the single `newBalance` state, replace with three states: `newCaisse`, `newImpayes`, `newBenefices` -- each pre-filled with the employee's current values when the dialog opens
-- Replace the read-only stat cards with editable Input fields for Caisse, Impayes, and Benefices
-- Keep the "Dossiers" (commands count) card as read-only since it cannot be manually set
-- Send `newCaisse`, `newImpayes`, `newBenefices` instead of `newBalance` in the mutation payload
+A React component (similar to `InvoiceTemplate.tsx`) that renders the full A4-sized expenses report:
+- Uses `AGENCY_INFO` from `src/constants/agency.ts`
+- Accepts `ExpensesPdfData` (same interface as current `pdfGenerator.ts`)
+- Renders the bilingual letterhead, title banner, summary stats, expenses table, footer
+- Uses inline styles (same pattern as InvoiceTemplate) for html2canvas compatibility
 
-### 2. Frontend -- `src/hooks/useCaisseHistory.ts`
+### 2. MODIFY: `src/utils/pdfGenerator.ts`
 
-- Update the mutation type to send `{ employeeId, newCaisse, newImpayes, newBenefices, notes }` instead of `{ employeeId, newBalance, notes }`
+Replace the current `jsPDF + autoTable` approach with the HTML-to-PDF pattern:
+- Import React, `createRoot`, `html2canvas`, `jsPDF`
+- Import `ExpensesReportTemplate`
+- Render the template off-screen, capture with `html2canvas` at 2x scale, embed in jsPDF A4
+- Same cleanup pattern as `invoiceGenerator.ts`
+- Keep the same exported function signature `generateExpensesPdf(data)` so `ExpensesPage.tsx` needs no changes
 
-### 3. Frontend -- `src/lib/api.ts`
+### 3. No changes needed to `ExpensesPage.tsx`
 
-- Update `createCaisseSettlement` method signature to accept the three new fields instead of `newBalance`
+The function signature stays the same, so the page component requires zero modifications.
 
-### 4. Frontend -- `src/types/index.ts`
+## Technical Approach
 
-- Update `CaisseSettlement` type: replace `newBalance` with `newCaisse`, `newImpayes`, `newBenefices`
+The implementation follows the exact same pattern as `src/utils/invoiceGenerator.ts`:
 
-### 5. Frontend -- `src/components/accounting/CaisseHistoryDialog.tsx`
-
-- Update history table to show the three new columns instead of the single "Nouveau solde" column
-
-### 6. Frontend -- Translation files (`fr/accounting.json`, `ar/accounting.json`)
-
-- Add labels for the new fields: `newCaisse`, `newImpayes`, `newBenefices`
-- Remove or keep `newBalance` label for backwards display
-
-### 7. Backend -- `server/src/caisse-history/dto/create-caisse-settlement.dto.ts`
-
-- Replace `newBalance` with three optional numeric fields: `newCaisse`, `newImpayes`, `newBenefices`
-
-### 8. Backend -- `server/src/caisse-history/entities/caisse-history.entity.ts`
-
-- Replace `newBalance` column with three new decimal columns: `newCaisse`, `newImpayes`, `newBenefices`
-
-### 9. Backend -- `server/src/caisse-history/caisse-history.service.ts`
-
-- Update `createSettlement` to save the three new fields instead of `newBalance`
-- Update `getAllLastResetDates` to return `newCaisse`, `newImpayes`, `newBenefices` instead of `newBalance`
-
-### 10. Backend -- New migration file
-
-- Add migration to:
-  - Add columns `newCaisse`, `newImpayes`, `newBenefices` (decimal 12,2, default 0)
-  - Migrate existing `newBalance` data into `newCaisse` (for backwards compatibility)
-  - Drop `newBalance` column
-
-### 11. Backend -- Analytics service adjustment
-
-- If `getAllLastResetDates` result is used to offset displayed stats, update the consumer to use the three separate values instead of a single `newBalance`
+1. Create off-screen container
+2. Render React template with `createRoot`
+3. Wait 500ms for render + images
+4. Capture with `html2canvas` at 2x scale
+5. Insert into jsPDF A4 document
+6. Save and cleanup
 
