@@ -1,56 +1,72 @@
 
 
-# Redesign Expenses PDF to Match Invoice Template Style
+# Add Payment Type Dropdown to Command Form
 
 ## Overview
 
-Replace the current plain jsPDF-based expenses PDF with an HTML-to-PDF approach identical to how invoices are generated. This means creating a React template component (`ExpensesReportTemplate.tsx`) that mirrors the invoice design (bilingual letterhead, accent colors, professional layout, Arabic footer), then rendering it off-screen and capturing via `html2canvas` into a jsPDF A4 document.
+Add a "Type de paiement" (Payment Type) dropdown to the command creation/edit form with these default values:
+- Cash
+- Edahabia / CIB
+- BaridiMob
+- International Cards
 
-## Design Details
-
-The expenses report PDF will feature:
-- **Bilingual letterhead** (French left, logo center, Arabic right) -- same as invoices
-- **Legal identifiers row** (RC, NIF, NIS, Art. Fiscal)
-- **Gradient separator line**
-- **Title banner** with accent color background: "RAPPORT DES DEPENSES" / "تقرير المصروفات"
-- **Summary cards** in a 3-column layout showing: Ce Mois, Cette Annee, Total Global
-- **Expenses table** styled as an HTML table with header accent color, alternating rows
-- **Total row** at the bottom of the table with the accent-colored highlight
-- **Arabic footer** with agency details (same as invoice footer)
-- **Timestamp** at bottom right
-- Accent color: a distinct color like `#1B4332` (Forest Green) to match the professional feel
+The payment types will be stored as a simple admin-managed list in the backend (new `payment_types` table/entity), and only admins can add, edit, or delete them. The selected value is saved in the command's `data` JSONB field as `paymentType`.
 
 ## Files to Create / Modify
 
-### 1. NEW: `src/components/expenses/ExpensesReportTemplate.tsx`
+### 1. Backend -- New Entity: `server/src/payment-types/entities/payment-type.entity.ts`
+- Simple entity: `id` (uuid), `name` (string), `isActive` (boolean), `createdAt`, `updatedAt`
 
-A React component (similar to `InvoiceTemplate.tsx`) that renders the full A4-sized expenses report:
-- Uses `AGENCY_INFO` from `src/constants/agency.ts`
-- Accepts `ExpensesPdfData` (same interface as current `pdfGenerator.ts`)
-- Renders the bilingual letterhead, title banner, summary stats, expenses table, footer
-- Uses inline styles (same pattern as InvoiceTemplate) for html2canvas compatibility
+### 2. Backend -- New DTO: `server/src/payment-types/dto/create-payment-type.dto.ts`
+- `name: string` (required)
 
-### 2. MODIFY: `src/utils/pdfGenerator.ts`
+### 3. Backend -- New DTO: `server/src/payment-types/dto/update-payment-type.dto.ts`
+- `name?: string`, `isActive?: boolean`
 
-Replace the current `jsPDF + autoTable` approach with the HTML-to-PDF pattern:
-- Import React, `createRoot`, `html2canvas`, `jsPDF`
-- Import `ExpensesReportTemplate`
-- Render the template off-screen, capture with `html2canvas` at 2x scale, embed in jsPDF A4
-- Same cleanup pattern as `invoiceGenerator.ts`
-- Keep the same exported function signature `generateExpensesPdf(data)` so `ExpensesPage.tsx` needs no changes
+### 4. Backend -- New Service: `server/src/payment-types/payment-types.service.ts`
+- CRUD operations for payment types
 
-### 3. No changes needed to `ExpensesPage.tsx`
+### 5. Backend -- New Controller: `server/src/payment-types/payment-types.controller.ts`
+- `GET /payment-types` -- all users (for dropdown)
+- `POST /payment-types` -- admin only
+- `PATCH /payment-types/:id` -- admin only
+- `DELETE /payment-types/:id` -- admin only
 
-The function signature stays the same, so the page component requires zero modifications.
+### 6. Backend -- New Module: `server/src/payment-types/payment-types.module.ts`
+- Register entity, service, controller
 
-## Technical Approach
+### 7. Backend -- Update `server/src/app.module.ts`
+- Import `PaymentTypesModule`
 
-The implementation follows the exact same pattern as `src/utils/invoiceGenerator.ts`:
+### 8. Backend -- New Migration: `server/src/database/migrations/1771300000000-AddPaymentTypes.ts`
+- Create `payment_types` table
+- Seed default values: Cash, Edahabia / CIB, BaridiMob, International Cards
 
-1. Create off-screen container
-2. Render React template with `createRoot`
-3. Wait 500ms for render + images
-4. Capture with `html2canvas` at 2x scale
-5. Insert into jsPDF A4 document
-6. Save and cleanup
+### 9. Frontend -- New Type in `src/types/index.ts`
+- Add `PaymentType` interface: `{ id, name, isActive, createdAt, updatedAt }`
 
+### 10. Frontend -- Update `src/lib/api.ts`
+- Add `PaymentType` DTOs and API methods: `getPaymentTypes()`, `createPaymentType()`, `updatePaymentType()`, `deletePaymentType()`
+
+### 11. Frontend -- New Hook: `src/hooks/usePaymentTypes.ts`
+- `usePaymentTypes()` -- fetch all active payment types
+- `useCreatePaymentType()`, `useUpdatePaymentType()`, `useDeletePaymentType()` -- admin mutations
+
+### 12. Frontend -- Update `src/pages/CommandsPage.tsx`
+- Add `paymentType` to `formData` state (default: `''`)
+- Add a Select dropdown in the accounting section (after supplier) with payment types from the API
+- Include an inline "add" button (visible to admins only, same pattern as the company inline add)
+- Save `paymentType` into the command's `data` JSONB field
+- Load `paymentType` from `command.data.paymentType` when editing
+- Reset `paymentType` in `resetForm()`
+- Display payment type in the table (optional new column or in the details view)
+
+### 13. Frontend -- Translation updates
+- `src/i18n/locales/fr/commands.json`: Add `form.paymentType`, `form.selectPaymentType`, `form.noPaymentType`, `form.addPaymentType`
+- `src/i18n/locales/ar/commands.json`: Same keys in Arabic
+
+## Technical Notes
+
+- Payment type values are stored as the `name` string in `command.data.paymentType` (inside the JSONB field), not as a foreign key, to keep it simple and avoid schema changes to the commands table.
+- The admin inline-add pattern follows the existing Company inline-add dialog already in the form.
+- The `@Roles('admin')` decorator + `RolesGuard` is used on create/update/delete endpoints, matching existing patterns (e.g., Companies controller).
