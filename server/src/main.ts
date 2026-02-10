@@ -11,8 +11,8 @@ async function bootstrap() {
   app.setGlobalPrefix('api');
 
   // Increase body size limits for file uploads (20MB)
-  app.use(json({ limit: '10gb' }));
-  app.use(urlencoded({ extended: true, limit: '10gb' }));
+  app.use(json({ limit: '20mb' }));
+  app.use(urlencoded({ extended: true, limit: '20mb' }));
 
   // Global exception filter
   app.useGlobalFilters(new HttpExceptionFilter());
