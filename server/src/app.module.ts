@@ -26,6 +26,7 @@ import { ClientInvoicesModule } from './client-invoices/client-invoices.module';
 import { AgencySettingsModule } from './agency-settings/agency-settings.module';
 import { CaisseHistoryModule } from './caisse-history/caisse-history.module';
 import { CompaniesModule } from './companies/companies.module';
+import { PaymentTypesModule } from './payment-types/payment-types.module';
 
 
 @Module({
@@ -78,6 +79,7 @@ import { CompaniesModule } from './companies/companies.module';
     AgencySettingsModule,
     CaisseHistoryModule,
     CompaniesModule,
+    PaymentTypesModule,
   ],
   providers: [
     {

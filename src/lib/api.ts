@@ -1,4 +1,4 @@
-import { User, Service, Supplier, Command, Payment, SupplierTransaction, DocumentNode, OmraHotel, OmraOrder, OmraVisa, OmraProgram, OmraProgramInventory, OmraRoomType, OmraStatus, OmraOrderType, EmployeeTransaction, EmployeeBalance, EmployeeTransactionType, Expense, ExpenseStats, ExpenseCategory, PaymentMethod, SupplierOrder, SupplierOrderStatus, SupplierReceipt, SupplierInvoice, SupplierInvoiceStatus, ServiceTypeEntity, InternalTask, TaskStats, TaskPriority, TaskStatus, TaskVisibility, ClientInvoice, ClientInvoiceStats, ClientInvoiceType, ClientInvoiceStatus, CaisseSettlement, Company } from '@/types';
+import { User, Service, Supplier, Command, Payment, SupplierTransaction, DocumentNode, OmraHotel, OmraOrder, OmraVisa, OmraProgram, OmraProgramInventory, OmraRoomType, OmraStatus, OmraOrderType, EmployeeTransaction, EmployeeBalance, EmployeeTransactionType, Expense, ExpenseStats, ExpenseCategory, PaymentMethod, SupplierOrder, SupplierOrderStatus, SupplierReceipt, SupplierInvoice, SupplierInvoiceStatus, ServiceTypeEntity, InternalTask, TaskStats, TaskPriority, TaskStatus, TaskVisibility, ClientInvoice, ClientInvoiceStats, ClientInvoiceType, ClientInvoiceStatus, CaisseSettlement, Company, PaymentType } from '@/types';
 
 // API base URL - includes /api prefix to match nginx proxy configuration
 const API_URL = (import.meta.env.VITE_API_URL || 'http://69.62.127.134:8080/api')
@@ -1498,6 +1498,26 @@ class ApiClient {
 
   deleteCompany = (id: string): Promise<void> =>
     this.request(`/companies/${id}`, { method: 'DELETE' });
+
+  // ==================== PAYMENT TYPES ====================
+
+  getPaymentTypes = (): Promise<PaymentType[]> =>
+    this.request('/payment-types');
+
+  createPaymentType = (data: { name: string }): Promise<PaymentType> =>
+    this.request('/payment-types', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+
+  updatePaymentType = (id: string, data: { name?: string; isActive?: boolean }): Promise<PaymentType> =>
+    this.request(`/payment-types/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    });
+
+  deletePaymentType = (id: string): Promise<void> =>
+    this.request(`/payment-types/${id}`, { method: 'DELETE' });
 }
 
 export const api = new ApiClient();
