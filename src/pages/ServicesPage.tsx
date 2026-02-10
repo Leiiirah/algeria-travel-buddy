@@ -24,10 +24,21 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Plus, Settings, FileText, Plane, Hotel, Folder, Ship, Bus, Ticket, Globe, CreditCard, Briefcase, MapPin, Users, Package } from 'lucide-react';
+import { Plus, Settings, FileText, Plane, Hotel, Folder, Ship, Bus, Ticket, Globe, CreditCard, Briefcase, MapPin, Users, Package, Trash2 } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 import { useAuth } from '@/contexts/AuthContext';
 import { Navigate } from 'react-router-dom';
-import { useServices, useCreateService, useUpdateService, useToggleServiceStatus } from '@/hooks/useServices';
+import { useServices, useCreateService, useUpdateService, useToggleServiceStatus, useDeleteService } from '@/hooks/useServices';
 import { useSuppliers } from '@/hooks/useSuppliers';
 import { useActiveServiceTypes } from '@/hooks/useServiceTypes';
 import { ServicesSkeleton } from '@/components/skeletons/ServicesSkeleton';
@@ -81,6 +92,7 @@ const ServicesPage = () => {
   const createService = useCreateService();
   const updateService = useUpdateService();
   const toggleStatus = useToggleServiceStatus();
+  const deleteService = useDeleteService();
 
   const formatDate = (dateString: string | Date) => {
     const date = typeof dateString === 'string' ? new Date(dateString) : dateString;
@@ -363,6 +375,28 @@ const ServicesPage = () => {
                     <Button variant="ghost" size="sm" onClick={() => handleEditService(service)}>
                       <Settings className="h-4 w-4" />
                     </Button>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button variant="ghost" size="sm">
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>{tCommon('actions.confirmDeleteTitle')}</AlertDialogTitle>
+                          <AlertDialogDescription>{tCommon('actions.confirmDeleteMessage')}</AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>{tCommon('actions.cancel')}</AlertDialogCancel>
+                          <AlertDialogAction
+                            onClick={() => deleteService.mutate(service.id)}
+                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                          >
+                            {tCommon('actions.delete')}
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
                   </div>
                 </CardContent>
               </Card>

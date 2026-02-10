@@ -27,6 +27,8 @@
     "add": "إضافة",
     "edit": "تعديل",
     "delete": "حذف",
+    "confirmDeleteTitle": "تأكيد الحذف",
+    "confirmDeleteMessage": "هل أنت متأكد من حذف هذا العنصر؟ لا يمكن التراجع عن هذا الإجراء.",
     "save": "حفظ",
     "cancel": "إلغاء",
     "search": "بحث",

@@ -5,6 +5,7 @@ import {
   Body,
   Patch,
   Param,
+  Delete,
   UseGuards,
 } from '@nestjs/common';
 import { ServicesService } from './services.service';
@@ -48,5 +49,12 @@ export class ServicesController {
   @Roles('admin')
   toggleStatus(@Param('id') id: string) {
     return this.servicesService.toggleStatus(id);
+  }
+
+  @Delete(':id')
+  @UseGuards(RolesGuard)
+  @Roles('admin')
+  remove(@Param('id') id: string) {
+    return this.servicesService.remove(id);
   }
 }

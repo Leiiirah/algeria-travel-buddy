@@ -17,6 +17,17 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -31,10 +42,10 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Plus, Mail, Shield, UserCheck, UserX, Users, Pencil } from 'lucide-react';
+import { Plus, Mail, Shield, UserCheck, UserX, Users, Pencil, Trash2 } from 'lucide-react';
 import { UserRole } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
-import { useUsers, useCreateUser, useToggleUserStatus, useUpdateUser } from '@/hooks/useUsers';
+import { useUsers, useCreateUser, useToggleUserStatus, useUpdateUser, useDeleteUser } from '@/hooks/useUsers';
 import { EmployeesSkeleton } from '@/components/skeletons/EmployeesSkeleton';
 import { ErrorState } from '@/components/ui/error-state';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -69,6 +80,7 @@ const EmployeesPage = () => {
   const createUser = useCreateUser();
   const updateUser = useUpdateUser();
   const toggleStatus = useToggleUserStatus();
+  const deleteUser = useDeleteUser();
 
   const formatDate = (dateString: string | Date) => {
     const date = typeof dateString === 'string' ? new Date(dateString) : dateString;
@@ -472,6 +484,28 @@ const EmployeesPage = () => {
                         >
                           <Pencil className="h-4 w-4" />
                         </Button>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button variant="ghost" size="sm">
+                              <Trash2 className="h-4 w-4 text-destructive" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>{tCommon('actions.confirmDeleteTitle')}</AlertDialogTitle>
+                              <AlertDialogDescription>{tCommon('actions.confirmDeleteMessage')}</AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>{tCommon('actions.cancel')}</AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={() => deleteUser.mutate(user.id)}
+                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                              >
+                                {tCommon('actions.delete')}
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
                       </TableCell>
                     )}
                   </TableRow>

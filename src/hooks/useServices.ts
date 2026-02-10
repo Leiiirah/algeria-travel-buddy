@@ -85,3 +85,26 @@ export const useToggleServiceStatus = () => {
     },
   });
 };
+
+export const useDeleteService = () => {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: (id: string) => api.deleteService(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['services'] });
+      toast({
+        title: 'Service supprimé',
+        description: 'Le service a été supprimé avec succès',
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: 'Erreur',
+        description: error.message,
+        variant: 'destructive',
+      });
+    },
+  });
+};
