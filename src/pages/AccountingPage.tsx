@@ -102,13 +102,13 @@ const AccountingPage = () => {
   const allPayments = payments ?? [];
 
   // Calculate stats
-  const totalRevenue = allPayments.reduce((sum, p) => sum + p.amount, 0);
+  const totalRevenue = allPayments.reduce((sum, p) => sum + Number(p.amount || 0), 0);
   const pendingPayments = commands.reduce(
-    (sum, cmd) => sum + calculateRemainingBalance(cmd.sellingPrice, cmd.amountPaid),
+    (sum, cmd) => sum + calculateRemainingBalance(Number(cmd.sellingPrice || 0), Number(cmd.amountPaid || 0)),
     0
   );
   const totalProfit = commands.reduce(
-    (sum, cmd) => sum + calculateNetProfit(cmd.sellingPrice, cmd.buyingPrice),
+    (sum, cmd) => sum + calculateNetProfit(Number(cmd.sellingPrice || 0), Number(cmd.buyingPrice || 0)),
     0
   );
   const todayPayments = allPayments.filter(
