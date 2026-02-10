@@ -117,7 +117,7 @@ export class AuthService {
 
     // Generate refresh token (long-lived, stored in DB)
     const refreshTokenValue = uuidv4();
-    const refreshExpiresIn = this.configService.get('JWT_REFRESH_EXPIRES_IN', '7d');
+    const refreshExpiresIn = this.configService.get('JWT_REFRESH_EXPIRES_IN', '30d');
     const expiresAt = this.calculateExpiry(refreshExpiresIn);
 
     // Save refresh token to database
