@@ -84,7 +84,7 @@ export class CommandsController implements OnModuleInit {
           cb(null, `passport-${uuidv4()}${ext}`);
         },
       }),
-      limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
+      limits: { fileSize: 500 * 1024 * 1024 }, // 500MB
       fileFilter: (req, file, cb) => {
         const allowed = ['application/pdf', 'image/jpeg', 'image/png', 'image/webp'];
         cb(null, allowed.includes(file.mimetype));
