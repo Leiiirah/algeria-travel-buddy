@@ -1,39 +1,20 @@
 
 
-# Fix Body Size Limits in main.ts
+## Increase Passport Upload Limit to 500MB
 
-## What Changes
-**File:** `server/src/main.ts` (lines 14-15)
+**File:** `server/src/commands/commands.controller.ts` (line 87)
 
-Change:
+Change the Multer file size limit from 10MB to 500MB:
+
 ```typescript
-app.use(json({ limit: '10gb' }));
-app.use(urlencoded({ extended: true, limit: '10gb' }));
+// Before
+limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
+
+// After
+limits: { fileSize: 500 * 1024 * 1024 }, // 500MB
 ```
 
-To:
-```typescript
-app.use(json({ limit: '20mb' }));
-app.use(urlencoded({ extended: true, limit: '20mb' }));
-```
+This only affects the passport file upload endpoint (`/commands/with-passport`). The global JSON/urlencoded body parsers remain at 20MB as previously configured.
 
-## Why This Is Safe
-- These parsers only handle JSON/form API requests (login, create command, etc.) -- never file uploads
-- File uploads go through Multer which streams to disk and has its own per-controller limits
-- No legitimate JSON request will ever exceed 20MB
-- The current 10GB limit is a denial-of-service vulnerability
+**Note:** Make sure your Nginx `client_max_body_size` is also set to at least `500m` in your production config, otherwise Nginx will reject the upload before it reaches NestJS.
 
-## File Uploads Are Unaffected
-Your existing Multer configurations remain independent:
-- Documents controller: 10GB limit (you can adjust this to your desired max, e.g., 1GB)
-- Receipts controller: 20MB limit
-- Passports controller: 10MB limit
-
-## Technical Detail
-| Parser | Purpose | Current | Proposed |
-|--------|---------|---------|----------|
-| `json()` | JSON API bodies | 10gb | 20mb |
-| `urlencoded()` | Form submissions | 10gb | 20mb |
-| Multer (documents) | File uploads | 10gb | No change |
-| Multer (receipts) | PDF uploads | 20mb | No change |
-| Multer (passports) | Image/PDF uploads | 10mb | No change |
