@@ -102,6 +102,15 @@ const InvoiceTemplate = forwardRef<HTMLDivElement, InvoiceTemplateProps>(
     const isArabic = data.language === 'ar';
     const lang = isArabic ? 'ar' : 'fr';
 
+    // Normalize financial fields to numbers to prevent string concatenation
+    const amount = Number(data.totalAmount) || 0;
+    const ticket = Number(data.ticketPrice) || 0;
+    const fees = Number(data.agencyFees) || 0;
+    const paid = Number(data.paidAmount) || 0;
+    const rem = Number(data.remaining) || 0;
+    const tva = Math.round(amount * 0.09);
+    const totalTTC = amount + tva;
+
     const accent = isProforma ? '#1E3A5F' : '#1B4332';
     const accentLight = isProforma ? '#e8eef5' : '#e6f0eb';
 
@@ -109,12 +118,12 @@ const InvoiceTemplate = forwardRef<HTMLDivElement, InvoiceTemplateProps>(
       ? isArabic ? 'فاتورة مبدئية' : 'FACTURE PROFORMA'
       : isArabic ? 'فاتورة نهائية' : 'FACTURE DÉFINITIVE';
 
-    const hasBreakdown = data.ticketPrice > 0 || data.agencyFees > 0;
+    const hasBreakdown = ticket > 0 || fees > 0;
     const classLabel = TRAVEL_CLASS_LABELS[data.travelClass]?.[lang] || data.travelClass;
     const paymentLabel = PAYMENT_LABELS[data.paymentMethod]?.[lang] || data.paymentMethod;
     const statusInfo = STATUS_LABELS[data.status] || STATUS_LABELS['en_attente'];
 
-    const amountWords = numberToWords(data.totalAmount);
+    const amountWords = numberToWords(totalTTC);
     const docType = isProforma ? 'proforma' : 'définitive';
 
     const arrow = isArabic ? '←' : '→';
@@ -328,13 +337,13 @@ const InvoiceTemplate = forwardRef<HTMLDivElement, InvoiceTemplateProps>(
                     <td style={{ padding: '7px 12px' }} dir={isArabic ? 'rtl' : undefined}>
                       {isArabic ? 'سعر التذكرة' : 'Prix du billet'}
                     </td>
-                    <td style={{ padding: '7px 12px', textAlign: 'right' }}>{fmt(data.ticketPrice)} DA</td>
+                    <td style={{ padding: '7px 12px', textAlign: 'right' }}>{fmt(ticket)} DA</td>
                   </tr>
                   <tr style={{ borderBottom: '1px solid #e2e8f0' }}>
                     <td style={{ padding: '7px 12px' }} dir={isArabic ? 'rtl' : undefined}>
                       {isArabic ? 'رسوم الوكالة' : "Frais d'agence"}
                     </td>
-                    <td style={{ padding: '7px 12px', textAlign: 'right' }}>{fmt(data.agencyFees)} DA</td>
+                    <td style={{ padding: '7px 12px', textAlign: 'right' }}>{fmt(fees)} DA</td>
                   </tr>
                 </>
               )}
@@ -345,13 +354,13 @@ const InvoiceTemplate = forwardRef<HTMLDivElement, InvoiceTemplateProps>(
                     <td style={{ padding: '7px 12px', fontWeight: 600 }} dir={isArabic ? 'rtl' : undefined}>
                       {isArabic ? 'المجموع قبل الضريبة' : 'Total HT'}
                     </td>
-                    <td style={{ padding: '7px 12px', textAlign: 'right', fontWeight: 600 }}>{fmt(data.totalAmount)} DA</td>
+                    <td style={{ padding: '7px 12px', textAlign: 'right', fontWeight: 600 }}>{fmt(amount)} DA</td>
                   </tr>
                   <tr style={{ borderBottom: '1px solid #e2e8f0' }}>
                     <td style={{ padding: '7px 12px' }} dir={isArabic ? 'rtl' : undefined}>
                       {isArabic ? 'ضريبة (9%)' : 'TVA (9%)'}
                     </td>
-                    <td style={{ padding: '7px 12px', textAlign: 'right' }}>{fmt(Math.round(data.totalAmount * 0.09))} DA</td>
+                    <td style={{ padding: '7px 12px', textAlign: 'right' }}>{fmt(tva)} DA</td>
                   </tr>
                   {/* Total TTC highlighted row */}
                   <tr style={{ backgroundColor: accent }}>
@@ -361,7 +370,7 @@ const InvoiceTemplate = forwardRef<HTMLDivElement, InvoiceTemplateProps>(
                       {isArabic ? 'المجموع الكلي' : 'TOTAL TTC'}
                     </td>
                     <td style={{ padding: '9px 12px', textAlign: 'right', fontWeight: 700, color: '#ffffff', fontSize: '13px' }}>
-                      {fmt(data.totalAmount + Math.round(data.totalAmount * 0.09))} DA
+                      {fmt(totalTTC)} DA
                     </td>
                   </tr>
                   {/* Payment status rows */}
@@ -370,7 +379,7 @@ const InvoiceTemplate = forwardRef<HTMLDivElement, InvoiceTemplateProps>(
                       {isArabic ? 'المبلغ المدفوع' : 'Montant payé'}
                     </td>
                     <td style={{ padding: '7px 12px', textAlign: 'right', color: '#166534', fontWeight: 600 }}>
-                      {fmt(data.paidAmount)} DA
+                      {fmt(paid)} DA
                     </td>
                   </tr>
                   <tr>
@@ -381,9 +390,9 @@ const InvoiceTemplate = forwardRef<HTMLDivElement, InvoiceTemplateProps>(
                       padding: '7px 12px',
                       textAlign: 'right',
                       fontWeight: 700,
-                      color: data.remaining > 0 ? '#991b1b' : '#166534',
+                      color: rem > 0 ? '#991b1b' : '#166534',
                     }}>
-                      {fmt(data.remaining)} DA
+                      {fmt(rem)} DA
                     </td>
                   </tr>
                 </>
@@ -395,7 +404,7 @@ const InvoiceTemplate = forwardRef<HTMLDivElement, InvoiceTemplateProps>(
                     {isArabic ? 'المجموع' : 'TOTAL'}
                   </td>
                   <td style={{ padding: '9px 12px', textAlign: 'right', fontWeight: 700, color: '#ffffff', fontSize: '13px' }}>
-                    {fmt(data.totalAmount)} DA
+                    {fmt(amount)} DA
                   </td>
                 </tr>
               )}
