@@ -1,25 +1,39 @@
 
 
-# Extend Token Lifetime to Reduce Frequent Logouts
+# Fix Body Size Limits in main.ts
 
-## Problem
-The access token expires every **15 minutes**, causing frequent logouts when the refresh mechanism encounters any hiccup.
+## What Changes
+**File:** `server/src/main.ts` (lines 14-15)
 
-## Changes
+Change:
+```typescript
+app.use(json({ limit: '10gb' }));
+app.use(urlencoded({ extended: true, limit: '10gb' }));
+```
 
-### 1. `server/src/auth/auth.module.ts`
-Change the default `JWT_EXPIRES_IN` fallback from `'15m'` to `'8h'` (full work day).
+To:
+```typescript
+app.use(json({ limit: '20mb' }));
+app.use(urlencoded({ extended: true, limit: '20mb' }));
+```
 
-### 2. `server/src/auth/auth.service.ts`
-Change the default `JWT_REFRESH_EXPIRES_IN` fallback from `'7d'` to `'30d'` (one month).
+## Why This Is Safe
+- These parsers only handle JSON/form API requests (login, create command, etc.) -- never file uploads
+- File uploads go through Multer which streams to disk and has its own per-controller limits
+- No legitimate JSON request will ever exceed 20MB
+- The current 10GB limit is a denial-of-service vulnerability
 
-### 3. `server/.env.example`
-Update example values to match:
-- `JWT_EXPIRES_IN=8h`
-- `JWT_REFRESH_EXPIRES_IN=30d`
+## File Uploads Are Unaffected
+Your existing Multer configurations remain independent:
+- Documents controller: 10GB limit (you can adjust this to your desired max, e.g., 1GB)
+- Receipts controller: 20MB limit
+- Passports controller: 10MB limit
 
-## Result
-- Users stay logged in throughout their work day without interruption
-- Sessions persist for up to 30 days even after closing the browser
-- No frontend changes needed
-
+## Technical Detail
+| Parser | Purpose | Current | Proposed |
+|--------|---------|---------|----------|
+| `json()` | JSON API bodies | 10gb | 20mb |
+| `urlencoded()` | Form submissions | 10gb | 20mb |
+| Multer (documents) | File uploads | 10gb | No change |
+| Multer (receipts) | PDF uploads | 20mb | No change |
+| Multer (passports) | Image/PDF uploads | 10mb | No change |
