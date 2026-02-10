@@ -242,21 +242,16 @@ export class AnalyticsService {
       };
     });
 
-    // Filter out employees with no assigned items AND no settlement history
-    const activeEmployeeStats = employeeStats.filter(e => 
-      e.commandCount > 0 || (lastResetDates && lastResetDates[e.employeeId])
-    );
-
     // Calculate global totals
     const global = {
-      totalCaisse: activeEmployeeStats.reduce((sum, e) => sum + e.totalCaisse, 0),
-      totalImpayes: activeEmployeeStats.reduce((sum, e) => sum + e.totalImpayes, 0),
-      totalBenefices: activeEmployeeStats.reduce((sum, e) => sum + e.totalBenefices, 0),
-      totalCommands: activeEmployeeStats.reduce((sum, e) => sum + e.commandCount, 0),
+      totalCaisse: employeeStats.reduce((sum, e) => sum + e.totalCaisse, 0),
+      totalImpayes: employeeStats.reduce((sum, e) => sum + e.totalImpayes, 0),
+      totalBenefices: employeeStats.reduce((sum, e) => sum + e.totalBenefices, 0),
+      totalCommands: employeeStats.reduce((sum, e) => sum + e.commandCount, 0),
     };
 
     return {
-      employees: activeEmployeeStats,
+      employees: employeeStats,
       global,
     };
   }
