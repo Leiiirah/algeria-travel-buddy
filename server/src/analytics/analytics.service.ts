@@ -226,13 +226,18 @@ export class AnalyticsService {
       const omraVisaBenefices = filteredOmraVisas.reduce((sum, v) => 
         sum + (Number(v.sellingPrice || 0) - Number(v.buyingPrice || 0)), 0);
 
+      // Add carry-over values from last settlement
+      const carryOverCaisse = resetInfo ? Number(resetInfo.newCaisse || 0) : 0;
+      const carryOverImpayes = resetInfo ? Number(resetInfo.newImpayes || 0) : 0;
+      const carryOverBenefices = resetInfo ? Number(resetInfo.newBenefices || 0) : 0;
+
       return {
         employeeId: employee.id,
         firstName: employee.firstName,
         lastName: employee.lastName,
-        totalCaisse: commandCaisse + omraOrderCaisse + omraVisaCaisse,
-        totalImpayes: commandImpayes + omraOrderImpayes + omraVisaImpayes,
-        totalBenefices: commandBenefices + omraOrderBenefices + omraVisaBenefices,
+        totalCaisse: commandCaisse + omraOrderCaisse + omraVisaCaisse + carryOverCaisse,
+        totalImpayes: commandImpayes + omraOrderImpayes + omraVisaImpayes + carryOverImpayes,
+        totalBenefices: commandBenefices + omraOrderBenefices + omraVisaBenefices + carryOverBenefices,
         commandCount: filteredCommands.length + filteredOmraOrders.length + filteredOmraVisas.length,
       };
     });
