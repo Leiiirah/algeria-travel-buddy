@@ -201,19 +201,6 @@ const LoginPage = () => {
             </Button>
           </form>
 
-          <div className="mt-6 rounded-xl bg-muted/50 p-4">
-            <p className="text-sm font-bold text-muted-foreground mb-2">
-              {t('login.demoAccounts')}
-            </p>
-            <div className="space-y-1 text-sm text-muted-foreground">
-              <p>
-                <span className="font-medium">{t('login.admin')} :</span> admin@elhikma.dz / Admin@123
-              </p>
-              <p>
-                <span className="font-medium">{t('login.employee')} :</span> sarah@elhikma.dz / Employee@123
-              </p>
-            </div>
-          </div>
         </CardContent>
       </Card>
     </div>
