@@ -1,64 +1,41 @@
 
 
-# Add Admin Delete Functionality to Multiple Tabs
+# Fix TVA String Concatenation Bug in Invoice PDFs
 
-## Overview
+## Problem
 
-Add delete buttons (admin-only) to 4 tabs that are currently missing them. All deletions will require a confirmation dialog (AlertDialog) to prevent accidental data loss.
+The `totalAmount`, `ticketPrice`, `agencyFees`, `paidAmount`, and `remaining` values arrive from the API as **strings** (e.g., `"100000.00"`), not numbers. When JavaScript evaluates `data.totalAmount + Math.round(data.totalAmount * 0.09)`, it performs string concatenation instead of numeric addition, producing `"100000.009000"` instead of `109000`.
 
-## Current State
+## Solution
 
-- **Commands, Omra, Employee Accounting** -- already have delete functionality
-- **Employees, Services, Service Types, Supplier Accounting** -- missing delete in the UI
+Wrap all numeric data fields with `Number()` at the point of use in `src/components/invoice/InvoiceTemplate.tsx`. This ensures arithmetic operations work correctly.
 
-## Changes Required
+## File to Modify
 
-### 1. Employees Page (`src/pages/EmployeesPage.tsx`)
+### `src/components/invoice/InvoiceTemplate.tsx`
 
-The backend endpoint, API method, and `useDeleteUser` hook all exist. Just need to:
-- Import `useDeleteUser`, `Trash2`, and AlertDialog components
-- Add a delete button next to the edit button in the actions column
-- Wrap in an AlertDialog for confirmation
-- Only visible to admins (already gated by `isAdmin`)
+Add a normalization block near the top of the component (after props destructuring) that converts all financial fields to numbers:
 
-### 2. Services Page (`src/pages/ServicesPage.tsx`)
+```typescript
+const amount = Number(data.totalAmount) || 0;
+const ticket = Number(data.ticketPrice) || 0;
+const fees = Number(data.agencyFees) || 0;
+const paid = Number(data.paidAmount) || 0;
+const rem = Number(data.remaining) || 0;
+const tva = Math.round(amount * 0.09);
+const totalTTC = amount + tva;
+```
 
-This requires the most work since there's no backend delete endpoint:
+Then replace all occurrences throughout the template:
+- `fmt(data.ticketPrice)` becomes `fmt(ticket)`
+- `fmt(data.agencyFees)` becomes `fmt(fees)`
+- `fmt(data.totalAmount)` becomes `fmt(amount)`
+- `fmt(Math.round(data.totalAmount * 0.09))` becomes `fmt(tva)`
+- `fmt(data.totalAmount + Math.round(data.totalAmount * 0.09))` becomes `fmt(totalTTC)`
+- `fmt(data.paidAmount)` becomes `fmt(paid)`
+- `fmt(data.remaining)` becomes `fmt(rem)`
+- `data.remaining > 0` becomes `rem > 0`
+- `numberToWords(data.totalAmount)` becomes `numberToWords(totalTTC)`
 
-**Backend:**
-- Add `remove()` method to `server/src/services/services.service.ts`
-- Add `@Delete(':id')` endpoint (admin-only) to `server/src/services/services.controller.ts`
+This is a single-file fix affecting around 10 lines.
 
-**Frontend:**
-- Add `deleteService` API method to `src/lib/api.ts`
-- Add `useDeleteService` hook to `src/hooks/useServices.ts`
-- Add delete button to each service card with AlertDialog confirmation
-- Import `Trash2` icon and AlertDialog components
-
-### 3. Service Types Page (`src/pages/ServiceTypesPage.tsx`)
-
-Backend, API, and `useDeleteServiceType` hook all exist. Just need to:
-- Import `useDeleteServiceType`, `Trash2`, and AlertDialog components
-- Add a delete button/menu item in the actions area
-- Wrap in AlertDialog for confirmation
-
-### 4. Supplier Accounting Page (`src/pages/SupplierAccountingPage.tsx`)
-
-Backend `DELETE /supplier-transactions/:id` exists, `useDeleteSupplierTransaction` hook exists. Need to:
-- Import the hook, `Trash2`, and AlertDialog components
-- Add delete button to each transaction row in the transactions table
-- Admin-only visibility
-- AlertDialog confirmation
-
-## Translation Updates
-
-Add a generic delete confirmation key if not already present:
-- `src/i18n/locales/fr/common.json`: `"confirmDelete"` message
-- `src/i18n/locales/ar/common.json`: Same in Arabic
-
-## Technical Details
-
-- All delete buttons use the `AlertDialog` pattern (already used in InternalTasksPage and EmployeeAccountingPage) for safe confirmation
-- Delete buttons are only rendered when `isAdmin` is true
-- The `Trash2` icon from lucide-react is used consistently with `text-destructive` styling
-- Backend delete for Services follows the exact same pattern as the existing `remove()` in `CommandsService`
