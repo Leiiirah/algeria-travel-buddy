@@ -70,7 +70,11 @@
     "noPassport": "لا يوجد جواز سفر",
     "assignTo": "تعيين إلى",
     "selectEmployee": "اختر موظفاً",
-    "unassigned": "غير معين"
+    "unassigned": "غير معين",
+    "paymentType": "نوع الدفع",
+    "selectPaymentType": "اختر نوع الدفع",
+    "noPaymentType": "لا توجد أنواع متاحة",
+    "addPaymentType": "إضافة نوع دفع"
   },
   "calculations": {
     "remaining": "المتبقي للدفع",

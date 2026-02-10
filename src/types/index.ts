@@ -567,3 +567,13 @@ export interface Company {
   createdAt: Date;
   updatedAt: Date;
 }
+
+// ==================== PAYMENT TYPES ====================
+
+export interface PaymentType {
+  id: string;
+  name: string;
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}

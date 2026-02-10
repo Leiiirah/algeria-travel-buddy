@@ -53,6 +53,7 @@ import { useActiveServices } from '@/hooks/useServices';
 import { useSuppliers } from '@/hooks/useSuppliers';
 import { useActiveEmployees } from '@/hooks/useUsers';
 import { useCompanies, useCreateCompany } from '@/hooks/useCompanies';
+import { usePaymentTypes, useCreatePaymentType } from '@/hooks/usePaymentTypes';
 import { useDebounce } from '@/hooks/useDebounce';
 import { CommandsSkeleton } from '@/components/skeletons/CommandsSkeleton';
 import { ErrorState } from '@/components/ui/error-state';
@@ -80,6 +81,9 @@ const CommandsPage = () => {
   // Inline add company dialog (admin only)
   const [isAddCompanyOpen, setIsAddCompanyOpen] = useState(false);
   const [newCompanyName, setNewCompanyName] = useState('');
+  // Inline add payment type dialog (admin only)
+  const [isAddPaymentTypeOpen, setIsAddPaymentTypeOpen] = useState(false);
+  const [newPaymentTypeName, setNewPaymentTypeName] = useState('');
   // Form states
   const [formData, setFormData] = useState({
     clientFullName: '',
@@ -95,6 +99,7 @@ const CommandsPage = () => {
     company: '',
     description: '',
     assignedTo: '',
+    paymentType: '',
   });
 
   const debouncedSearch = useDebounce(searchQuery, 500);
@@ -109,7 +114,9 @@ const CommandsPage = () => {
   const { data: suppliers } = useSuppliers();
   const { data: employees } = useActiveEmployees();
   const { data: companies } = useCompanies();
+  const { data: paymentTypes } = usePaymentTypes();
   const createCompanyMutation = useCreateCompany();
+  const createPaymentTypeMutation = useCreatePaymentType();
   const createCommand = useCreateCommand();
   const updateCommand = useUpdateCommand();
   const deleteCommand = useDeleteCommand();
@@ -171,6 +178,7 @@ const CommandsPage = () => {
       company: '',
       description: '',
       assignedTo: '',
+      paymentType: '',
     });
     setEditingCommandId(null);
     setPassportFile(null);
@@ -225,6 +233,11 @@ const CommandsPage = () => {
           type: serviceType,
         };
         break;
+    }
+
+    // Include paymentType in the data JSONB field
+    if (formData.paymentType) {
+      (data as any).paymentType = formData.paymentType;
     }
 
     const commandPayload = {
@@ -315,6 +328,7 @@ const CommandsPage = () => {
     }
 
     formUpdates.assignedTo = command.assignedTo || '';
+    formUpdates.paymentType = (command.data as any).paymentType || '';
 
     setFormData(prev => ({ ...prev, ...formUpdates }));
     setIsDialogOpen(true);
@@ -814,6 +828,7 @@ const CommandsPage = () => {
                           company: '',
                           description: '',
                           assignedTo: '',
+                          paymentType: '',
                         });
                         setEditingCommandId(null);
                       }}>
@@ -946,6 +961,96 @@ const CommandsPage = () => {
                               </Select>
                             </div>
                           </div>
+
+                          {/* Payment Type */}
+                          <div className="space-y-2 mt-4">
+                            <Label>{t('form.paymentType')}</Label>
+                            <div className="flex gap-2">
+                              <Select
+                                value={formData.paymentType || '__none__'}
+                                onValueChange={(value) => setFormData({ ...formData, paymentType: value === '__none__' ? '' : value })}
+                              >
+                                <SelectTrigger className="flex-1">
+                                  <SelectValue placeholder={t('form.selectPaymentType')} />
+                                </SelectTrigger>
+                                <SelectContent className="bg-popover">
+                                  <SelectItem value="__none__">{t('form.selectPaymentType')}</SelectItem>
+                                  {paymentTypes?.map((pt) => (
+                                    <SelectItem key={pt.id} value={pt.name}>
+                                      {pt.name}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                              {isAdmin && (
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="icon"
+                                  onClick={() => setIsAddPaymentTypeOpen(true)}
+                                  title={t('form.addPaymentType')}
+                                >
+                                  <Plus className="h-4 w-4" />
+                                </Button>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Inline Add Payment Type Dialog */}
+                          <Dialog open={isAddPaymentTypeOpen} onOpenChange={setIsAddPaymentTypeOpen}>
+                            <DialogContent className="sm:max-w-[400px]">
+                              <DialogHeader>
+                                <DialogTitle>{t('form.addPaymentType')}</DialogTitle>
+                              </DialogHeader>
+                              <div className="space-y-4">
+                                <div className="space-y-2">
+                                  <Label>{tCommon('common.name') || 'Nom'}</Label>
+                                  <Input
+                                    value={newPaymentTypeName}
+                                    onChange={(e) => setNewPaymentTypeName(e.target.value)}
+                                    placeholder={t('form.paymentType')}
+                                    onKeyDown={(e) => {
+                                      if (e.key === 'Enter' && newPaymentTypeName.trim()) {
+                                        createPaymentTypeMutation.mutate(
+                                          { name: newPaymentTypeName.trim() },
+                                          {
+                                            onSuccess: (pt) => {
+                                              setFormData({ ...formData, paymentType: pt.name });
+                                              setNewPaymentTypeName('');
+                                              setIsAddPaymentTypeOpen(false);
+                                            },
+                                          }
+                                        );
+                                      }
+                                    }}
+                                  />
+                                </div>
+                              </div>
+                              <DialogFooter>
+                                <Button variant="outline" onClick={() => { setIsAddPaymentTypeOpen(false); setNewPaymentTypeName(''); }}>
+                                  {tCommon('actions.cancel')}
+                                </Button>
+                                <Button
+                                  onClick={() => {
+                                    if (!newPaymentTypeName.trim()) return;
+                                    createPaymentTypeMutation.mutate(
+                                      { name: newPaymentTypeName.trim() },
+                                      {
+                                        onSuccess: (pt) => {
+                                          setFormData({ ...formData, paymentType: pt.name });
+                                          setNewPaymentTypeName('');
+                                          setIsAddPaymentTypeOpen(false);
+                                        },
+                                      }
+                                    );
+                                  }}
+                                  disabled={!newPaymentTypeName.trim() || createPaymentTypeMutation.isPending}
+                                >
+                                  {tCommon('actions.save')}
+                                </Button>
+                              </DialogFooter>
+                            </DialogContent>
+                          </Dialog>
 
                           {/* Assign To - Admin Only for VISA services */}
                           {user?.role === 'admin' && selectedService && getServiceType(selectedService) === 'visa' && (

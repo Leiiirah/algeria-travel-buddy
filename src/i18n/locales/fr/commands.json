@@ -70,7 +70,11 @@
     "noPassport": "Aucun passeport",
     "assignTo": "Attribuer à",
     "selectEmployee": "Sélectionner un employé",
-    "unassigned": "Non attribué"
+    "unassigned": "Non attribué",
+    "paymentType": "Type de paiement",
+    "selectPaymentType": "Sélectionner le type",
+    "noPaymentType": "Aucun type disponible",
+    "addPaymentType": "Ajouter un type de paiement"
   },
   "calculations": {
     "remaining": "Reste à payer",
