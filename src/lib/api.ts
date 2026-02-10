@@ -774,6 +774,9 @@ class ApiClient {
   toggleServiceStatus = (id: string): Promise<Service> =>
     this.request(`/services/${id}/status`, { method: 'PATCH' });
 
+  deleteService = (id: string): Promise<void> =>
+    this.request(`/services/${id}`, { method: 'DELETE' });
+
   // ==================== SERVICE TYPES ====================
 
   serviceTypes = {

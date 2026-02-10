@@ -3,7 +3,18 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import { fr, ar } from 'date-fns/locale';
-import { Plus, ArrowDownCircle, ArrowUpCircle, Wallet, TrendingDown, CreditCard, FileText, Eye, Download, Loader2 } from 'lucide-react';
+import { Plus, ArrowDownCircle, ArrowUpCircle, Wallet, TrendingDown, CreditCard, FileText, Eye, Download, Loader2, Trash2 } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -38,7 +49,8 @@ import { formatDZD, getTransactionTypeLabel } from '@/lib/utils';
 import { api } from '@/lib/api';
 import { SupplierTransactionType } from '@/types';
 import { useSuppliers, useSuppliersWithBalance } from '@/hooks/useSuppliers';
-import { useSupplierTransactions, useCreateSupplierTransaction } from '@/hooks/useSupplierTransactions';
+import { useSupplierTransactions, useCreateSupplierTransaction, useDeleteSupplierTransaction } from '@/hooks/useSupplierTransactions';
+import { useAuth } from '@/contexts/AuthContext';
 import { useCommands } from '@/hooks/useCommands';
 import { SupplierAccountingSkeleton } from '@/components/skeletons/SupplierAccountingSkeleton';
 import { ErrorState } from '@/components/ui/error-state';
@@ -53,6 +65,7 @@ const SupplierAccountingPage = () => {
   const { t: tCommon } = useTranslation('common');
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { isAdmin } = useAuth();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [isPdfPreviewOpen, setIsPdfPreviewOpen] = useState(false);
@@ -79,6 +92,7 @@ const SupplierAccountingPage = () => {
     selectedSupplierId ? { supplierId: selectedSupplierId } : undefined
   );
   const createTransaction = useCreateSupplierTransaction();
+  const deleteTransaction = useDeleteSupplierTransaction();
 
   const isLoading = suppliersLoading || transactionsLoading;
 
@@ -637,6 +651,7 @@ const SupplierAccountingPage = () => {
                         <TableHead className="text-right">{tCommon('amount')}</TableHead>
                         <TableHead>{tCommon('note')}</TableHead>
                         <TableHead>{t('accounting.transaction.receipt')}</TableHead>
+                        {isAdmin && <TableHead>{tCommon('actions.label')}</TableHead>}
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -688,6 +703,32 @@ const SupplierAccountingPage = () => {
                               <span className="text-muted-foreground">-</span>
                             )}
                           </TableCell>
+                          {isAdmin && (
+                            <TableCell>
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <Button variant="ghost" size="sm">
+                                    <Trash2 className="h-4 w-4 text-destructive" />
+                                  </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>{tCommon('actions.confirmDeleteTitle')}</AlertDialogTitle>
+                                    <AlertDialogDescription>{tCommon('actions.confirmDeleteMessage')}</AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>{tCommon('actions.cancel')}</AlertDialogCancel>
+                                    <AlertDialogAction
+                                      onClick={() => deleteTransaction.mutate(transaction.id)}
+                                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                    >
+                                      {tCommon('actions.delete')}
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
+                            </TableCell>
+                          )}
                         </TableRow>
                       ))}
                     </TableBody>
