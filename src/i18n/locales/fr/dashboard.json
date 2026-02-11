@@ -32,5 +32,19 @@
     "fri": "Ven",
     "sat": "Sam",
     "sun": "Dim"
+  },
+  "tasks": {
+    "title": "Mes missions",
+    "ongoingTitle": "En cours",
+    "unreadTitle": "Non lue",
+    "emptyOngoing": "Aucune mission en cours",
+    "emptyUnread": "Aucune nouvelle mission",
+    "viewAll": "Voir toutes les missions",
+    "dueDate": "Échéance",
+    "priority": {
+      "urgent": "Urgent",
+      "normal": "Normal",
+      "critical": "Critique"
+    }
   }
 }
