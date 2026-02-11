@@ -51,7 +51,7 @@ export const EmployeeTasksSection = ({ tasks }: EmployeeTasksSectionProps) => {
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-lg font-semibold">{t('tasks.title')}</h2>
         <Link
-          to="/internal-tasks"
+          to="/missions-internes"
           className="text-sm text-primary hover:underline flex items-center gap-1"
         >
           {t('tasks.viewAll')}
