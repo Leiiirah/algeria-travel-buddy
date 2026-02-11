@@ -5,6 +5,7 @@ import {
   IsOptional,
   IsObject,
   IsUUID,
+  IsDateString,
 } from 'class-validator';
 
 export class CreateCommandDto {
