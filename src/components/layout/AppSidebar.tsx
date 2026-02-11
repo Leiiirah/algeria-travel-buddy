@@ -70,11 +70,6 @@ export function AppSidebar() {
       url: '/factures',
       icon: FileText,
     },
-    {
-      titleKey: 'navigation.documents',
-      url: '/documents',
-      icon: FolderOpen,
-    },
   ];
 
   // Items visible to all users
@@ -140,6 +135,11 @@ export function AppSidebar() {
       titleKey: 'navigation.companies',
       url: '/compagnies',
       icon: Plane,
+    },
+    {
+      titleKey: 'navigation.documents',
+      url: '/documents',
+      icon: FolderOpen,
     },
   ];
 
