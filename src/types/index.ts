@@ -124,6 +124,7 @@ export interface Command {
   buyingPrice: number;           // Prix d'achat (coût fournisseur)
   supplierId: string;            // Fournisseur lié
   passportUrl?: string;          // Scanned passport file for visa commands
+  commandDate?: Date;            // Optional command date (defaults to createdAt if null)
   assignedTo?: string;           // Employee assigned to this command
   assignee?: User;               // Populated assignee user
   createdBy: string;

@@ -20,8 +20,8 @@ export class CreateOmraOrderDto {
   phone?: string;
 
   @IsDateString()
-  @IsNotEmpty()
-  orderDate: string;
+  @IsOptional()
+  orderDate?: string;
 
   @IsDateString()
   @IsNotEmpty()

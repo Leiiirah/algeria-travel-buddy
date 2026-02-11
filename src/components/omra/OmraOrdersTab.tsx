@@ -152,7 +152,7 @@ export const OmraOrdersTab = () => {
       setFormData({
         clientName: order.clientName,
         phone: order.phone || '',
-        orderDate: new Date(order.orderDate).toISOString().split('T')[0],
+        orderDate: order.orderDate ? new Date(order.orderDate).toISOString().split('T')[0] : '',
         periodFrom: new Date(order.periodFrom).toISOString().split('T')[0],
         periodTo: new Date(order.periodTo).toISOString().split('T')[0],
         hotelId: order.hotelId || '',
@@ -177,6 +177,7 @@ export const OmraOrdersTab = () => {
 
     const payload = {
       ...formData,
+      orderDate: formData.orderDate || undefined,
       hotelId: formData.hotelId || undefined,
       assignedTo: formData.assignedTo || undefined,
       programId: formData.programId || undefined,

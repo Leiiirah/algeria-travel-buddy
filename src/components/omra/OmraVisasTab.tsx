@@ -118,7 +118,7 @@ export const OmraVisasTab = () => {
       setFormData({
         clientName: visa.clientName,
         phone: visa.phone || '',
-        visaDate: new Date(visa.visaDate).toISOString().split('T')[0],
+        visaDate: visa.visaDate ? new Date(visa.visaDate).toISOString().split('T')[0] : '',
         entryDate: new Date(visa.entryDate).toISOString().split('T')[0],
         hotelId: visa.hotelId || '',
         sellingPrice: Number(visa.sellingPrice),
@@ -134,10 +134,11 @@ export const OmraVisasTab = () => {
   };
 
   const handleSubmit = () => {
-    if (!formData.clientName.trim() || !formData.visaDate || !formData.entryDate) return;
+    if (!formData.clientName.trim() || !formData.entryDate) return;
 
     const payload = {
       ...formData,
+      visaDate: formData.visaDate || undefined,
       hotelId: formData.hotelId || undefined,
       assignedTo: formData.assignedTo || undefined,
     };
@@ -362,7 +363,7 @@ export const OmraVisasTab = () => {
             {/* Dates */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="visaDate">{t('visas.form.visaDate')} *</Label>
+                <Label htmlFor="visaDate">{t('visas.form.visaDate')}</Label>
                 <Input
                   id="visaDate"
                   type="date"
