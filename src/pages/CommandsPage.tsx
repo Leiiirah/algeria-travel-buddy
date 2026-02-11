@@ -84,6 +84,8 @@ const CommandsPage = () => {
   // Inline add payment type dialog (admin only)
   const [isAddPaymentTypeOpen, setIsAddPaymentTypeOpen] = useState(false);
   const [newPaymentTypeName, setNewPaymentTypeName] = useState('');
+  // Loading state for passport upload path (bypasses mutation)
+  const [isSubmitting, setIsSubmitting] = useState(false);
   // Form states
   const [formData, setFormData] = useState({
     clientFullName: '',
@@ -273,6 +275,7 @@ const CommandsPage = () => {
       const serviceType = getServiceType(selectedService);
       if (serviceType === 'visa' && passportFile && !editingCommandId) {
         // Use the API method with FormData for file upload
+        setIsSubmitting(true);
         api.createCommandWithPassport(commandPayload, passportFile)
           .then(() => {
             setIsDialogOpen(false);
@@ -283,6 +286,9 @@ const CommandsPage = () => {
           })
           .catch((error) => {
             console.error('Error creating command with passport:', error);
+          })
+          .finally(() => {
+            setIsSubmitting(false);
           });
       } else {
         createCommand.mutate(
@@ -1115,8 +1121,9 @@ const CommandsPage = () => {
                     <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
                       {tCommon('actions.cancel')}
                     </Button>
-                    <Button onClick={handleCreateCommand} disabled={!selectedService || createCommand.isPending || updateCommand.isPending}>
-                      {createCommand.isPending || updateCommand.isPending ? t('actions.saving') : (editingCommandId ? t('actions.edit') : t('actions.create'))}
+                    <Button onClick={handleCreateCommand} disabled={!selectedService || createCommand.isPending || updateCommand.isPending || isSubmitting}>
+                      {(createCommand.isPending || updateCommand.isPending || isSubmitting) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                      {createCommand.isPending || updateCommand.isPending || isSubmitting ? t('actions.saving') : (editingCommandId ? t('actions.edit') : t('actions.create'))}
                     </Button>
                   </DialogFooter>
                 </DialogContent>

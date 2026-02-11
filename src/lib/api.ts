@@ -100,6 +100,7 @@ export interface CreateCommandDto {
   amountPaid: number;
   buyingPrice: number;
   assignedTo?: string;
+  commandDate?: string;
 }
 
 export interface UpdateCommandDto {
@@ -109,6 +110,8 @@ export interface UpdateCommandDto {
   sellingPrice?: number;
   amountPaid?: number;
   buyingPrice?: number;
+  assignedTo?: string;
+  commandDate?: string;
 }
 
 export interface CreatePaymentDto {
@@ -897,6 +900,12 @@ class ApiClient {
     formData.append('sellingPrice', data.sellingPrice.toString());
     formData.append('amountPaid', data.amountPaid.toString());
     formData.append('buyingPrice', data.buyingPrice.toString());
+    if (data.assignedTo) {
+      formData.append('assignedTo', data.assignedTo);
+    }
+    if (data.commandDate) {
+      formData.append('commandDate', data.commandDate);
+    }
     formData.append('passport', passportFile);
     return this.requestWithFormData('/commands/with-passport', formData);
   };
