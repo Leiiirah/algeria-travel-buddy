@@ -71,7 +71,7 @@
     "assignTo": "تعيين إلى",
     "selectEmployee": "اختر موظفاً",
     "unassigned": "غير معين",
-    "commandDate": "تاريخ الطلب",
+    "commandDate": "تاريخ الطلب (اختياري)",
     "commandDateHelp": "اختياري. إذا لم يتم تحديده، سيتم استخدام تاريخ الإنشاء.",
     "paymentType": "نوع الدفع",
     "selectPaymentType": "اختر نوع الدفع",

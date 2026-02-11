@@ -71,7 +71,7 @@
     "assignTo": "Attribuer à",
     "selectEmployee": "Sélectionner un employé",
     "unassigned": "Non attribué",
-    "commandDate": "Date de commande",
+    "commandDate": "Date de commande (optionnel)",
     "commandDateHelp": "Optionnel. Si non renseignée, la date de création sera utilisée.",
     "paymentType": "Type de paiement",
     "selectPaymentType": "Sélectionner le type",
