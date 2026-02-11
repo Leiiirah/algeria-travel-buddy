@@ -40,6 +40,10 @@ export class CreateCommandDto {
   @IsOptional()
   passportUrl?: string;
 
+  @IsDateString()
+  @IsOptional()
+  commandDate?: string;
+
   @IsUUID()
   @IsOptional()
   assignedTo?: string;

@@ -17,8 +17,8 @@ export class CreateOmraVisaDto {
   phone?: string;
 
   @IsDateString()
-  @IsNotEmpty()
-  visaDate: string;
+  @IsOptional()
+  visaDate?: string;
 
   @IsDateString()
   @IsNotEmpty()

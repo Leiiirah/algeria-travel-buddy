@@ -100,6 +100,7 @@ const CommandsPage = () => {
     description: '',
     assignedTo: '',
     paymentType: '',
+    commandDate: '',
   });
 
   const debouncedSearch = useDebounce(searchQuery, 500);
@@ -179,6 +180,7 @@ const CommandsPage = () => {
       description: '',
       assignedTo: '',
       paymentType: '',
+      commandDate: '',
     });
     setEditingCommandId(null);
     setPassportFile(null);
@@ -249,6 +251,7 @@ const CommandsPage = () => {
       buyingPrice: formData.buyingPrice,
       supplierId: formData.supplierId,
       assignedTo: formData.assignedTo || undefined,
+      commandDate: formData.commandDate || undefined,
     };
 
     if (editingCommandId) {
@@ -329,6 +332,7 @@ const CommandsPage = () => {
 
     formUpdates.assignedTo = command.assignedTo || '';
     formUpdates.paymentType = (command.data as any).paymentType || '';
+    formUpdates.commandDate = command.commandDate ? new Date(command.commandDate).toISOString().split('T')[0] : '';
 
     setFormData(prev => ({ ...prev, ...formUpdates }));
     setIsDialogOpen(true);
@@ -829,6 +833,7 @@ const CommandsPage = () => {
                           description: '',
                           assignedTo: '',
                           paymentType: '',
+                          commandDate: '',
                         });
                         setEditingCommandId(null);
                       }}>
@@ -886,6 +891,16 @@ const CommandsPage = () => {
                             onChange={(e) => setFormData({ ...formData, destination: e.target.value })}
                             placeholder="Ex: ALG-IST-ALG"
                           />
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label>{t('form.commandDate')}</Label>
+                          <Input
+                            type="date"
+                            value={formData.commandDate}
+                            onChange={(e) => setFormData({ ...formData, commandDate: e.target.value })}
+                          />
+                          <p className="text-xs text-muted-foreground">{t('form.commandDateHelp')}</p>
                         </div>
 
                         {/* Accounting fields */}

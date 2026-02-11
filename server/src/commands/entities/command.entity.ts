@@ -57,6 +57,9 @@ export class Command {
   @Column({ nullable: true })
   passportUrl: string;
 
+  @Column({ type: 'timestamp', nullable: true })
+  commandDate: Date;
+
   @Column({ nullable: true })
   assignedTo: string;
 

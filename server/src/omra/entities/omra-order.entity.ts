@@ -44,7 +44,7 @@ export class OmraOrder {
   @Column({ nullable: true })
   phone: string;
 
-  @Column({ type: 'date' })
+  @Column({ type: 'date', nullable: true })
   orderDate: Date;
 
   @Column({ type: 'date' })

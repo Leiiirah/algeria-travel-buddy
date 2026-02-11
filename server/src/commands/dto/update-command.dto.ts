@@ -5,6 +5,7 @@ import {
   IsObject,
   IsEnum,
   IsUUID,
+  IsDateString,
 } from 'class-validator';
 import { CommandStatus } from '../entities/command.entity';
 
@@ -44,6 +45,10 @@ export class UpdateCommandDto {
   @IsString()
   @IsOptional()
   passportUrl?: string;
+
+  @IsDateString()
+  @IsOptional()
+  commandDate?: string;
 
   @IsUUID()
   @IsOptional()

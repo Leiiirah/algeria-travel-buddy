@@ -22,7 +22,7 @@ export class OmraVisa {
   @Column({ nullable: true })
   phone: string;
 
-  @Column({ type: 'date' })
+  @Column({ type: 'date', nullable: true })
   visaDate: Date;
 
   @Column({ type: 'date' })
