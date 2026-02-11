@@ -32,5 +32,19 @@
     "fri": "الجمعة",
     "sat": "السبت",
     "sun": "الأحد"
+  },
+  "tasks": {
+    "title": "مهامي",
+    "ongoingTitle": "قيد التنفيذ",
+    "unreadTitle": "غير مقروءة",
+    "emptyOngoing": "لا توجد مهام قيد التنفيذ",
+    "emptyUnread": "لا توجد مهام جديدة",
+    "viewAll": "عرض جميع المهام",
+    "dueDate": "تاريخ الاستحقاق",
+    "priority": {
+      "urgent": "عاجل",
+      "normal": "عادي",
+      "critical": "حرج"
+    }
   }
 }

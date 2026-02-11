@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { StatsCard } from '@/components/dashboard/StatsCard';
+import { EmployeeTasksSection } from '@/components/dashboard/EmployeeTasksSection';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -11,6 +12,8 @@ import {
   AlertCircle,
 } from 'lucide-react';
 import { formatDZD, getCommandStatusLabel, getPaymentStatusFromAmounts } from '@/lib/utils';
+import { useAuth } from '@/contexts/AuthContext';
+import { useInternalTasks } from '@/hooks/useInternalTasks';
 import {
   ResponsiveContainer,
   PieChart,
@@ -31,9 +34,11 @@ import { ErrorState } from '@/components/ui/error-state';
 
 const DashboardPage = () => {
   const { t, i18n } = useTranslation('dashboard');
+  const { user, isAdmin } = useAuth();
   const { data: stats, isLoading: statsLoading, isError: statsError, error, refetch: refetchStats } = useDashboardStats();
   const { data: commandsData, isLoading: commandsLoading } = useCommands({ limit: 5 });
   const { data: services } = useServices();
+  const { data: tasks } = useInternalTasks();
 
   const isLoading = statsLoading || commandsLoading;
 
@@ -289,6 +294,10 @@ const DashboardPage = () => {
           </CardContent>
         </Card>
       </div>
+      {/* Employee Tasks Section */}
+      {!isAdmin && tasks && tasks.length > 0 && (
+        <EmployeeTasksSection tasks={tasks} />
+      )}
     </DashboardLayout>
   );
 };
