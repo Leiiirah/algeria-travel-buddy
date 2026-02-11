@@ -1,34 +1,49 @@
 
-# Make Reports Chart Dynamic with Real Data
+# Add Employee Tasks Section to Dashboard
 
 ## Overview
-Replace the hardcoded dummy data in the "Revenus vs Depenses" chart on the Rapports tab with real data computed from existing payments (revenue) and expenses (depenses), grouped by month for the last 6 months.
+Add a new section to the Dashboard page that is visible only to employees, showing their internal tasks split into two categories: ongoing tasks ("En cours") and unread tasks ("Non lue" -- tasks with visibility = 'unreadable').
 
 ## Changes
 
-### 1. Fetch Expenses Data in AccountingPage
+### 1. Add translations for the new section
 
-**File:** `src/pages/AccountingPage.tsx`
-- Import `useExpenses` from `@/hooks/useExpenses`
-- Call `useExpenses()` to fetch all expenses alongside existing payments and commands data
+**File:** `src/i18n/locales/fr/dashboard.json`
+- Add a new `tasks` key with translations:
+  - `title`: "Mes missions"
+  - `ongoingTitle`: "En cours"
+  - `unreadTitle`: "Non lue"
+  - `emptyOngoing`: "Aucune mission en cours"
+  - `emptyUnread`: "Aucune nouvelle mission"
+  - `viewAll`: "Voir toutes les missions"
+  - `dueDate`: "Echéance"
+  - `priority`: labels for urgent/normal/critical
 
-### 2. Replace Hardcoded `monthlyData` with Dynamic Computation
+**File:** `src/i18n/locales/ar/dashboard.json`
+- Add corresponding Arabic translations for the same keys.
 
-**File:** `src/pages/AccountingPage.tsx`
-- Remove the static `monthlyData` array (lines 125-132)
-- Add a `useMemo` that computes monthly data for the last 6 months:
-  - Loop over the last 6 months (including current month)
-  - For each month, sum payment amounts from `allPayments` where `createdAt` falls in that month (this is the "revenus" / revenue)
-  - For each month, sum expense amounts from `expenses` where the expense date falls in that month (this is the "depenses" / expenses)
-  - Format month names using the current i18n locale (French or Arabic month abbreviations)
-- The result is an array like `[{ mois: "Sep", revenus: 50000, depenses: 12000 }, ...]`
+### 2. Add the tasks section to DashboardPage
+
+**File:** `src/pages/DashboardPage.tsx`
+- Import `useInternalTasks` from `@/hooks/useInternalTasks`
+- Import `useAuth` from `@/contexts/AuthContext`
+- Import necessary icons (`ClipboardCheck`, `Clock`, `Eye`, `EyeOff`, etc.)
+- Import `Link` from react-router-dom for a "View all" link
+- Call `useInternalTasks()` only when the user is an employee (or for all users -- the backend already filters by role)
+- After the "Recent Commands" section, add a new section visible to employees:
+  - Two side-by-side cards (grid layout):
+    - **"En cours" card**: Shows tasks where `status === 'in_progress'` and `visibility === 'clear'`
+    - **"Non lue" card**: Shows tasks where `visibility === 'unreadable'`
+  - Each task card shows: title, priority badge (color-coded), and due date if present
+  - A "View all" link at the bottom navigating to `/internal-tasks`
+  - Empty states when no tasks exist in either category
 
 ### Technical Details
 
 | Area | File | Change |
 |------|------|--------|
-| Import | `AccountingPage.tsx` | Add `useExpenses`, `useMemo` imports |
-| Data fetch | `AccountingPage.tsx` | Call `useExpenses()` hook |
-| Chart data | `AccountingPage.tsx` | Replace static array with dynamic `useMemo` computation |
+| Translations | `fr/dashboard.json` | Add `tasks` section |
+| Translations | `ar/dashboard.json` | Add `tasks` section |
+| Dashboard | `DashboardPage.tsx` | Import hooks, add conditional employee tasks section |
 
-The chart component itself (`BarChart`, `Bar`, etc.) remains unchanged -- only its `data` prop switches from static to dynamic.
+The section will use the existing `useInternalTasks` hook which already returns only the employee's own tasks (backend filtering). Tasks are split client-side by `status` and `visibility` fields.
