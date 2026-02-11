@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
@@ -65,6 +65,7 @@ import { ErrorState } from '@/components/ui/error-state';
 import { EmptyState } from '@/components/ui/empty-state';
 import { useAuth } from '@/contexts/AuthContext';
 import EmployeeCaisseTable from '@/components/accounting/EmployeeCaisseTable';
+import { useExpenses } from '@/hooks/useExpenses';
 
 const AccountingPage = () => {
   const { t, i18n } = useTranslation('accounting');
@@ -97,9 +98,11 @@ const AccountingPage = () => {
   const { data: commandsData } = useCommands({});
   const { data: services } = useServices();
   const createPayment = useCreatePayment();
+  const { data: expensesData } = useExpenses();
 
   const commands = commandsData?.data ?? [];
   const allPayments = payments ?? [];
+  const allExpenses = expensesData ?? [];
 
   // Calculate stats
   const totalRevenue = allPayments.reduce((sum, p) => sum + Number(p.amount || 0), 0);
@@ -121,15 +124,25 @@ const AccountingPage = () => {
     (cmd) => calculateRemainingBalance(cmd.sellingPrice, cmd.amountPaid) > 0
   );
 
-  // Monthly data for chart
-  const monthlyData = [
-    { mois: t('reports.months.jan'), revenus: 850000, depenses: 320000 },
-    { mois: t('reports.months.feb'), revenus: 920000, depenses: 280000 },
-    { mois: t('reports.months.mar'), revenus: 780000, depenses: 350000 },
-    { mois: t('reports.months.apr'), revenus: 1050000, depenses: 290000 },
-    { mois: t('reports.months.may'), revenus: 890000, depenses: 310000 },
-    { mois: t('reports.months.jun'), revenus: 1150000, depenses: 340000 },
-  ];
+  // Monthly data for chart - last 6 months from real data
+  const monthlyData = useMemo(() => {
+    const now = new Date();
+    const months: { mois: string; revenus: number; depenses: number }[] = [];
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const year = d.getFullYear();
+      const month = d.getMonth();
+      const label = d.toLocaleDateString(i18n.language === 'ar' ? 'ar-DZ' : 'fr-FR', { month: 'short' });
+      const revenus = allPayments
+        .filter((p) => { const pd = new Date(p.createdAt); return pd.getFullYear() === year && pd.getMonth() === month; })
+        .reduce((sum, p) => sum + Number(p.amount || 0), 0);
+      const depenses = allExpenses
+        .filter((e) => { const ed = new Date(e.date); return ed.getFullYear() === year && ed.getMonth() === month; })
+        .reduce((sum, e) => sum + Number(e.amount || 0), 0);
+      months.push({ mois: label, revenus, depenses });
+    }
+    return months;
+  }, [allPayments, allExpenses, i18n.language]);
 
   const handleAddPayment = () => {
     if (!selectedCommand || !newPayment.amount) {
