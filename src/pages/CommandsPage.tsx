@@ -348,7 +348,8 @@ const CommandsPage = () => {
     const command = commands.find((c) => c.id === commandId);
     if (!command || !user) return;
 
-    if (!isCommandEditable(command, user.id)) {
+    // Admins can delete any command at any time
+    if (user.role !== 'admin' && !isCommandEditable(command, user.id)) {
       return;
     }
 
@@ -1160,6 +1161,7 @@ const CommandsPage = () => {
                   {commands.map((command) => {
                     const service = services?.find((s) => s.id === command.serviceId);
                     const canEdit = user ? isCommandEditable(command, user.id) : false;
+                    const canDelete = user?.role === 'admin' || canEdit;
                     const remaining = calculateRemainingBalance(command.sellingPrice, command.amountPaid);
                     const profit = calculateNetProfit(command.sellingPrice, command.buyingPrice);
 
@@ -1251,19 +1253,19 @@ const CommandsPage = () => {
                                 {t('actions.printInvoice')}
                               </DropdownMenuItem>
                               {canEdit && (
-                                <>
-                                  <DropdownMenuItem onClick={() => handleEditCommand(command)}>
-                                    <Edit className="ltr:mr-2 rtl:ml-2 h-4 w-4" />
-                                    {tCommon('actions.edit')}
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem
-                                    className="text-destructive"
-                                    onClick={() => handleDeleteCommand(command.id)}
-                                  >
-                                    <Trash2 className="ltr:mr-2 rtl:ml-2 h-4 w-4" />
-                                    {tCommon('actions.delete')}
-                                  </DropdownMenuItem>
-                                </>
+                                <DropdownMenuItem onClick={() => handleEditCommand(command)}>
+                                  <Edit className="ltr:mr-2 rtl:ml-2 h-4 w-4" />
+                                  {tCommon('actions.edit')}
+                                </DropdownMenuItem>
+                              )}
+                              {canDelete && (
+                                <DropdownMenuItem
+                                  className="text-destructive"
+                                  onClick={() => handleDeleteCommand(command.id)}
+                                >
+                                  <Trash2 className="ltr:mr-2 rtl:ml-2 h-4 w-4" />
+                                  {tCommon('actions.delete')}
+                                </DropdownMenuItem>
                               )}
                             </DropdownMenuContent>
                           </DropdownMenu>
