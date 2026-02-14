@@ -1,36 +1,86 @@
 
 
-# Fix Command Creation: Loading Indicator and Assignment Bug
+# Fix: Employee Command Stats Should Only Show Their Own Data
 
-## Overview
-Two issues need to be fixed in the Commands page:
-1. No loading feedback when submitting a new command, risking duplicate submissions
-2. Employee assignment is lost when creating visa commands with passport upload
+## Problem
+The `/commands/stats` endpoint returns company-wide totals (Total Versements, Total Credit, Total Benefice Net) without filtering by user. Employees see the same global numbers as admins.
 
-## Issue 1: Missing Loading Indicator on Submit
+## Solution
+The simplest and most reliable fix is to **stop using the global stats endpoint for employees** and instead calculate the totals from the commands already visible on the page (which are already filtered server-side by `createdBy`).
 
-**Problem:** The submit button stays active during command creation, allowing multiple clicks.
+## Technical Changes
 
-**Fix in `src/pages/CommandsPage.tsx`:**
-- Track a local `isSubmitting` state for the passport-upload code path (which bypasses the mutation)
-- Disable the submit button and show a spinner when either `createCommand.isPending`, `updateCommand.isPending`, or the local `isSubmitting` state is true
-- The button already imports `Loader2` icon -- just need to wire it up in the DialogFooter
+### File: `src/pages/CommandsPage.tsx`
 
-## Issue 2: Assignment Not Working on Create
+**Current behavior (lines 130-151):** The `totals` memo uses `statsData` from the global `/commands/stats` API when available, and only falls back to local calculation when `statsData` is missing.
 
-**Problem:** The `createCommandWithPassport` method in `src/lib/api.ts` builds a `FormData` object but never appends the `assignedTo` field. So when creating a visa command with a passport file, the employee assignment is silently dropped.
+**Fix:** For non-admin users, always calculate totals from the locally filtered `commands` array. Only use `statsData` for admins.
 
-**Fix in `src/lib/api.ts`:**
-- Add `assignedTo` to the FormData in `createCommandWithPassport` (only when it has a value)
-- Also add `commandDate` which is similarly missing from the FormData builder
+```typescript
+const totals = useMemo(() => {
+  // For admins, use global stats if available
+  if (user?.role === 'admin' && statsData) {
+    return {
+      totalPaid: statsData.totalPaid,
+      totalRemaining: statsData.totalRemaining,
+      totalProfit: statsData.totalProfit,
+    };
+  }
+  // For employees (or when stats unavailable), calculate from visible commands
+  return commands.reduce(
+    (acc, cmd) => {
+      const remaining = calculateRemainingBalance(cmd.sellingPrice, cmd.amountPaid);
+      const profit = calculateNetProfit(cmd.sellingPrice, cmd.buyingPrice);
+      return {
+        totalPaid: acc.totalPaid + cmd.amountPaid,
+        totalRemaining: acc.totalRemaining + remaining,
+        totalProfit: acc.totalProfit + profit,
+      };
+    },
+    { totalPaid: 0, totalRemaining: 0, totalProfit: 0 }
+  );
+}, [user?.role, statsData, commands]);
+```
 
-**Fix in `src/lib/api.ts` (UpdateCommandDto):**
-- Add the missing `assignedTo?: string` and `commandDate?: string` fields to `UpdateCommandDto` for type safety
+**Note on pagination:** The commands list is paginated (default 20 per page). For employees with more than 20 commands, the local calculation would only cover the current page. To handle this correctly, we will also fetch **all** employee commands for the totals by passing a high limit, or better yet, make the stats endpoint user-aware.
 
-## Summary of Changes
+### File: `server/src/commands/commands.controller.ts` (line 62-65)
+
+Pass the user context to `getStats()` so it filters by user for employees:
+
+```typescript
+@Get('stats')
+getStats(@Request() req: any) {
+  const isAdmin = req.user.role === 'admin';
+  return this.commandsService.getStats(isAdmin ? undefined : req.user.id);
+}
+```
+
+### File: `server/src/commands/commands.service.ts` (getStats method)
+
+Accept an optional `userId` parameter and filter commands accordingly:
+
+```typescript
+async getStats(userId?: string) {
+  const queryBuilder = this.commandsRepository.createQueryBuilder('command');
+  if (userId) {
+    queryBuilder.where(
+      '(command.createdBy = :userId OR command.assignedTo = :userId)',
+      { userId }
+    );
+  }
+  const commands = await queryBuilder.getMany();
+  // ... rest stays the same
+}
+```
+
+## Summary
 
 | File | Change |
 |------|--------|
-| `src/lib/api.ts` | Append `assignedTo` and `commandDate` to FormData in `createCommandWithPassport`; add missing fields to `UpdateCommandDto` |
-| `src/pages/CommandsPage.tsx` | Add `isSubmitting` state for passport upload path; disable submit button and show spinner during any submission |
+| `server/src/commands/commands.controller.ts` | Pass user info to `getStats()` for role-based filtering |
+| `server/src/commands/commands.service.ts` | Filter `getStats()` by userId for employees |
+| `src/pages/CommandsPage.tsx` | Update `totals` memo to use role-aware logic as fallback safety |
+
+This ensures employees only see stats from their own commands, matching the data isolation policy already in place for the commands list.
 
