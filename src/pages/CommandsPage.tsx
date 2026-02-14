@@ -1183,12 +1183,20 @@ const CommandsPage = () => {
                           <div>
                             <p className="font-medium">{command.data.clientFullName}</p>
                             <p className="text-xs text-muted-foreground">{command.data.phone}</p>
+                            {command.creator && (
+                              <Badge 
+                                variant="outline" 
+                                className="text-xs mt-1 bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-400"
+                              >
+                                {t('table.by')} {command.creator.firstName}
+                              </Badge>
+                            )}
                             {command.assignee && (
                               <Badge 
                                 variant="outline" 
                                 className="text-xs mt-1 bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
                               >
-                                {t('table.by')} {command.assignee.firstName}
+                                {t('table.assignee')}: {command.assignee.firstName}
                               </Badge>
                             )}
                           </div>
