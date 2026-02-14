@@ -1,50 +1,69 @@
 
-
-# Fix: 500 Error on GET /api/commands
+# Fix: TypeORM orderBy Cannot Handle COALESCE Expression
 
 ## Root Cause
-The `COALESCE(command."commandDate", command."createdAt")` used in the `orderBy` call on line 98 of `server/src/commands/commands.service.ts` is causing a SQL error. TypeORM's `orderBy` method can fail with raw SQL expressions containing double-quoted identifiers because it tries to re-escape them.
+TypeORM's `orderBy('COALESCE(command.commandDate, command.createdAt)', 'DESC')` splits the string on `.` and treats `COALESCE(command` as an alias name, which fails. This happens regardless of quoting -- it's a fundamental limitation of `orderBy`.
 
 ## Fix
 
-**File: `server/src/commands/commands.service.ts`** (line 97-101)
+Use `addSelect` to create a computed column with an alias, then `orderBy` that alias. Also use raw SQL column references (with double-quoted actual DB column names, not property names) in `andWhere` since those go directly into the WHERE clause and are not parsed the same way.
 
-Replace the `orderBy` with `addOrderBy` and avoid double-quoting issues by using a simpler expression syntax:
+**File: `server/src/commands/commands.service.ts`**
+
+### 1. Add a select alias for the effective date (after the initial queryBuilder creation, around line 51)
 
 ```typescript
-// Before (broken):
-const data = await queryBuilder
-  .orderBy('COALESCE(command."commandDate", command."createdAt")', 'DESC')
-  .skip(skip)
-  .take(limit)
-  .getMany();
+const queryBuilder = this.commandsRepository
+  .createQueryBuilder('command')
+  .leftJoinAndSelect('command.service', 'service')
+  .leftJoinAndSelect('command.supplier', 'supplier')
+  .leftJoinAndSelect('command.creator', 'creator')
+  .leftJoinAndSelect('command.assignee', 'assignee')
+  .addSelect('COALESCE(command."commandDate", command."createdAt")', 'effective_date');
+```
 
-// After (fixed):
+### 2. Fix the fromDate/toDate WHERE clauses (lines 75, 81)
+
+In `andWhere`, raw SQL is passed directly to PostgreSQL, so we need actual column names with double quotes:
+
+```typescript
+// fromDate filter
+queryBuilder.andWhere(
+  'COALESCE(command."commandDate", command."createdAt") >= :fromDate',
+  { fromDate: new Date(fromDate) }
+);
+
+// toDate filter  
+queryBuilder.andWhere(
+  'COALESCE(command."commandDate", command."createdAt") <= :toDate',
+  { toDate: new Date(toDate) }
+);
+```
+
+### 3. Fix the orderBy (line 98)
+
+Order by the select alias instead of re-specifying the expression:
+
+```typescript
 const data = await queryBuilder
-  .orderBy('COALESCE(command.commandDate, command.createdAt)', 'DESC')
+  .orderBy('effective_date', 'DESC')
   .skip(skip)
   .take(limit)
   .getMany();
 ```
 
-Also fix the same quoting pattern in the `fromDate` and `toDate` filters (lines 75 and 81):
-
-```typescript
-// Before:
-'COALESCE(command."commandDate", command."createdAt") >= :fromDate'
-'COALESCE(command."commandDate", command."createdAt") <= :toDate'
-
-// After:
-'COALESCE(command.commandDate, command.createdAt) >= :fromDate'
-'COALESCE(command.commandDate, command.createdAt) <= :toDate'
-```
-
-TypeORM's QueryBuilder uses property names (camelCase), not raw SQL column names with double quotes. The double quotes cause the SQL generation to break.
+## Why This Works
+- `addSelect` creates a named computed column (`effective_date`) that TypeORM recognizes as a valid alias
+- `orderBy('effective_date', 'DESC')` references that alias without any dot-splitting issues
+- `andWhere` passes raw SQL directly to PostgreSQL, so double-quoted column names work correctly there
 
 ## Summary
 
-| File | Change |
-|------|--------|
-| `server/src/commands/commands.service.ts` | Remove double quotes from COALESCE column references in orderBy and where clauses (lines 75, 81, 98) |
+| Line(s) | Change |
+|---------|--------|
+| ~51 | Add `.addSelect('COALESCE(command."commandDate", command."createdAt")', 'effective_date')` |
+| 75 | Use double-quoted column names in fromDate WHERE |
+| 81 | Use double-quoted column names in toDate WHERE |
+| 98 | Change `orderBy` to use `'effective_date'` alias |
 
 The backend server will need to be redeployed after this fix.
