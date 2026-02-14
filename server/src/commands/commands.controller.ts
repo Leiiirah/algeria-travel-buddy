@@ -108,6 +108,7 @@ export class CommandsController implements OnModuleInit {
       buyingPrice: parseFloat(createDto.buyingPrice) || 0,
       passportUrl: file?.filename || undefined,
       assignedTo: createDto.assignedTo || undefined,
+      commandDate: createDto.commandDate || undefined,
     };
     return this.commandsService.create(parsedDto, req.user.id);
   }

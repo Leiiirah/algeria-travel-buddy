@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { formatLocalDate } from '@/utils/dateHelpers';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
@@ -347,7 +348,7 @@ const CommandsPage = () => {
 
     formUpdates.assignedTo = command.assignedTo || '';
     formUpdates.paymentType = (command.data as any).paymentType || '';
-    formUpdates.commandDate = command.commandDate ? new Date(command.commandDate).toISOString().split('T')[0] : '';
+    formUpdates.commandDate = command.commandDate ? formatLocalDate(new Date(command.commandDate)) : '';
 
     setFormData(prev => ({ ...prev, ...formUpdates }));
     setIsDialogOpen(true);

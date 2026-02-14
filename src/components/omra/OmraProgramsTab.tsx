@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { formatLocalDate } from '@/utils/dateHelpers';
 import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -98,8 +99,8 @@ export const OmraProgramsTab = () => {
       setEditingProgram(program);
       setFormData({
         name: program.name,
-        periodFrom: new Date(program.periodFrom).toISOString().split('T')[0],
-        periodTo: new Date(program.periodTo).toISOString().split('T')[0],
+        periodFrom: formatLocalDate(new Date(program.periodFrom)),
+        periodTo: formatLocalDate(new Date(program.periodTo)),
         totalPlaces: program.totalPlaces,
         hotelId: program.hotelId || '',
         pricing: { ...defaultPricing, ...(program.pricing || {}) },
