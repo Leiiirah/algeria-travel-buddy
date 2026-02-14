@@ -50,7 +50,8 @@ export class CommandsService {
       .leftJoinAndSelect('command.service', 'service')
       .leftJoinAndSelect('command.supplier', 'supplier')
       .leftJoinAndSelect('command.creator', 'creator')
-      .leftJoinAndSelect('command.assignee', 'assignee');
+      .leftJoinAndSelect('command.assignee', 'assignee')
+      .addSelect('COALESCE(command."commandDate", command."createdAt")', 'effective_date');
 
     if (status) {
       queryBuilder.andWhere('command.status = :status', { status });
@@ -72,13 +73,13 @@ export class CommandsService {
     }
 
     if (fromDate) {
-      queryBuilder.andWhere('COALESCE(command.commandDate, command.createdAt) >= :fromDate', {
+      queryBuilder.andWhere('COALESCE(command."commandDate", command."createdAt") >= :fromDate', {
         fromDate: new Date(fromDate),
       });
     }
 
     if (toDate) {
-      queryBuilder.andWhere('COALESCE(command.commandDate, command.createdAt) <= :toDate', {
+      queryBuilder.andWhere('COALESCE(command."commandDate", command."createdAt") <= :toDate', {
         toDate: new Date(toDate),
       });
     }
@@ -95,7 +96,7 @@ export class CommandsService {
     const skip = (page - 1) * limit;
 
     const data = await queryBuilder
-      .orderBy('COALESCE(command.commandDate, command.createdAt)', 'DESC')
+      .orderBy('effective_date', 'DESC')
       .skip(skip)
       .take(limit)
       .getMany();
