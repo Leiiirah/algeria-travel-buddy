@@ -127,8 +127,16 @@ const CommandsPage = () => {
 
   const commands = commandsData?.data ?? [];
 
-  // Use stats from API or calculate from current page
+  // Use stats from API for admins, calculate from visible commands for employees
   const totals = useMemo(() => {
+    if (user?.role === 'admin' && statsData) {
+      return {
+        totalPaid: statsData.totalPaid,
+        totalRemaining: statsData.totalRemaining,
+        totalProfit: statsData.totalProfit,
+      };
+    }
+    // For employees, stats endpoint is now user-filtered, so use it if available
     if (statsData) {
       return {
         totalPaid: statsData.totalPaid,
@@ -136,6 +144,7 @@ const CommandsPage = () => {
         totalProfit: statsData.totalProfit,
       };
     }
+    // Fallback: calculate from current page commands
     return commands.reduce(
       (acc, cmd) => {
         const remaining = calculateRemainingBalance(cmd.sellingPrice, cmd.amountPaid);
@@ -148,7 +157,7 @@ const CommandsPage = () => {
       },
       { totalPaid: 0, totalRemaining: 0, totalProfit: 0 }
     );
-  }, [statsData, commands]);
+  }, [user?.role, statsData, commands]);
 
   // Real-time form calculations
   const formCalculations = useMemo(() => {
