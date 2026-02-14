@@ -422,7 +422,7 @@ const CommandsPage = () => {
       clientName: command.data.clientFullName || command.data.nomPrenom || command.data.clientName || '',
       clientPhone: command.data.phone || '',
       clientPassport: command.data.passportNumber || '',
-      invoiceDate: format(new Date(command.createdAt), 'dd/MM/yyyy'),
+      invoiceDate: format(new Date(command.commandDate || command.createdAt), 'dd/MM/yyyy'),
       totalAmount: Number(command.sellingPrice),
       paidAmount: Number(command.amountPaid),
       remaining: Number(command.sellingPrice) - Number(command.amountPaid),
@@ -1323,7 +1323,7 @@ const CommandsPage = () => {
                   </div>
                   <div>
                     <Label className="text-muted-foreground text-xs">{t('details.createdAt')}</Label>
-                    <p className="font-medium">{format(new Date(viewingCommand.createdAt), 'dd/MM/yyyy HH:mm')}</p>
+                    <p className="font-medium">{format(new Date(viewingCommand.commandDate || viewingCommand.createdAt), 'dd/MM/yyyy')}</p>
                   </div>
                 </div>
 
