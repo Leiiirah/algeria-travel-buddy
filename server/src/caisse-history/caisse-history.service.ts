@@ -90,9 +90,15 @@ export class CaisseHistoryService {
 
   private async calculateEmployeeStats(employeeId: string, lastResetDate: Date | null) {
     const [commands, omraOrders, omraVisas] = await Promise.all([
-      this.commandsRepo.find({ where: { assignedTo: employeeId } }),
-      this.omraOrdersRepo.find({ where: { assignedTo: employeeId } }),
-      this.omraVisasRepo.find({ where: { assignedTo: employeeId } }),
+      this.commandsRepo.createQueryBuilder('c')
+        .where('c.assignedTo = :id OR c.createdBy = :id', { id: employeeId })
+        .getMany(),
+      this.omraOrdersRepo.createQueryBuilder('o')
+        .where('o.assignedTo = :id OR o.createdBy = :id', { id: employeeId })
+        .getMany(),
+      this.omraVisasRepo.createQueryBuilder('v')
+        .where('v.assignedTo = :id OR v.createdBy = :id', { id: employeeId })
+        .getMany(),
     ]);
 
     // Filter by reset date if exists
