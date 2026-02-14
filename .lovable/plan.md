@@ -1,31 +1,62 @@
 
-# Add "Created by" Badge on Command Items
+# Fix: Employee-Created Commands in Caisse + Hide Creator Badge for Employees
 
-## Problem
-When an employee creates a command, the admin cannot see which employee created it in the commands table. Currently only the "assignee" badge is shown.
+## Two Changes
 
-## Solution
-Add a "par [creator name]" badge next to the client name in the commands table, similar to the existing assignee badge. This badge will show the creator's name so admins can track who created each command.
+### 1. Include employee-created commands in Caisse stats
 
-## Technical Changes
+Currently, the caisse calculation (both in `analytics.service.ts` and `caisse-history.service.ts`) only counts commands where `assignedTo = employeeId`. Commands that an employee **created** (but didn't explicitly assign to themselves) are ignored.
 
-### File: `src/pages/CommandsPage.tsx` (around line 1186)
+**Fix:** Change the filter logic to include commands where `assignedTo = employeeId` **OR** `createdBy = employeeId`, while avoiding double-counting when both fields match the same employee.
 
-Add a creator badge right after the client info, before the existing assignee badge:
+**Files to change:**
 
+**`server/src/analytics/analytics.service.ts`** (lines 192-194)
+- Change the filter from only `assignedTo` to include `createdBy` as well, using a deduplication approach:
 ```typescript
-{command.creator && (
-  <Badge 
-    variant="outline" 
-    className="text-xs mt-1 bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-400"
-  >
+// Before:
+const assignedCommands = commands.filter(c => c.assignedTo === employee.id);
+
+// After:
+const assignedCommands = commands.filter(
+  c => c.assignedTo === employee.id || c.createdBy === employee.id
+);
+```
+Same for `omraOrders` and `omraVisas`.
+
+**`server/src/caisse-history/caisse-history.service.ts`** (lines 92-95)
+- Same change in `calculateEmployeeStats`:
+```typescript
+// Before:
+this.commandsRepo.find({ where: { assignedTo: employeeId } })
+
+// After: Use QueryBuilder with OR condition
+this.commandsRepo.createQueryBuilder('c')
+  .where('c.assignedTo = :id OR c.createdBy = :id', { id: employeeId })
+  .getMany()
+```
+Same for `omraOrders` and `omraVisas`.
+
+### 2. Hide "par..." creator badge for employees
+
+Since employees only see their own commands, showing "par [their own name]" is redundant.
+
+**File to change:**
+
+**`src/pages/CommandsPage.tsx`** (lines 1186-1193)
+- Wrap the creator badge with an admin role check:
+```typescript
+{user?.role === 'admin' && command.creator && (
+  <Badge ...>
     {t('table.by')} {command.creator.firstName}
   </Badge>
 )}
 ```
 
-This will appear with a green style to differentiate it from the blue assignee badge. Both badges will be visible when a command has a different creator and assignee.
+## Summary
 
 | File | Change |
 |------|--------|
-| `src/pages/CommandsPage.tsx` | Add creator badge ("par [name]") next to client name in commands table |
+| `server/src/analytics/analytics.service.ts` | Filter commands by `assignedTo OR createdBy` instead of only `assignedTo` |
+| `server/src/caisse-history/caisse-history.service.ts` | Same OR filter in `calculateEmployeeStats` |
+| `src/pages/CommandsPage.tsx` | Only show creator badge for admin users |
