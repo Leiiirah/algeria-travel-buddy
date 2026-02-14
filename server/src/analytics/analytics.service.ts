@@ -189,9 +189,9 @@ export class AnalyticsService {
     // Calculate stats per employee
     const employeeStats = employees.map(employee => {
       // Filter items assigned to this employee
-      const assignedCommands = commands.filter(c => c.assignedTo === employee.id);
-      const assignedOmraOrders = omraOrders.filter(o => o.assignedTo === employee.id);
-      const assignedOmraVisas = omraVisas.filter(v => v.assignedTo === employee.id);
+      const assignedCommands = commands.filter(c => c.assignedTo === employee.id || c.createdBy === employee.id);
+      const assignedOmraOrders = omraOrders.filter(o => o.assignedTo === employee.id || o.createdBy === employee.id);
+      const assignedOmraVisas = omraVisas.filter(v => v.assignedTo === employee.id || v.createdBy === employee.id);
 
       // Get last reset date for this employee
       const resetInfo = lastResetDates?.[employee.id];

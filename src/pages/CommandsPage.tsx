@@ -1183,7 +1183,7 @@ const CommandsPage = () => {
                           <div>
                             <p className="font-medium">{command.data.clientFullName}</p>
                             <p className="text-xs text-muted-foreground">{command.data.phone}</p>
-                            {command.creator && (
+                            {isAdmin && command.creator && (
                               <Badge 
                                 variant="outline" 
                                 className="text-xs mt-1 bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-400"
