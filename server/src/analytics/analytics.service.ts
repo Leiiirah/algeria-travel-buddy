@@ -25,7 +25,7 @@ export class AnalyticsService {
     // Build query based on role
     let queryBuilder = this.commandsRepo.createQueryBuilder('command')
       .leftJoinAndSelect('command.service', 'service')
-      .orderBy('command.createdAt', 'DESC');
+      .orderBy('COALESCE(command."commandDate", command."createdAt")', 'DESC');
     
     // Filter by user for non-admin
     if (!isAdmin && userId) {
@@ -47,7 +47,7 @@ export class AnalyticsService {
     today.setHours(0, 0, 0, 0);
 
     const todayCommands = commands.filter(c => {
-      const d = new Date(c.createdAt);
+      const d = new Date(c.commandDate || c.createdAt);
       d.setHours(0, 0, 0, 0);
       return d.getTime() === today.getTime();
     }).length;
@@ -64,7 +64,7 @@ export class AnalyticsService {
       const formattedName = dayName.charAt(0).toUpperCase() + dayName.slice(1);
       const dayRevenue = commands
         .filter(c => {
-          const cd = new Date(c.createdAt);
+          const cd = new Date(c.commandDate || c.createdAt);
           cd.setHours(0, 0, 0, 0);
           return cd.getTime() === d.getTime();
         })
@@ -122,9 +122,12 @@ export class AnalyticsService {
   }
 
   async getRevenueStats(fromDate: string, toDate: string) {
-    const commands = await this.commandsRepo.find({ where: { createdAt: Between(new Date(fromDate), new Date(toDate)) } });
+    const commands = await this.commandsRepo.createQueryBuilder('c')
+      .where('COALESCE(c."commandDate", c."createdAt") >= :fromDate', { fromDate: new Date(fromDate) })
+      .andWhere('COALESCE(c."commandDate", c."createdAt") <= :toDate', { toDate: new Date(toDate) })
+      .getMany();
     const grouped: Record<string, number> = {};
-    commands.forEach(c => { const d = c.createdAt.toISOString().split('T')[0]; grouped[d] = (grouped[d] || 0) + Number(c.sellingPrice || 0); });
+    commands.forEach(c => { const effectiveDate = new Date(c.commandDate || c.createdAt); const d = `${effectiveDate.getFullYear()}-${String(effectiveDate.getMonth()+1).padStart(2,'0')}-${String(effectiveDate.getDate()).padStart(2,'0')}`; grouped[d] = (grouped[d] || 0) + Number(c.sellingPrice || 0); });
     return Object.entries(grouped).map(([date, revenue]) => ({ date, revenue })).sort((a, b) => a.date.localeCompare(b.date));
   }
 
@@ -198,9 +201,9 @@ export class AnalyticsService {
       const resetDate = resetInfo ? new Date(resetInfo.resetDate) : null;
 
       // Filter by reset date if exists
-      const filterByDate = <T extends { createdAt: Date }>(items: T[]): T[] => {
+      const filterByDate = <T extends { createdAt: Date; commandDate?: Date }>(items: T[]): T[] => {
         if (!resetDate) return items;
-        return items.filter(item => new Date(item.createdAt) > resetDate);
+        return items.filter(item => new Date((item as any).commandDate || item.createdAt) > resetDate);
       };
 
       const filteredCommands = filterByDate(assignedCommands);

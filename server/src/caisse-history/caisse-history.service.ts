@@ -104,7 +104,7 @@ export class CaisseHistoryService {
     // Filter by reset date if exists
     const filterByDate = <T extends { createdAt: Date }>(items: T[]): T[] => {
       if (!lastResetDate) return items;
-      return items.filter(item => new Date(item.createdAt) > lastResetDate);
+      return items.filter(item => new Date((item as any).commandDate || item.createdAt) > lastResetDate);
     };
 
     const filteredCommands = filterByDate(commands);
