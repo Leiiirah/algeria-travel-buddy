@@ -120,8 +120,15 @@ export class CommandsService {
     return command;
   }
 
-  async getStats() {
-    const commands = await this.commandsRepository.find();
+  async getStats(userId?: string) {
+    const queryBuilder = this.commandsRepository.createQueryBuilder('command');
+    if (userId) {
+      queryBuilder.where(
+        '(command.createdBy = :userId OR command.assignedTo = :userId)',
+        { userId },
+      );
+    }
+    const commands = await queryBuilder.getMany();
 
     const totalPaid = commands.reduce(
       (sum, cmd) => sum + Number(cmd.amountPaid || 0),

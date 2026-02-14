@@ -60,8 +60,9 @@ export class CommandsController implements OnModuleInit {
   }
 
   @Get('stats')
-  getStats() {
-    return this.commandsService.getStats();
+  getStats(@Request() req: any) {
+    const isAdmin = req.user.role === 'admin';
+    return this.commandsService.getStats(isAdmin ? undefined : req.user.id);
   }
 
   @Get(':id')
