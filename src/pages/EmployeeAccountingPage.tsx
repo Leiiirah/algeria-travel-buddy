@@ -580,7 +580,7 @@ export default function EmployeeAccountingPage() {
                           return (
                             <TableRow key={command.id}>
                               <TableCell>
-                                {format(new Date(command.createdAt), 'dd MMM yyyy', { locale: dateLocale })}
+{format(new Date(command.commandDate || command.createdAt), 'dd MMM yyyy', { locale: dateLocale })}
                               </TableCell>
                               <TableCell className="font-medium">{clientName}</TableCell>
                               <TableCell>{serviceName}</TableCell>
@@ -799,7 +799,7 @@ export default function EmployeeAccountingPage() {
                         return (
                           <TableRow key={command.id}>
                             <TableCell>
-                              {format(new Date(command.createdAt), 'dd MMM yyyy', { locale: dateLocale })}
+                              {format(new Date(command.commandDate || command.createdAt), 'dd MMM yyyy', { locale: dateLocale })}
                             </TableCell>
                             <TableCell className="font-medium">{clientName}</TableCell>
                             <TableCell>{serviceName}</TableCell>
