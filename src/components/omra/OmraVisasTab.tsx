@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { formatLocalDate } from '@/utils/dateHelpers';
 import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -71,7 +72,7 @@ export const OmraVisasTab = () => {
   const [formData, setFormData] = useState({
     clientName: '',
     phone: '',
-    visaDate: new Date().toISOString().split('T')[0],
+    visaDate: formatLocalDate(new Date()),
     entryDate: '',
     hotelId: '',
     sellingPrice: 0,
@@ -100,7 +101,7 @@ export const OmraVisasTab = () => {
     setFormData({
       clientName: '',
       phone: '',
-      visaDate: new Date().toISOString().split('T')[0],
+      visaDate: formatLocalDate(new Date()),
       entryDate: '',
       hotelId: '',
       sellingPrice: 0,
@@ -118,8 +119,8 @@ export const OmraVisasTab = () => {
       setFormData({
         clientName: visa.clientName,
         phone: visa.phone || '',
-        visaDate: visa.visaDate ? new Date(visa.visaDate).toISOString().split('T')[0] : '',
-        entryDate: new Date(visa.entryDate).toISOString().split('T')[0],
+        visaDate: visa.visaDate ? formatLocalDate(new Date(visa.visaDate)) : '',
+        entryDate: formatLocalDate(new Date(visa.entryDate)),
         hotelId: visa.hotelId || '',
         sellingPrice: Number(visa.sellingPrice),
         amountPaid: Number(visa.amountPaid),

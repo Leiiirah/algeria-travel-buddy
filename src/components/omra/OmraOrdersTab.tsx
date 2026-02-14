@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { formatLocalDate } from '@/utils/dateHelpers';
 import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -79,7 +80,7 @@ export const OmraOrdersTab = () => {
   const [formData, setFormData] = useState({
     clientName: '',
     phone: '',
-    orderDate: new Date().toISOString().split('T')[0],
+    orderDate: formatLocalDate(new Date()),
     periodFrom: '',
     periodTo: '',
     hotelId: '',
@@ -129,7 +130,7 @@ export const OmraOrdersTab = () => {
     setFormData({
       clientName: '',
       phone: '',
-      orderDate: new Date().toISOString().split('T')[0],
+      orderDate: formatLocalDate(new Date()),
       periodFrom: '',
       periodTo: '',
       hotelId: '',
@@ -152,9 +153,9 @@ export const OmraOrdersTab = () => {
       setFormData({
         clientName: order.clientName,
         phone: order.phone || '',
-        orderDate: order.orderDate ? new Date(order.orderDate).toISOString().split('T')[0] : '',
-        periodFrom: new Date(order.periodFrom).toISOString().split('T')[0],
-        periodTo: new Date(order.periodTo).toISOString().split('T')[0],
+        orderDate: order.orderDate ? formatLocalDate(new Date(order.orderDate)) : '',
+        periodFrom: formatLocalDate(new Date(order.periodFrom)),
+        periodTo: formatLocalDate(new Date(order.periodTo)),
         hotelId: order.hotelId || '',
         roomType: order.roomType,
         omraType: order.omraType || 'libre',
