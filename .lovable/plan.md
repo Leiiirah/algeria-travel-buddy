@@ -1,62 +1,57 @@
 
-# Fix: Employee-Created Commands in Caisse + Hide Creator Badge for Employees
 
-## Two Changes
+# Fix: Dates Saved With Wrong Day Across the App
 
-### 1. Include employee-created commands in Caisse stats
+## Root Cause
+Two issues cause dates to be saved or displayed incorrectly:
 
-Currently, the caisse calculation (both in `analytics.service.ts` and `caisse-history.service.ts`) only counts commands where `assignedTo = employeeId`. Commands that an employee **created** (but didn't explicitly assign to themselves) are ignored.
+1. **Missing `commandDate` in passport upload**: The `createWithPassport` endpoint in `commands.controller.ts` does not extract `commandDate` from the form data, so it's always `undefined` even when the user picks a date.
 
-**Fix:** Change the filter logic to include commands where `assignedTo = employeeId` **OR** `createdBy = employeeId`, while avoiding double-counting when both fields match the same employee.
+2. **Timezone conversion shifts**: Throughout the app, `new Date(dateString).toISOString().split('T')[0]` is used to format dates. Since `toISOString()` converts to UTC, a date like "2026-02-01" in Algeria (UTC+1) becomes "2026-01-31T23:00:00Z" -- shifting to the **previous day**.
 
-**Files to change:**
+## Changes
 
-**`server/src/analytics/analytics.service.ts`** (lines 192-194)
-- Change the filter from only `assignedTo` to include `createdBy` as well, using a deduplication approach:
+### 1. Backend: `server/src/commands/commands.controller.ts` (line 101-111)
+Add the missing `commandDate` field to the `createWithPassport` parsed DTO:
+
 ```typescript
-// Before:
-const assignedCommands = commands.filter(c => c.assignedTo === employee.id);
-
-// After:
-const assignedCommands = commands.filter(
-  c => c.assignedTo === employee.id || c.createdBy === employee.id
-);
+const parsedDto: CreateCommandDto = {
+  ...
+  assignedTo: createDto.assignedTo || undefined,
+  commandDate: createDto.commandDate || undefined,  // ADD THIS LINE
+};
 ```
-Same for `omraOrders` and `omraVisas`.
 
-**`server/src/caisse-history/caisse-history.service.ts`** (lines 92-95)
-- Same change in `calculateEmployeeStats`:
-```typescript
-// Before:
-this.commandsRepo.find({ where: { assignedTo: employeeId } })
+### 2. Frontend: Create a date utility helper (`src/utils/dateHelpers.ts`)
+A small utility with two functions to avoid timezone issues across the app:
 
-// After: Use QueryBuilder with OR condition
-this.commandsRepo.createQueryBuilder('c')
-  .where('c.assignedTo = :id OR c.createdBy = :id', { id: employeeId })
-  .getMany()
-```
-Same for `omraOrders` and `omraVisas`.
+- `formatLocalDate(date: Date): string` -- extracts local YYYY-MM-DD using `getFullYear/getMonth/getDate` instead of `toISOString()`
+- `parseLocalDate(dateStr: string): Date` -- parses "YYYY-MM-DD" as local midnight instead of UTC
 
-### 2. Hide "par..." creator badge for employees
+### 3. Frontend: Fix all `toISOString().split('T')[0]` usages
 
-Since employees only see their own commands, showing "par [their own name]" is redundant.
+**`src/pages/CommandsPage.tsx`** (line 350):
+Replace `new Date(command.commandDate).toISOString().split('T')[0]` with `formatLocalDate(new Date(command.commandDate))`
 
-**File to change:**
+**`src/components/omra/OmraOrdersTab.tsx`** (lines 82, 132, 155-157):
+- Default `orderDate`: use `formatLocalDate(new Date())` 
+- Edit parsing: use `formatLocalDate(new Date(order.orderDate))` etc.
 
-**`src/pages/CommandsPage.tsx`** (lines 1186-1193)
-- Wrap the creator badge with an admin role check:
-```typescript
-{user?.role === 'admin' && command.creator && (
-  <Badge ...>
-    {t('table.by')} {command.creator.firstName}
-  </Badge>
-)}
-```
+**`src/components/omra/OmraVisasTab.tsx`** (lines 74, 103, 121-122):
+- Default `visaDate`: use `formatLocalDate(new Date())`
+- Edit parsing: use `formatLocalDate(new Date(visa.visaDate))` etc.
+
+**`src/components/omra/OmraProgramsTab.tsx`** (lines 101-102):
+- Edit parsing: use `formatLocalDate(new Date(program.periodFrom))` etc.
 
 ## Summary
 
 | File | Change |
 |------|--------|
-| `server/src/analytics/analytics.service.ts` | Filter commands by `assignedTo OR createdBy` instead of only `assignedTo` |
-| `server/src/caisse-history/caisse-history.service.ts` | Same OR filter in `calculateEmployeeStats` |
-| `src/pages/CommandsPage.tsx` | Only show creator badge for admin users |
+| `src/utils/dateHelpers.ts` | New file: `formatLocalDate()` and `parseLocalDate()` helpers |
+| `server/src/commands/commands.controller.ts` | Add missing `commandDate` to `createWithPassport` |
+| `src/pages/CommandsPage.tsx` | Use `formatLocalDate` for edit form date parsing |
+| `src/components/omra/OmraOrdersTab.tsx` | Use `formatLocalDate` for defaults and edit parsing |
+| `src/components/omra/OmraVisasTab.tsx` | Use `formatLocalDate` for defaults and edit parsing |
+| `src/components/omra/OmraProgramsTab.tsx` | Use `formatLocalDate` for edit parsing |
+
