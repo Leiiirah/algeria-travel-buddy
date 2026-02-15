@@ -176,6 +176,7 @@ export interface CommandFilters {
   status?: string;
   serviceId?: string;
   supplierId?: string;
+  createdBy?: string;
   fromDate?: string;
   toDate?: string;
   search?: string;

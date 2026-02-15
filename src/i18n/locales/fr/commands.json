@@ -100,6 +100,7 @@
     "status": "Statut",
     "service": "Service",
     "supplier": "Fournisseur",
+    "employee": "Employé",
     "fromDate": "Date début",
     "toDate": "Date fin"
   },
