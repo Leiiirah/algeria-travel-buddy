@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { formatLocalDate } from '@/utils/dateHelpers';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -39,7 +39,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Plus, Search, MoreHorizontal, Edit, Trash2, Eye, Lock, Unlock, Banknote, CreditCard, TrendingUp, FileDown, Download, Loader2, X } from 'lucide-react';
+import { Plus, Search, MoreHorizontal, Edit, Trash2, Eye, Lock, Unlock, Banknote, CreditCard, TrendingUp, FileDown, Download, Loader2, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import {
   formatDZD,
   isCommandEditable,
@@ -69,6 +69,7 @@ const CommandsPage = () => {
   const { t } = useTranslation('commands');
   const { t: tCommon } = useTranslation('common');
   const [searchQuery, setSearchQuery] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
   const [filters, setFilters] = useState<CommandFilters>({});
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedService, setSelectedService] = useState<string>('');
@@ -112,6 +113,8 @@ const CommandsPage = () => {
   const { data: commandsData, isLoading, isError, error, refetch } = useCommands({
     ...filters,
     search: debouncedSearch || undefined,
+    page: currentPage,
+    limit: 50,
   });
   const { data: statsData } = useCommandStats();
   const { data: services } = useActiveServices();
@@ -125,6 +128,11 @@ const CommandsPage = () => {
   const updateCommand = useUpdateCommand();
   const deleteCommand = useDeleteCommand();
   const { data: agencySettings } = useAgencySettings();
+
+  // Reset page when filters or search change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filters, debouncedSearch]);
 
   const commands = commandsData?.data ?? [];
 
@@ -1156,6 +1164,7 @@ const CommandsPage = () => {
               icon={CreditCard}
             />
           ) : (
+            <>
             <div className="overflow-x-auto -mx-4 sm:mx-0">
               <Table className="text-xs sm:text-sm">
                 <TableHeader>
@@ -1300,6 +1309,36 @@ const CommandsPage = () => {
                 </TableBody>
               </Table>
             </div>
+
+            {/* Pagination */}
+            {commandsData && commandsData.totalPages > 1 && (
+              <div className="flex items-center justify-between mt-4 px-2">
+                <p className="text-sm text-muted-foreground">
+                  {t('pagination.page')} {commandsData.page} {t('pagination.of')} {commandsData.totalPages}
+                </p>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                    disabled={currentPage <= 1}
+                  >
+                    <ChevronLeft className="h-4 w-4 ltr:mr-1 rtl:ml-1" />
+                    {t('pagination.previous')}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage(p => Math.min(commandsData.totalPages, p + 1))}
+                    disabled={currentPage >= commandsData.totalPages}
+                  >
+                    {t('pagination.next')}
+                    <ChevronRight className="h-4 w-4 ltr:ml-1 rtl:mr-1" />
+                  </Button>
+                </div>
+              </div>
+            )}
+            </>
           )}
         </CardContent>
       </Card>

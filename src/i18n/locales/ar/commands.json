@@ -139,6 +139,13 @@
     "thankYou": "شكراً لثقتكم!",
     "generatedOn": "تم الإنشاء في"
   },
+  "pagination": {
+    "page": "صفحة",
+    "of": "من",
+    "total": "{{count}} طلب إجمالاً",
+    "previous": "السابق",
+    "next": "التالي"
+  },
   "empty": {
     "title": "لا توجد طلبات",
     "description": "ابدأ بإنشاء أول طلب لك"
