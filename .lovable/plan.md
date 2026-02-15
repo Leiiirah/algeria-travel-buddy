@@ -1,31 +1,27 @@
 
-# Fix: "Mes commandes" Showing Today's Date Instead of User-Set Date
+# Add "Filter by Employee" to Commands Page (Admin Only)
 
-## Problem
-In the Employee Accounting page (`src/pages/EmployeeAccountingPage.tsx`), the "Mes commandes" table and the admin employee detail dialog both display `command.createdAt` for the date column, ignoring the `commandDate` set by the user.
+## Overview
+Add an employee filter dropdown to the admin commands table so you can fetch only commands created by or assigned to a specific employee.
 
-## Fix
+## Changes
 
-Two lines need to change in `src/pages/EmployeeAccountingPage.tsx`:
+### 1. Frontend filter interface (`src/lib/api.ts`)
+Add `createdBy` to the `CommandFilters` interface (the backend already supports this parameter).
 
-### 1. Employee "Mes commandes" table (line 583)
+### 2. Filter UI (`src/pages/CommandsPage.tsx`)
+Add a new filter option in the `AdvancedFilter` `filterConfig` array for employee selection. This filter will only be shown for admin users.
 
-```typescript
-// Before:
-format(new Date(command.createdAt), 'dd MMM yyyy', { locale: dateLocale })
+### 3. Translation keys (`src/i18n/locales/fr/commands.json` and `src/i18n/locales/ar/commands.json`)
+Add a translation key for the new filter label: `filters.employee`.
 
-// After:
-format(new Date(command.commandDate || command.createdAt), 'dd MMM yyyy', { locale: dateLocale })
-```
+## Technical Details
 
-### 2. Admin employee detail dialog - sales tab (line 802)
+| File | Change |
+|------|--------|
+| `src/lib/api.ts` (line 175-184) | Add `createdBy?: string` to `CommandFilters` |
+| `src/pages/CommandsPage.tsx` (lines 773-807) | Add employee filter to `filterConfig` array, conditionally for admins |
+| `src/i18n/locales/fr/commands.json` | Add `"employee": "Employé"` under `filters` |
+| `src/i18n/locales/ar/commands.json` | Add `"employee": "الموظف"` under `filters` |
 
-```typescript
-// Before:
-format(new Date(command.createdAt), 'dd MMM yyyy', { locale: dateLocale })
-
-// After:
-format(new Date(command.commandDate || command.createdAt), 'dd MMM yyyy', { locale: dateLocale })
-```
-
-Both changes apply the same effective date pattern: use `commandDate` if set, otherwise fall back to `createdAt`.
+The backend `CommandsService.findAll` already handles the `createdBy` filter parameter, filtering by `command.createdBy = :userId OR command.assignedTo = :userId`. For admin users, the controller passes it through directly as a query param (it only force-sets it for non-admin users).
