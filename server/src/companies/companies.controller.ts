@@ -22,7 +22,7 @@ export class CompaniesController {
   constructor(private readonly companiesService: CompaniesService) {}
 
   @Get()
-  findAll(@Request() req) {
+  findAll(@Request() req: any) {
     // Employees only see active companies
     if (req.user?.role !== 'admin') {
       return this.companiesService.findActive();

@@ -420,6 +420,7 @@ export class OmraService {
         confirme: 0,
         termine: 0,
         annule: 0,
+        reserve: 0,
       },
     };
 

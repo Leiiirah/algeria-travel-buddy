@@ -22,7 +22,7 @@ export class PaymentTypesController {
   constructor(private readonly paymentTypesService: PaymentTypesService) {}
 
   @Get()
-  findAll(@Request() req) {
+  findAll(@Request() req: any) {
     if (req.user?.role !== 'admin') {
       return this.paymentTypesService.findActive();
     }
