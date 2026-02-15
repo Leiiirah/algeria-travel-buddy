@@ -1,24 +1,28 @@
+# Remove TVA, Montant Payé, and Reste à Payer from Invoice PDFs
 
+## Overview
 
-# Remove "Solde Actuel" from Supplier Accounting Page
+Remove three financial sections from all generated invoice PDFs (both proforma and finale): the TVA (tax) row, the "Montant payé" (paid amount) row, and the "Reste à payer" (remaining) row. The total will now show the amount directly without tax calculations.  
+Make sure to not change the UI and design of the invoices 
 
 ## Changes
 
-### 1. Remove the "Solde Actuel" summary card (lines 540-555)
-Remove the third stats card ("Solde Actuel" / currentBalance) from the top summary section. Change the grid from `md:grid-cols-3` to `md:grid-cols-2` since only two cards remain (Total Du and Total Paye).
+### `src/components/invoice/InvoiceTemplate.tsx`
 
-### 2. Remove the "Solde Actuel" column from the situation table (lines 589, 599-601)
-- Remove the `<TableHead>` for "currentBalance" (line 589)
-- Remove the `<TableCell>` displaying the balance value (lines 599-601)
+**1. Remove TVA calculation variables (lines 111-112)**
+Remove `tva` and `totalTTC` variables. The `amountWords` (line 126) will use `amount` instead of `totalTTC`.
 
-This leaves the table with: Supplier, Total Due, Total Paid, and Actions columns.
+**2. Simplify the finale financial table (lines 351-398)**
+Replace the current finale block that shows Total HT, TVA (9%), Total TTC, Montant payé, and Reste à payer with a single highlighted TOTAL row showing just `amount`.
 
-## Files Modified
+**3. Remove unused variables (lines 109-110)**
+Remove `paid` and `rem` since they are no longer displayed.
 
-| File | Change |
-|------|--------|
-| `src/pages/SupplierAccountingPage.tsx` (lines 513) | Change grid from `md:grid-cols-3` to `md:grid-cols-2` |
-| `src/pages/SupplierAccountingPage.tsx` (lines 540-555) | Remove the "Solde Actuel" summary card |
-| `src/pages/SupplierAccountingPage.tsx` (line 589) | Remove the "Solde Actuel" table header |
-| `src/pages/SupplierAccountingPage.tsx` (lines 599-601) | Remove the "Solde Actuel" table cell |
+**Result**: Both proforma and finale invoices will show a simple TOTAL row with the amount, no tax breakdown, no payment status rows.
 
+
+| Section         | Before                                                       | After                      |
+| --------------- | ------------------------------------------------------------ | -------------------------- |
+| Finale table    | Total HT + TVA 9% + Total TTC + Montant payé + Reste à payer | Single TOTAL row           |
+| Proforma table  | Single TOTAL row                                             | No change (already simple) |
+| Amount in words | Based on totalTTC                                            | Based on amount (no tax)   |
