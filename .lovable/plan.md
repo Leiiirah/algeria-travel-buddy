@@ -1,28 +1,19 @@
-# Remove TVA, Montant Payé, and Reste à Payer from Invoice PDFs
 
-## Overview
 
-Remove three financial sections from all generated invoice PDFs (both proforma and finale): the TVA (tax) row, the "Montant payé" (paid amount) row, and the "Reste à payer" (remaining) row. The total will now show the amount directly without tax calculations.  
-Make sure to not change the UI and design of the invoices 
+# Fix Employee Filter to Show All Users
+
+## Problem
+The employee filter in the Commands tab only fetches active employees (role = "employee"), excluding admin users. Since admins can also create and be assigned commands, they don't appear in the filter dropdown, making it impossible to filter commands by admin users.
+
+## Solution
+The Commands page employee filter should use the full users list instead of the active-employees-only endpoint. This way all staff members (admins and employees) appear in the filter dropdown.
 
 ## Changes
 
-### `src/components/invoice/InvoiceTemplate.tsx`
+### `src/pages/CommandsPage.tsx`
+- Change the import from `useActiveEmployees` to `useUsers` (from `@/hooks/useUsers`)
+- Replace `const { data: employees } = useActiveEmployees();` with `const { data: employees } = useUsers();`
+- The rest of the code (filter options, assignee dropdown) already maps over `employees` with `firstName`/`lastName`/`id`, which the full users list also provides
 
-**1. Remove TVA calculation variables (lines 111-112)**
-Remove `tva` and `totalTTC` variables. The `amountWords` (line 126) will use `amount` instead of `totalTTC`.
+This is a one-line fix that ensures the filter dropdown includes all users in the system.
 
-**2. Simplify the finale financial table (lines 351-398)**
-Replace the current finale block that shows Total HT, TVA (9%), Total TTC, Montant payé, and Reste à payer with a single highlighted TOTAL row showing just `amount`.
-
-**3. Remove unused variables (lines 109-110)**
-Remove `paid` and `rem` since they are no longer displayed.
-
-**Result**: Both proforma and finale invoices will show a simple TOTAL row with the amount, no tax breakdown, no payment status rows.
-
-
-| Section         | Before                                                       | After                      |
-| --------------- | ------------------------------------------------------------ | -------------------------- |
-| Finale table    | Total HT + TVA 9% + Total TTC + Montant payé + Reste à payer | Single TOTAL row           |
-| Proforma table  | Single TOTAL row                                             | No change (already simple) |
-| Amount in words | Based on totalTTC                                            | Based on amount (no tax)   |
