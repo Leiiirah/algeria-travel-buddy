@@ -106,10 +106,7 @@ const InvoiceTemplate = forwardRef<HTMLDivElement, InvoiceTemplateProps>(
     const amount = Number(data.totalAmount) || 0;
     const ticket = Number(data.ticketPrice) || 0;
     const fees = Number(data.agencyFees) || 0;
-    const paid = Number(data.paidAmount) || 0;
-    const rem = Number(data.remaining) || 0;
-    const tva = Math.round(amount * 0.09);
-    const totalTTC = amount + tva;
+    // paid, rem, tva, totalTTC removed per plan
 
     const accent = isProforma ? '#1E3A5F' : '#1B4332';
     const accentLight = isProforma ? '#e8eef5' : '#e6f0eb';
@@ -123,7 +120,7 @@ const InvoiceTemplate = forwardRef<HTMLDivElement, InvoiceTemplateProps>(
     const paymentLabel = PAYMENT_LABELS[data.paymentMethod]?.[lang] || data.paymentMethod;
     const statusInfo = STATUS_LABELS[data.status] || STATUS_LABELS['en_attente'];
 
-    const amountWords = numberToWords(totalTTC);
+    const amountWords = numberToWords(amount);
     const docType = isProforma ? 'proforma' : 'définitive';
 
     const arrow = isArabic ? '←' : '→';
@@ -348,66 +345,17 @@ const InvoiceTemplate = forwardRef<HTMLDivElement, InvoiceTemplateProps>(
                 </>
               )}
 
-              {!isProforma ? (
-                <>
-                  <tr style={{ borderBottom: '1px solid #e2e8f0', backgroundColor: '#fafbfc' }}>
-                    <td style={{ padding: '7px 12px', fontWeight: 600 }} dir={isArabic ? 'rtl' : undefined}>
-                      {isArabic ? 'المجموع قبل الضريبة' : 'Total HT'}
-                    </td>
-                    <td style={{ padding: '7px 12px', textAlign: 'right', fontWeight: 600 }}>{fmt(amount)} DA</td>
-                  </tr>
-                  <tr style={{ borderBottom: '1px solid #e2e8f0' }}>
-                    <td style={{ padding: '7px 12px' }} dir={isArabic ? 'rtl' : undefined}>
-                      {isArabic ? 'ضريبة (9%)' : 'TVA (9%)'}
-                    </td>
-                    <td style={{ padding: '7px 12px', textAlign: 'right' }}>{fmt(tva)} DA</td>
-                  </tr>
-                  {/* Total TTC highlighted row */}
-                  <tr style={{ backgroundColor: accent }}>
-                    <td style={{ padding: '9px 12px', fontWeight: 700, color: '#ffffff', fontSize: '13px' }}
-                      dir={isArabic ? 'rtl' : undefined}
-                    >
-                      {isArabic ? 'المجموع الكلي' : 'TOTAL TTC'}
-                    </td>
-                    <td style={{ padding: '9px 12px', textAlign: 'right', fontWeight: 700, color: '#ffffff', fontSize: '13px' }}>
-                      {fmt(totalTTC)} DA
-                    </td>
-                  </tr>
-                  {/* Payment status rows */}
-                  <tr style={{ borderBottom: '1px solid #e2e8f0' }}>
-                    <td style={{ padding: '7px 12px' }} dir={isArabic ? 'rtl' : undefined}>
-                      {isArabic ? 'المبلغ المدفوع' : 'Montant payé'}
-                    </td>
-                    <td style={{ padding: '7px 12px', textAlign: 'right', color: '#166534', fontWeight: 600 }}>
-                      {fmt(paid)} DA
-                    </td>
-                  </tr>
-                  <tr>
-                    <td style={{ padding: '7px 12px', fontWeight: 600 }} dir={isArabic ? 'rtl' : undefined}>
-                      {isArabic ? 'المتبقي' : 'Reste à payer'}
-                    </td>
-                    <td style={{
-                      padding: '7px 12px',
-                      textAlign: 'right',
-                      fontWeight: 700,
-                      color: rem > 0 ? '#991b1b' : '#166534',
-                    }}>
-                      {fmt(rem)} DA
-                    </td>
-                  </tr>
-                </>
-              ) : (
-                <tr style={{ backgroundColor: accent }}>
-                  <td style={{ padding: '9px 12px', fontWeight: 700, color: '#ffffff', fontSize: '13px' }}
-                    dir={isArabic ? 'rtl' : undefined}
-                  >
-                    {isArabic ? 'المجموع' : 'TOTAL'}
-                  </td>
-                  <td style={{ padding: '9px 12px', textAlign: 'right', fontWeight: 700, color: '#ffffff', fontSize: '13px' }}>
-                    {fmt(amount)} DA
-                  </td>
-                </tr>
-              )}
+              {/* Single TOTAL row for both proforma and finale */}
+              <tr style={{ backgroundColor: accent }}>
+                <td style={{ padding: '9px 12px', fontWeight: 700, color: '#ffffff', fontSize: '13px' }}
+                  dir={isArabic ? 'rtl' : undefined}
+                >
+                  {isArabic ? 'المجموع' : 'TOTAL'}
+                </td>
+                <td style={{ padding: '9px 12px', textAlign: 'right', fontWeight: 700, color: '#ffffff', fontSize: '13px' }}>
+                  {fmt(amount)} DA
+                </td>
+              </tr>
             </tbody>
           </table>
         </div>
