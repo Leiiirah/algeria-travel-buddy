@@ -510,7 +510,7 @@ const SupplierAccountingPage = () => {
         </div>
 
         {/* Summary Cards */}
-        <div className="grid gap-4 md:grid-cols-3">
+        <div className="grid gap-4 md:grid-cols-2">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">{t('accounting.balance.totalDue')}</CardTitle>
@@ -534,22 +534,6 @@ const SupplierAccountingPage = () => {
               </div>
               <p className="text-xs text-muted-foreground">
                 {tCommon('paymentsMadeToSuppliers')}
-              </p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">{t('accounting.balance.currentBalance')}</CardTitle>
-              <TrendingDown className="h-4 w-4 text-destructive" />
-            </CardHeader>
-            <CardContent>
-              <div className={`text-2xl font-bold ${globalTotals.totalRemaining > 0 ? 'text-destructive' : 'text-success'}`}>
-                {globalTotals.totalRemaining < 0
-                  ? `${tCommon('credit')}: ${formatDZD(Math.abs(globalTotals.totalRemaining))}`
-                  : formatDZD(globalTotals.totalRemaining)}
-              </div>
-              <p className="text-xs text-muted-foreground">
-                {tCommon('globalSupplierBalance')}
               </p>
             </CardContent>
           </Card>
@@ -586,7 +570,7 @@ const SupplierAccountingPage = () => {
                         <TableHead>{t('table.supplier')}</TableHead>
                         <TableHead className="text-right">{t('accounting.balance.totalDue')}</TableHead>
                         <TableHead className="text-right">{t('accounting.balance.totalPaid')}</TableHead>
-                        <TableHead className="text-right">{t('accounting.balance.currentBalance')}</TableHead>
+                        
                         <TableHead className="text-right">{tCommon('actions.label')}</TableHead>
                       </TableRow>
                     </TableHeader>
@@ -596,9 +580,6 @@ const SupplierAccountingPage = () => {
                           <TableCell className="font-medium">{item.supplier.name}</TableCell>
                           <TableCell className="text-right">{formatDZD(item.totalPurchased)}</TableCell>
                           <TableCell className="text-right text-success">{formatDZD(item.totalPaid)}</TableCell>
-                          <TableCell className={`text-right ${getBalanceStyle(item.remainingBalance)}`}>
-                            {getBalanceDisplay(item.remainingBalance)}
-                          </TableCell>
                           <TableCell className="text-right">
                             <div className="flex justify-end gap-2">
                               <Button
