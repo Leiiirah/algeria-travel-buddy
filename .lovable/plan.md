@@ -1,37 +1,24 @@
 
 
-# Add Pagination to Commands Table
-
-## Problem
-The commands page doesn't pass `page` or `limit` to the API, so the backend defaults to `limit=20`. Commands beyond the first 20 are invisible.
+# Remove "Solde Actuel" from Supplier Accounting Page
 
 ## Changes
 
-### 1. Add pagination state (`src/pages/CommandsPage.tsx`)
-Add a `currentPage` state variable (default: 1) and pass `page` and `limit` into the `useCommands` filters.
+### 1. Remove the "Solde Actuel" summary card (lines 540-555)
+Remove the third stats card ("Solde Actuel" / currentBalance) from the top summary section. Change the grid from `md:grid-cols-3` to `md:grid-cols-2` since only two cards remain (Total Du and Total Paye).
 
-### 2. Reset page on filter/search change (`src/pages/CommandsPage.tsx`)
-When `filters` or `debouncedSearch` change, reset `currentPage` to 1 so the user always sees the first page of new results.
+### 2. Remove the "Solde Actuel" column from the situation table (lines 589, 599-601)
+- Remove the `<TableHead>` for "currentBalance" (line 589)
+- Remove the `<TableCell>` displaying the balance value (lines 599-601)
 
-### 3. Add pagination UI after the table (`src/pages/CommandsPage.tsx`)
-After the `</Table>` closing tag (around line 1302), add a pagination bar showing:
-- Previous / Next buttons
-- Page number indicators (e.g., "Page 2 of 5")
-- Total commands count
+This leaves the table with: Supplier, Total Due, Total Paid, and Actions columns.
 
-Uses the existing `Pagination` components from `src/components/ui/pagination.tsx`.
-
-### 4. Increase default limit
-Set `limit: 50` for a reasonable page size (instead of the backend default of 20).
-
-## Technical Details
+## Files Modified
 
 | File | Change |
 |------|--------|
-| `src/pages/CommandsPage.tsx` (line ~72) | Add `const [currentPage, setCurrentPage] = useState(1)` |
-| `src/pages/CommandsPage.tsx` (line ~112) | Pass `page: currentPage, limit: 50` to `useCommands` |
-| `src/pages/CommandsPage.tsx` (line ~72) | Reset `currentPage` to 1 when filters/search change (useEffect) |
-| `src/pages/CommandsPage.tsx` (after line 1302) | Add pagination controls using total/totalPages from API response |
-| `src/i18n/locales/fr/commands.json` | Add pagination labels: `"page"`, `"of"`, `"total"`, `"previous"`, `"next"` |
-| `src/i18n/locales/ar/commands.json` | Add Arabic pagination labels |
+| `src/pages/SupplierAccountingPage.tsx` (lines 513) | Change grid from `md:grid-cols-3` to `md:grid-cols-2` |
+| `src/pages/SupplierAccountingPage.tsx` (lines 540-555) | Remove the "Solde Actuel" summary card |
+| `src/pages/SupplierAccountingPage.tsx` (line 589) | Remove the "Solde Actuel" table header |
+| `src/pages/SupplierAccountingPage.tsx` (lines 599-601) | Remove the "Solde Actuel" table cell |
 
