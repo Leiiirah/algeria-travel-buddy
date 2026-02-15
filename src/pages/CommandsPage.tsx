@@ -52,7 +52,7 @@ import { AdvancedFilter } from '@/components/search/AdvancedFilter';
 import { useCommands, useCommandStats, useCreateCommand, useUpdateCommand, useDeleteCommand } from '@/hooks/useCommands';
 import { useActiveServices } from '@/hooks/useServices';
 import { useSuppliers } from '@/hooks/useSuppliers';
-import { useActiveEmployees } from '@/hooks/useUsers';
+import { useUsers } from '@/hooks/useUsers';
 import { useCompanies, useCreateCompany } from '@/hooks/useCompanies';
 import { usePaymentTypes, useCreatePaymentType } from '@/hooks/usePaymentTypes';
 import { useDebounce } from '@/hooks/useDebounce';
@@ -119,7 +119,7 @@ const CommandsPage = () => {
   const { data: statsData } = useCommandStats();
   const { data: services } = useActiveServices();
   const { data: suppliers } = useSuppliers();
-  const { data: employees } = useActiveEmployees();
+  const { data: employees } = useUsers();
   const { data: companies } = useCompanies();
   const { data: paymentTypes } = usePaymentTypes();
   const createCompanyMutation = useCreateCompany();
