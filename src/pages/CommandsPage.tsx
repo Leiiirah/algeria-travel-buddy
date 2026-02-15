@@ -794,6 +794,12 @@ const CommandsPage = () => {
                       type: 'select',
                       options: suppliers?.filter(s => s.isActive).map(s => ({ label: s.name, value: s.id })) || [],
                     },
+                    ...(isAdmin ? [{
+                      key: 'createdBy',
+                      label: t('filters.employee'),
+                      type: 'select' as const,
+                      options: employees?.map(e => ({ label: `${e.firstName} ${e.lastName}`, value: e.id })) || [],
+                    }] : []),
                     {
                       key: 'fromDate',
                       label: t('filters.fromDate'),
