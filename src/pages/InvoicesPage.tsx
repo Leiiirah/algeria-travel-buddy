@@ -360,8 +360,6 @@ export default function InvoicesPage() {
                     <TableHead>{t('table.client')}</TableHead>
                     <TableHead>{t('table.service')}</TableHead>
                     <TableHead className="text-right">{t('table.amount')}</TableHead>
-                    <TableHead className="text-right">{t('table.paid')}</TableHead>
-                    <TableHead className="text-right">{t('table.remaining')}</TableHead>
                     <TableHead>{t('table.date')}</TableHead>
                     <TableHead>{t('table.status')}</TableHead>
                     <TableHead className="text-center">{t('table.actions')}</TableHead>
@@ -369,7 +367,6 @@ export default function InvoicesPage() {
                 </TableHeader>
                 <TableBody>
                   {invoices?.map((invoice) => {
-                    const remaining = invoice.totalAmount - invoice.paidAmount;
                     return (
                       <TableRow key={invoice.id}>
                         <TableCell className="font-medium">{invoice.invoiceNumber}</TableCell>
@@ -378,12 +375,6 @@ export default function InvoicesPage() {
                         <TableCell>{invoice.serviceName}</TableCell>
                         <TableCell className="text-right">
                           {invoice.totalAmount.toLocaleString()} {t('common:currency')}
-                        </TableCell>
-                        <TableCell className="text-right text-green-600">
-                          {invoice.paidAmount.toLocaleString()} {t('common:currency')}
-                        </TableCell>
-                        <TableCell className={`text-right ${remaining > 0 ? 'text-red-600' : 'text-green-600'}`}>
-                          {remaining.toLocaleString()} {t('common:currency')}
                         </TableCell>
                         <TableCell>
                           {format(new Date(invoice.invoiceDate), 'dd/MM/yyyy', { locale })}
@@ -648,7 +639,7 @@ export default function InvoicesPage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 gap-4">
                 <div className="space-y-2">
                   <Label>{t('form.totalAmount')} *</Label>
                   <Input
@@ -657,24 +648,6 @@ export default function InvoicesPage() {
                     value={formData.totalAmount || 0}
                     onChange={(e) => setFormData((prev) => ({ ...prev, totalAmount: Number(e.target.value) }))}
                     required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>{t('form.paidAmount')}</Label>
-                  <Input
-                    type="number"
-                    min={0}
-                    value={formData.paidAmount || 0}
-                    onChange={(e) => setFormData((prev) => ({ ...prev, paidAmount: Number(e.target.value) }))}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>{t('form.remaining')}</Label>
-                  <Input
-                    type="number"
-                    value={(formData.totalAmount || 0) - (formData.paidAmount || 0)}
-                    disabled
-                    className="bg-muted"
                   />
                 </div>
               </div>
