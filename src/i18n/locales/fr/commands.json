@@ -139,6 +139,13 @@
     "thankYou": "Merci de votre confiance !",
     "generatedOn": "Généré le"
   },
+  "pagination": {
+    "page": "Page",
+    "of": "sur",
+    "total": "{{count}} commandes au total",
+    "previous": "Précédent",
+    "next": "Suivant"
+  },
   "empty": {
     "title": "Aucune commande",
     "description": "Commencez par créer votre première commande"
