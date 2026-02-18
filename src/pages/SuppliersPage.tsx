@@ -31,7 +31,17 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Plus, Building2, Phone, Mail, Edit, Trash2, MapPin, Plane, Hotel, FileText, Truck, Shield, MoreHorizontal } from 'lucide-react';
+import { Plus, Building2, Phone, Mail, Edit, Trash2, MapPin, Plane, Hotel, FileText, Truck, Shield, MoreHorizontal, ToggleLeft, ToggleRight } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { useSuppliers, useCreateSupplier, useDeleteSupplier, useUpdateSupplier } from '@/hooks/useSuppliers';
 import { SuppliersSkeleton } from '@/components/skeletons/SuppliersSkeleton';
 import { ErrorState } from '@/components/ui/error-state';
@@ -60,6 +70,7 @@ const SuppliersPage = () => {
   const [filters, setFilters] = useState<Record<string, any>>({});
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [supplierToDelete, setSupplierToDelete] = useState<string | null>(null);
   const [newSupplier, setNewSupplier] = useState({
     name: '',
     type: 'other' as SupplierType,
@@ -180,7 +191,20 @@ const SuppliersPage = () => {
   };
 
   const handleDeleteSupplier = (supplierId: string) => {
-    deleteSupplier.mutate(supplierId);
+    setSupplierToDelete(supplierId);
+  };
+
+  const handleConfirmDelete = () => {
+    if (supplierToDelete) {
+      deleteSupplier.mutate(supplierToDelete, {
+        onSuccess: () => setSupplierToDelete(null),
+        onError: () => setSupplierToDelete(null),
+      });
+    }
+  };
+
+  const handleToggleActive = (supplier: any) => {
+    updateSupplier.mutate({ id: supplier.id, data: { isActive: !supplier.isActive } });
   };
 
   if (isLoading) {
@@ -492,6 +516,18 @@ const SuppliersPage = () => {
                             <Button
                               variant="ghost"
                               size="icon"
+                              onClick={() => handleToggleActive(supplier)}
+                              disabled={updateSupplier.isPending}
+                              title={supplier.isActive ? tCommon('companies.deactivate') : tCommon('companies.activate')}
+                            >
+                              {supplier.isActive
+                                ? <ToggleRight className="h-4 w-4 text-primary" />
+                                : <ToggleLeft className="h-4 w-4 text-muted-foreground" />
+                              }
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
                               onClick={() => handleDeleteSupplier(supplier.id)}
                               disabled={deleteSupplier.isPending}
                             >
@@ -509,6 +545,25 @@ const SuppliersPage = () => {
           )}
         </CardContent>
       </Card>
+
+      <AlertDialog open={!!supplierToDelete} onOpenChange={(open) => { if (!open) setSupplierToDelete(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{tCommon('actions.confirmDeleteTitle')}</AlertDialogTitle>
+            <AlertDialogDescription>{tCommon('actions.confirmDeleteMessage')}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{tCommon('actions.cancel')}</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={deleteSupplier.isPending}
+            >
+              {tCommon('actions.delete')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </DashboardLayout>
   );
 };
