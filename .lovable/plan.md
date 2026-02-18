@@ -1,47 +1,72 @@
 
-# Add Activate/Deactivate Toggle & Delete Confirmation for Suppliers
+# Add TVA (9%) on Agency Fees for Final Invoices
 
-## What will change
+## What the feature does
 
-Two improvements to `src/pages/SuppliersPage.tsx` only — no backend changes needed since `updateSupplier` already accepts `isActive` via the existing `UpdateSupplierDto`, and `deleteSupplier` already exists.
-
----
-
-## 1. Delete Confirmation (AlertDialog)
-
-Currently, clicking the trash icon deletes immediately with no warning. We'll replace this with a two-step flow matching the pattern used in `EmployeeAccountingPage`, `DocumentsPage`, and others:
-
-- Add state: `supplierToDelete: string | null`
-- Trash icon button sets `supplierToDelete` to the supplier's id (instead of deleting directly)
-- An `AlertDialog` renders at the bottom of the page, controlled by `supplierToDelete`
-- Confirming in the dialog calls `deleteSupplier.mutate(supplierToDelete)` and resets state
-- Uses existing i18n keys: `tCommon('actions.confirmDeleteTitle')` and `tCommon('actions.confirmDeleteMessage')`
+For **Factures Définitives** (finale invoices) only, a TVA line of 9% is calculated exclusively on the `Frais d'agence` amount and displayed in the financial table. The proforma invoice remains unchanged.
 
 ---
 
-## 2. Activate / Deactivate Toggle
+## Logic
 
-Currently there is no way to toggle a supplier's active status from the UI. We'll add:
+```
+TVA = agencyFees × 9%
+Total TTC = ticketPrice + agencyFees + TVA
+```
 
-- A toggle button next to the Edit/Delete buttons in the actions column (admin only)
-- Clicking it calls `updateSupplier.mutate({ id, data: { isActive: !supplier.isActive } })`
-- Icon: `ToggleLeft` (inactive → activate) / `ToggleRight` (active → deactivate), following the `CompaniesPage` pattern
-- Uses `tCommon('companies.activate')` / `tCommon('companies.deactivate')` i18n keys which already exist
+- TVA is shown **only** when `invoiceType === 'finale'` AND `agencyFees > 0`
+- The existing `TOTAL` row becomes **TOTAL TTC** for final invoices
+- The `totalAmount` field on the data object still drives the amount-in-words sentence in the payment section (so no backend change is needed)
+
+---
+
+## Files to change
+
+### 1. `src/components/invoice/InvoiceTemplate.tsx`
+
+This is the only file that needs to change — the PDF template itself.
+
+**In the financial calculations block (lines ~105-118):**
+- Compute `tva = !isProforma ? Math.round(fees * 0.09 * 100) / 100 : 0`
+
+**In the financial table (lines ~330-360):**
+
+Current table rows (when breakdown exists):
+```
+Prix du billet    | ticketPrice
+Frais d'agence    | fees
+TOTAL             | amount
+```
+
+New table rows for **finale** invoices (when breakdown exists):
+```
+Prix du billet    | ticketPrice
+Frais d'agence HT | fees
+TVA 9% (Frais)    | tva        ← new row, finale only
+TOTAL TTC         | ticketPrice + fees + tva
+```
+
+For **proforma** invoices (unchanged):
+```
+Prix du billet    | ticketPrice
+Frais d'agence    | fees
+TOTAL             | amount
+```
+
+The `TOTAL` label becomes `TOTAL TTC` on finale invoices to clearly signal the tax-inclusive total.
 
 ---
 
 ## Technical Details
 
-### Files modified
-- `src/pages/SuppliersPage.tsx` — only file to change
+- TVA row is only rendered when `!isProforma && fees > 0`
+- All arithmetic uses `Number()` casts — already done in the existing code — to avoid string bugs
+- The bilingual labels:
+  - FR: `TVA 9% (Frais d'agence)`
+  - AR: `ضريبة القيمة المضافة 9% (رسوم الوكالة)`
+- TOTAL label changes:
+  - FR: `TOTAL TTC` (finale) / `TOTAL` (proforma)
+  - AR: `المجموع الشامل` (finale) / `المجموع` (proforma)
+- The `amountWords` in the payment section already reads from `data.totalAmount` — this doesn't change since the `totalAmount` stored in the DB is already the agreed final total. The TVA breakdown is purely informational on the PDF.
 
-### Changes
-1. Add imports: `AlertDialog` family from `@/components/ui/alert-dialog`, `ToggleLeft`, `ToggleRight` from `lucide-react`
-2. Add state: `const [supplierToDelete, setSupplierToDelete] = useState<string | null>(null)`
-3. Update `handleDeleteSupplier` to just set `setSupplierToDelete(id)` instead of calling `deleteSupplier.mutate` directly
-4. Add `handleConfirmDelete` function that calls `deleteSupplier.mutate(supplierToDelete!)` then resets
-5. Add `handleToggleActive` function that calls `updateSupplier.mutate({ id, data: { isActive: !supplier.isActive } })`
-6. In the actions `TableCell`: add a toggle button between Edit and Delete. Change Delete button to set `supplierToDelete` instead of calling mutate directly
-7. Add `AlertDialog` at the end of the JSX (before closing `DashboardLayout`) for delete confirmation
-
-No backend, no i18n, no migration changes required — everything needed already exists.
+No backend changes, no database changes, no i18n file changes, no API changes required.
