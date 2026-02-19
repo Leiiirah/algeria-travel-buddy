@@ -67,7 +67,7 @@ import {
 import { generateClientInvoicePdf } from '@/utils/invoiceGenerator';
 import { ClientInvoice, ClientInvoiceType, ClientInvoiceStatus } from '@/types';
 import { CreateClientInvoiceDto, UpdateClientInvoiceDto, ClientInvoiceFilters } from '@/lib/api';
-import { TRAVEL_CLASSES, PAYMENT_METHODS } from '@/constants/agency';
+import { AGENCY_INFO, TRAVEL_CLASSES, PAYMENT_METHODS } from '@/constants/agency';
 import { useAgencySettings } from '@/hooks/useAgencySettings';
 
 export default function InvoicesPage() {
@@ -131,8 +131,8 @@ export default function InvoicesPage() {
       agencyFees: 0,
       validityHours: 48,
     });
-    setPdfBankName(agencySettings?.bankName || '');
-    setPdfBankAccount(agencySettings?.bankAccount || '');
+    setPdfBankName(agencySettings?.bankName || AGENCY_INFO.bankName);
+    setPdfBankAccount(agencySettings?.bankAccount || AGENCY_INFO.bankAccount);
     setIsFormOpen(true);
   };
 
@@ -160,8 +160,8 @@ export default function InvoicesPage() {
       validityHours: invoice.validityHours || 48,
       notes: invoice.notes || undefined,
     });
-    setPdfBankName(agencySettings?.bankName || '');
-    setPdfBankAccount(agencySettings?.bankAccount || '');
+    setPdfBankName(agencySettings?.bankName || AGENCY_INFO.bankName);
+    setPdfBankAccount(agencySettings?.bankAccount || AGENCY_INFO.bankAccount);
     setIsFormOpen(true);
   };
 
@@ -393,7 +393,11 @@ export default function InvoicesPage() {
                             <Button
                               variant="ghost"
                               size="icon"
-                              onClick={() => handleDownloadPdf(invoice)}
+                              onClick={() => handleDownloadPdf(
+                                invoice,
+                                agencySettings?.bankName || AGENCY_INFO.bankName,
+                                agencySettings?.bankAccount || AGENCY_INFO.bankAccount,
+                              )}
                               title={t('actions.download')}
                             >
                               <Download className="h-4 w-4" />
