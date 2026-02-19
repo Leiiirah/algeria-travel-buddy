@@ -377,10 +377,9 @@ const CommandsPage = () => {
   const getTimeRemaining = (createdAt: Date | string): string => {
     const createdDate = typeof createdAt === 'string' ? new Date(createdAt) : createdAt;
     const hoursSinceCreation = (Date.now() - createdDate.getTime()) / (1000 * 60 * 60);
-    if (hoursSinceCreation >= 24) return t('time.locked');
-    const remaining = 24 - hoursSinceCreation;
-    if (remaining < 1) return t('time.minutesRemaining', { minutes: Math.round(remaining * 60) });
-    return t('time.hoursRemaining', { hours: Math.round(remaining) });
+    if (hoursSinceCreation >= 0.5) return t('time.locked');
+    const remaining = 0.5 - hoursSinceCreation;
+    return t('time.minutesRemaining', { minutes: Math.round(remaining * 60) });
   };
 
   const getStatusLabel = (status: string): string => {

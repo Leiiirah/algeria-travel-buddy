@@ -15,14 +15,14 @@ export const formatDZD = (amount: number): string => {
   }).format(amount) + ' DZD';
 };
 
-// Utility function to check if command is editable (within 24 hours)
+// Utility function to check if command is editable (within 30 minutes)
 export const isCommandEditable = (command: Command, currentUserId: string): boolean => {
   if (command.createdBy !== currentUserId) return false;
   const createdAt = typeof command.createdAt === 'string'
     ? new Date(command.createdAt)
     : command.createdAt;
   const hoursSinceCreation = (Date.now() - createdAt.getTime()) / (1000 * 60 * 60);
-  return hoursSinceCreation <= 24;
+  return hoursSinceCreation <= 0.5;
 };
 
 // Get service type label in French
