@@ -1,72 +1,93 @@
 
-# Invoice Template: 3 Improvements
+# Fix: Banque & Compte PDF Fields Showing Wrong Values
 
-## Summary of Changes
+## Root Cause Analysis
 
-### 1. Remove "(Frais d'agence)" from the TVA row label
+There are two compounding problems:
 
-In `InvoiceTemplate.tsx`, line 349, the TVA row currently reads:
-- FR: `TVA 9% (Frais d'agence)`
-- AR: `ضريبة القيمة المضافة 9% (رسوم الوكالة)`
+### Problem 1 — Missing keys in the database (primary cause)
 
-It will be simplified to:
-- FR: `TVA 9%`
-- AR: `ضريبة القيمة المضافة 9%`
+The migration that seeds agency settings (`1770700000000-AddAgencySettings.ts`) only seeds 7 keys: `legalName`, `address`, `phone`, `email`, `nif`, `nis`, `rc`. It does **not** seed `bankName` or `bankAccount`.
+
+So when `agencySettings` is fetched from the API, it returns a map with no `bankName` or `bankAccount` entries. When passed to `mergeAgencyInfo` as `agencyInfo`, `param?.bankName` is `undefined`, so it falls back to the hardcoded `AGENCY_INFO.bankName = 'ccp'` and `AGENCY_INFO.bankAccount = '00799999001499040728'` — the wrong hardcoded values.
+
+### Problem 2 — Form bank fields pre-populate from unloaded data
+
+In `openCreateDialog` and `openEditDialog`, the code does:
+```ts
+setPdfBankName(agencySettings?.bankName || '');
+```
+If `agencySettings` hasn't returned `bankName` from the API (because it was never seeded), this sets the form field to `''`. Users see empty inputs and may not know what to put there.
+
+### Problem 3 — Direct download bypasses form bank overrides
+
+The download icon button in the invoices table calls:
+```ts
+onClick={() => handleDownloadPdf(invoice)
+```
+— with no bank override arguments. The `pdfBankName`/`pdfBankAccount` state only flows to the PDF when clicking "Télécharger PDF" from inside the **edit dialog**. The table-row download always falls back to `agencySettings`.
 
 ---
 
-### 2. Per-invoice Banque & Compte fields (admin only)
+## Fix Plan
 
-Currently, "Banque" and "Compte" in the PDF come exclusively from global agency settings. The user wants to be able to override these values per invoice when creating/editing a facture.
+### Fix 1 — Add `bankName` and `bankAccount` to the database via a new migration (backend)
 
-**Approach:**
-- Add two new fields to `ClientInvoicePdfData` interface: `bankName?: string` and `bankAccount?: string` (separate from, but named the same as what's already in `AgencyInfoParam`)
-- In `InvoiceTemplate.tsx`, the Règlement section already reads `info.bankName` and `info.bankAccount` (merged from agency settings). We will change it to prefer per-invoice values when present: `data.bankName || info.bankName`
-- In `InvoicesPage.tsx` form dialog, add two new input fields (visible to all users, since any user can create invoices) for "Banque" and "Compte" — pre-populated with the agency settings values as defaults when the dialog opens
-- Pass the values through `handleDownloadPdf` → `generateClientInvoicePdf` → `InvoiceTemplate`
+Create a new migration that inserts `bankName` and `bankAccount` into `agency_settings` if they don't already exist. This ensures the Contact settings page shows these fields with correct defaults, and the API returns them properly.
 
-No backend/database change is required — the bank override values are only needed at PDF generation time, not stored per invoice.
+**File: `server/src/database/migrations/1771600000000-AddBankFieldsToAgencySettings.ts`**
 
----
+```sql
+INSERT INTO agency_settings (id, key, value)
+SELECT uuid_generate_v4(), 'bankName', 'CCP'
+WHERE NOT EXISTS (SELECT 1 FROM agency_settings WHERE key = 'bankName');
 
-### 3. Add "Conditions générales" section to the PDF
-
-Replace the current single-line "Billet émis et non remboursable" on finale invoices with a proper boxed "Conditions générales" block containing the 4 bullet points provided, placed between the payment/signature section and the spacer div (before the footer).
-
-The conditions will appear on **finale invoices only** (proforma keeps its existing validity/warning block unchanged).
-
-Content:
-```
-Conditions générales :
-• Les billets émis ne sont ni remboursables ni modifiables après confirmation, sauf selon les conditions de la compagnie aérienne.
-• Les frais de service restent non remboursables.
-• Toute modification peut entraîner des frais supplémentaires.
-• La responsabilité de l'agence se limite à l'émission du billet.
+INSERT INTO agency_settings (id, key, value)
+SELECT uuid_generate_v4(), 'bankAccount', ''
+WHERE NOT EXISTS (SELECT 1 FROM agency_settings WHERE key = 'bankAccount');
 ```
 
-Styled as a light bordered box consistent with the existing conditions block on proforma invoices.
+This is safe (uses `WHERE NOT EXISTS`) and idempotent.
+
+### Fix 2 — Fall back to `AGENCY_INFO` constants when form fields are pre-populated (frontend)
+
+In `InvoicesPage.tsx`, change the pre-population logic to always provide a non-empty default even when the API hasn't returned a value for `bankName`/`bankAccount`:
+
+```ts
+// openCreateDialog and openEditDialog:
+setPdfBankName(agencySettings?.bankName || AGENCY_INFO.bankName);
+setPdfBankAccount(agencySettings?.bankAccount || AGENCY_INFO.bankAccount);
+```
+
+This ensures the form inputs show the right values (from constants as fallback) so the user can see and edit them.
+
+### Fix 3 — Table row download button should also use the agency settings bank values
+
+In `InvoicesPage.tsx`, the table-row download button currently calls `handleDownloadPdf(invoice)` with no overrides, which is correct behavior — it should use agency settings. The actual fix is Fix 1 (ensuring the DB has the right values). But we also want the direct download to use the same `pdfBankName`/`pdfBankAccount` state that the user can configure. 
+
+The simplest fix: pass `agencySettings?.bankName` and `agencySettings?.bankAccount` explicitly as the overrides when there's no user-provided value, removing the ambiguity entirely. We do this by changing `handleDownloadPdf` to always use the current `pdfBankName`/`pdfBankAccount` state as the source of truth, with proper fallback to constants.
 
 ---
 
 ## Files to Change
 
-### `src/components/invoice/InvoiceTemplate.tsx`
+### 1. `server/src/database/migrations/1771600000000-AddBankFieldsToAgencySettings.ts` (new file)
 
-1. **Interface `ClientInvoicePdfData`**: Add `bankName?: string` and `bankAccount?: string` fields
-2. **Règlement section** (~line 395-400): Change `info.bankName` → `data.bankName || info.bankName` and `info.bankAccount` → `data.bankAccount || info.bankAccount`
-3. **TVA row label** (line 349): Remove "(Frais d'agence)" / "(رسوم الوكالة)"
-4. **Conditions section for finale** (~line 483-489): Replace the simple "Billet émis et non remboursable" line with the full boxed conditions block
+Adds `bankName` and `bankAccount` rows to `agency_settings` safely (no-op if already present).
 
-### `src/pages/InvoicesPage.tsx`
+### 2. `src/pages/InvoicesPage.tsx`
 
-1. **`formData` state** (line 88-97): Add `bankName` and `bankAccount` to the initial state
-2. **`openCreateDialog`** (line 120-133): Pre-populate `bankName` and `bankAccount` from `agencySettings` as defaults
-3. **`openEditDialog`** (line 135-160): Include `bankName` and `bankAccount` in the edit form state
-4. **`handleDownloadPdf`** (line 182-209): Pass `bankName` and `bankAccount` from the invoice data (or directly from the form — but since they're not stored per invoice in the DB, we'd pass from `agencySettings` for downloaded existing invoices, or store them in formData for new ones). 
+- **Lines 134–135** (`openCreateDialog`): Change `agencySettings?.bankName || ''` → `agencySettings?.bankName || AGENCY_INFO.bankName` and same for bankAccount
+- **Lines 163–164** (`openEditDialog`): Same change
+- **Line 396** (table download button): Pass `pdfBankName || agencySettings?.bankName || AGENCY_INFO.bankName` and same for account so the direct download also benefits from the correct values
+- Add `import { AGENCY_INFO } from '@/constants/agency'` at the top if not already present (it's not currently imported in InvoicesPage)
 
-> **Note on persistence**: Since `bankName`/`bankAccount` per invoice aren't stored in the database, for existing invoices the PDF will fall back to agency settings. For new invoices created through the form, the overridden values will be used at creation time to generate the PDF, but they won't persist on subsequent downloads. This is acceptable and matches the user's request ("when creating a facture").
+### 3. `src/components/invoice/InvoiceTemplate.tsx`
 
-5. **Form dialog** (~line 573-602): Add two new input fields under the PNR/Payment section for "Banque" and "Compte", visible when `formData.type === 'finale'` (since bank details are most relevant for final invoices)
+No changes needed — the template logic at lines 397–402 (`data.bankName || info.bankName`) is already correct. The fix just ensures the data flowing into it is correct.
 
-### No backend/DB changes needed
-All changes are frontend-only (PDF template + form UI). The bank override values are ephemeral at PDF-generation time.
+---
+
+## Summary
+
+The PDF shows wrong bank values because `bankName`/`bankAccount` were never seeded into the database, causing the API to return nothing for these keys, which forces a fallback to the old hardcoded constants (`'ccp'`). The fix seeds these values into the DB and ensures the frontend form always shows correct defaults.
