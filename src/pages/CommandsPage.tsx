@@ -1175,7 +1175,7 @@ const CommandsPage = () => {
                 <TableBody>
                   {commands.map((command) => {
                     const service = services?.find((s) => s.id === command.serviceId);
-                    const canEdit = user ? isCommandEditable(command, user.id) : false;
+                    const canEdit = user?.role === 'admin' || (user ? isCommandEditable(command, user.id) : false);
                     const canDelete = user?.role === 'admin' || canEdit;
                     const remaining = calculateRemainingBalance(command.sellingPrice, command.amountPaid);
                     const profit = calculateNetProfit(command.sellingPrice, command.buyingPrice);
@@ -1251,7 +1251,7 @@ const CommandsPage = () => {
                               {canEdit ? (
                                 <>
                                   <Unlock className="h-3 w-3 text-green-600" />
-                                  <span className="text-muted-foreground">{getTimeRemaining(command.createdAt)}</span>
+                                  {user?.role !== 'admin' && <span className="text-muted-foreground">{getTimeRemaining(command.createdAt)}</span>}
                                 </>
                               ) : (
                                 <Lock className="h-3 w-3 text-muted-foreground" />
