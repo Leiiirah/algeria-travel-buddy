@@ -924,16 +924,6 @@ const CommandsPage = () => {
                           />
                         </div>
 
-                        <div className="space-y-2">
-                          <Label>{t('form.commandDate')}</Label>
-                          <Input
-                            type="date"
-                            value={formData.commandDate}
-                            onChange={(e) => setFormData({ ...formData, commandDate: e.target.value })}
-                          />
-                          <p className="text-xs text-muted-foreground">{t('form.commandDateHelp')}</p>
-                        </div>
-
                         {/* Accounting fields */}
                         <div className="border-t pt-4 mt-4">
                           <h4 className="font-medium mb-3">{t('form.accountingInfo')}</h4>
