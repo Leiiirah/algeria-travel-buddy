@@ -438,6 +438,8 @@ export interface CreateClientInvoiceDto {
   agencyFees?: number;
   paymentMethod?: string;
   validityHours?: number;
+  bankName?: string;
+  bankAccount?: string;
 }
 
 export interface UpdateClientInvoiceDto {
@@ -464,6 +466,8 @@ export interface UpdateClientInvoiceDto {
   agencyFees?: number;
   paymentMethod?: string;
   validityHours?: number;
+  bankName?: string;
+  bankAccount?: string;
 }
 
 export interface ClientInvoiceFilters {

@@ -8,7 +8,7 @@ export const AGENCY_INFO = {
   rc: '12ب0807686-09/00',
   nif: '001209080768687',
   nis: '001209010019858',
-  bankName: 'ccp',
+  bankName: 'CCP',
   bankAccount: '00799999001499040728',
   mobilePhone: '0540 40 00 80',
   licenseNumber: '1500',

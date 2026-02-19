@@ -106,6 +106,12 @@ export class ClientInvoice {
   @Column({ type: 'int', default: 48 })
   validityHours: number;
 
+  @Column({ type: 'varchar', length: 100, nullable: true })
+  bankName: string | null;
+
+  @Column({ type: 'varchar', length: 100, nullable: true })
+  bankAccount: string | null;
+
   @Column({ type: 'uuid' })
   createdBy: string;
 
