@@ -46,6 +46,8 @@ export interface ClientInvoicePdfData {
   status: string;
   language: 'fr' | 'ar';
   agencyInfo?: AgencyInfoParam;
+  bankName?: string;
+  bankAccount?: string;
 }
 
 function mergeAgencyInfo(param?: AgencyInfoParam) {
@@ -346,7 +348,7 @@ const InvoiceTemplate = forwardRef<HTMLDivElement, InvoiceTemplateProps>(
                   {!isProforma && tva > 0 && (
                     <tr style={{ borderBottom: '1px solid #e2e8f0', backgroundColor: '#fffbeb' }}>
                       <td style={{ padding: '7px 12px', fontStyle: 'italic', color: '#92400e' }} dir={isArabic ? 'rtl' : undefined}>
-                        {isArabic ? 'ضريبة القيمة المضافة 9% (رسوم الوكالة)' : "TVA 9% (Frais d'agence)"}
+                        {isArabic ? 'ضريبة القيمة المضافة 9%' : "TVA 9%"}
                       </td>
                       <td style={{ padding: '7px 12px', textAlign: 'right', fontStyle: 'italic', color: '#92400e' }}>{fmt(tva)} DA</td>
                     </tr>
@@ -392,11 +394,11 @@ const InvoiceTemplate = forwardRef<HTMLDivElement, InvoiceTemplateProps>(
             {data.paymentMethod && (
               <InfoRow label={isArabic ? 'طريقة الدفع' : 'Mode'} value={paymentLabel} isArabic={isArabic} />
             )}
-            {info.bankName && (
-              <InfoRow label={isArabic ? 'البنك' : 'Banque'} value={info.bankName} isArabic={isArabic} />
+            {(data.bankName || info.bankName) && (
+              <InfoRow label={isArabic ? 'البنك' : 'Banque'} value={data.bankName || info.bankName || ''} isArabic={isArabic} />
             )}
-            {info.bankAccount && (
-              <InfoRow label={isArabic ? 'الحساب' : 'Compte'} value={info.bankAccount} isArabic={isArabic} />
+            {(data.bankAccount || info.bankAccount) && (
+              <InfoRow label={isArabic ? 'الحساب' : 'Compte'} value={data.bankAccount || info.bankAccount || ''} isArabic={isArabic} />
             )}
 
             <div style={{ fontSize: '10px', fontStyle: 'italic', marginTop: '8px', lineHeight: '1.5', color: '#4a5568' }}>
@@ -481,10 +483,26 @@ const InvoiceTemplate = forwardRef<HTMLDivElement, InvoiceTemplateProps>(
             </div>
           </div>
         ) : (
-          <div style={{ fontSize: '10px', fontWeight: 700, color: '#4a5568', marginBottom: '10px', textAlign: 'center' }}
-            dir={isArabic ? 'rtl' : undefined}
-          >
-            {isArabic ? 'تذكرة صادرة وغير قابلة للاسترداد' : 'Billet émis et non remboursable'}
+          <div style={{ marginBottom: '10px' }}>
+            <div
+              style={{
+                backgroundColor: accentLight,
+                border: `1px solid ${accent}30`,
+                borderRadius: '4px',
+                padding: '8px 14px',
+                fontSize: '10px',
+                color: '#1a1a1a',
+                lineHeight: '1.7',
+              }}
+            >
+              <div style={{ fontWeight: 700, marginBottom: '5px', color: accent }}>
+                Conditions générales :
+              </div>
+              <div>• Les billets émis ne sont ni remboursables ni modifiables après confirmation, sauf selon les conditions de la compagnie aérienne.</div>
+              <div>• Les frais de service restent non remboursables.</div>
+              <div>• Toute modification peut entraîner des frais supplémentaires.</div>
+              <div>• La responsabilité de l'agence se limite à l'émission du billet.</div>
+            </div>
           </div>
         )}
 
