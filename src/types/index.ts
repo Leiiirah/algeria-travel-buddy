@@ -531,6 +531,8 @@ export interface ClientInvoice {
   agencyFees?: number;
   paymentMethod?: string;
   validityHours?: number;
+  bankName?: string | null;
+  bankAccount?: string | null;
   createdBy: string;
   creator?: User;
   createdAt: Date;

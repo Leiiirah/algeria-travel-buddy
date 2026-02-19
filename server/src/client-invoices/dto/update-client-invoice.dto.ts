@@ -112,4 +112,14 @@ export class UpdateClientInvoiceDto {
   @IsNumber()
   @Min(1)
   validityHours?: number;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  bankName?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  bankAccount?: string;
 }

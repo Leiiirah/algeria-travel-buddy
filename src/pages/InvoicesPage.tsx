@@ -84,8 +84,8 @@ export default function InvoicesPage() {
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [selectedInvoice, setSelectedInvoice] = useState<ClientInvoice | null>(null);
 
-  // Form state (bankName/bankAccount are ephemeral PDF-only fields, not stored in DB)
-  const [formData, setFormData] = useState<Partial<CreateClientInvoiceDto> & { bankName?: string; bankAccount?: string }>({
+  // Form state
+  const [formData, setFormData] = useState<Partial<CreateClientInvoiceDto>>({
     type: 'proforma',
     clientName: '',
     serviceName: '',
@@ -95,8 +95,6 @@ export default function InvoicesPage() {
     agencyFees: 0,
     validityHours: 48,
   });
-  const [pdfBankName, setPdfBankName] = useState('');
-  const [pdfBankAccount, setPdfBankAccount] = useState('');
 
   // Queries and mutations
   const { data: invoices, isLoading, isError, error, refetch } = useClientInvoices(filters);
@@ -130,9 +128,9 @@ export default function InvoicesPage() {
       ticketPrice: 0,
       agencyFees: 0,
       validityHours: 48,
+      bankName: agencySettings?.bankName || AGENCY_INFO.bankName,
+      bankAccount: agencySettings?.bankAccount || AGENCY_INFO.bankAccount,
     });
-    setPdfBankName(agencySettings?.bankName || AGENCY_INFO.bankName);
-    setPdfBankAccount(agencySettings?.bankAccount || AGENCY_INFO.bankAccount);
     setIsFormOpen(true);
   };
 
@@ -159,9 +157,9 @@ export default function InvoicesPage() {
       paymentMethod: invoice.paymentMethod || undefined,
       validityHours: invoice.validityHours || 48,
       notes: invoice.notes || undefined,
+      bankName: invoice.bankName || agencySettings?.bankName || AGENCY_INFO.bankName,
+      bankAccount: invoice.bankAccount || agencySettings?.bankAccount || AGENCY_INFO.bankAccount,
     });
-    setPdfBankName(agencySettings?.bankName || AGENCY_INFO.bankName);
-    setPdfBankAccount(agencySettings?.bankAccount || AGENCY_INFO.bankAccount);
     setIsFormOpen(true);
   };
 
@@ -185,7 +183,7 @@ export default function InvoicesPage() {
     }
   };
 
-  const handleDownloadPdf = (invoice: ClientInvoice, overrideBankName?: string, overrideBankAccount?: string) => {
+  const handleDownloadPdf = (invoice: ClientInvoice) => {
     generateClientInvoicePdf({
       invoiceNumber: invoice.invoiceNumber,
       invoiceType: invoice.type,
@@ -211,8 +209,8 @@ export default function InvoicesPage() {
       status: invoice.status,
       language: i18n.language as 'fr' | 'ar',
       agencyInfo: agencySettings || undefined,
-      bankName: overrideBankName || undefined,
-      bankAccount: overrideBankAccount || undefined,
+      bankName: invoice.bankName || agencySettings?.bankName || AGENCY_INFO.bankName,
+      bankAccount: invoice.bankAccount || agencySettings?.bankAccount || AGENCY_INFO.bankAccount,
     });
   };
 
@@ -393,11 +391,7 @@ export default function InvoicesPage() {
                             <Button
                               variant="ghost"
                               size="icon"
-                              onClick={() => handleDownloadPdf(
-                                invoice,
-                                agencySettings?.bankName || AGENCY_INFO.bankName,
-                                agencySettings?.bankAccount || AGENCY_INFO.bankAccount,
-                              )}
+                              onClick={() => handleDownloadPdf(invoice)}
                               title={t('actions.download')}
                             >
                               <Download className="h-4 w-4" />
@@ -613,22 +607,22 @@ export default function InvoicesPage() {
                 </div>
               )}
 
-              {/* Bank details override (PDF only) */}
+              {/* Bank details */}
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label>Banque <span className="text-xs text-muted-foreground">(PDF)</span></Label>
+                  <Label>Banque</Label>
                   <Input
-                    value={pdfBankName}
-                    onChange={(e) => setPdfBankName(e.target.value)}
-                    placeholder={agencySettings?.bankName || ''}
+                    value={formData.bankName || ''}
+                    onChange={(e) => setFormData((prev) => ({ ...prev, bankName: e.target.value }))}
+                    placeholder={agencySettings?.bankName || AGENCY_INFO.bankName}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>Compte bancaire <span className="text-xs text-muted-foreground">(PDF)</span></Label>
+                  <Label>Compte bancaire</Label>
                   <Input
-                    value={pdfBankAccount}
-                    onChange={(e) => setPdfBankAccount(e.target.value)}
-                    placeholder={agencySettings?.bankAccount || ''}
+                    value={formData.bankAccount || ''}
+                    onChange={(e) => setFormData((prev) => ({ ...prev, bankAccount: e.target.value }))}
+                    placeholder={agencySettings?.bankAccount || AGENCY_INFO.bankAccount}
                   />
                 </div>
               </div>
@@ -715,7 +709,7 @@ export default function InvoicesPage() {
               {selectedInvoice && (
                 <Button
                   variant="secondary"
-                  onClick={() => handleDownloadPdf(selectedInvoice, pdfBankName, pdfBankAccount)}
+                  onClick={() => handleDownloadPdf(selectedInvoice)}
                 >
                   <Download className="mr-2 h-4 w-4" />
                   {t('actions.download')}
