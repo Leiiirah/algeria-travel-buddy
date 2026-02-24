@@ -1,55 +1,65 @@
 
-# Change Employee Edit Window from 24 Hours to 30 Minutes
 
-## What Changes
+# Add TVA to Proforma Invoices
 
-Two functions reference the 24-hour limit — both must be updated to 30 minutes (0.5 hours).
+## Summary
 
-### File 1 — `src/lib/utils.ts` (line 25)
+Currently, the 9% TVA (calculated on agency fees) only appears on Final invoices. This change makes it appear on Proforma invoices as well, using the same calculation and styling.
 
-The core editability check:
+## Changes — Single File
 
-```typescript
-// BEFORE
-const hoursSinceCreation = (Date.now() - createdAt.getTime()) / (1000 * 60 * 60);
-return hoursSinceCreation <= 24;
+**`src/components/invoice/InvoiceTemplate.tsx`** — 3 small edits:
 
-// AFTER
-const hoursSinceCreation = (Date.now() - createdAt.getTime()) / (1000 * 60 * 60);
-return hoursSinceCreation <= 0.5;  // 30 minutes
-```
+### 1. TVA Calculation (line 111)
 
-Also update the comment on line 18 from `"within 24 hours"` to `"within 30 minutes"`.
-
-### File 2 — `src/pages/CommandsPage.tsx` (lines 380–383)
-
-The countdown display logic:
+Remove the `!isProforma` guard so TVA is calculated for both invoice types:
 
 ```typescript
 // BEFORE
-if (hoursSinceCreation >= 24) return t('time.locked');
-const remaining = 24 - hoursSinceCreation;
-if (remaining < 1) return t('time.minutesRemaining', { minutes: Math.round(remaining * 60) });
-return t('time.hoursRemaining', { hours: Math.round(remaining) });
+const tva = !isProforma && fees > 0 ? Math.round(fees * 0.09 * 100) / 100 : 0;
 
 // AFTER
-if (hoursSinceCreation >= 0.5) return t('time.locked');
-const remaining = 0.5 - hoursSinceCreation;  // max 30 min remaining
-// Always show minutes (remaining is always < 1 hour now)
-return t('time.minutesRemaining', { minutes: Math.round(remaining * 60) });
+const tva = fees > 0 ? Math.round(fees * 0.09 * 100) / 100 : 0;
 ```
 
-Since the window is only 30 minutes, the countdown will always display in minutes (e.g. "28 min restantes"), never in hours — so the `hoursRemaining` branch is no longer reachable and can be removed.
+### 2. TVA Row Display (line 348)
 
-## Files to Change
+Remove the `!isProforma &&` condition so the TVA row renders for both types:
 
-| File | Change |
-|---|---|
-| `src/lib/utils.ts` | Change `<= 24` to `<= 0.5` + update comment |
-| `src/pages/CommandsPage.tsx` | Change `24` to `0.5` in `getTimeRemaining`, simplify to always show minutes |
+```tsx
+// BEFORE
+{!isProforma && tva > 0 && (
 
-## No Other Changes Needed
+// AFTER
+{tva > 0 && (
+```
 
-- Admin bypass (`user?.role === 'admin'`) already works independently of this limit
-- `canDelete` logic is unaffected
-- Backend has no time-based enforcement — this is purely frontend
+### 3. Total Row (line 369)
+
+Use `totalTTC` for proforma invoices too when a breakdown exists:
+
+```tsx
+// BEFORE
+{fmt(hasBreakdown && !isProforma ? totalTTC : amount)} DA
+
+// AFTER
+{fmt(hasBreakdown ? totalTTC : amount)} DA
+```
+
+### 4. Total Label (lines 364-366)
+
+Update the proforma total label to also say "TOTAL TTC":
+
+```tsx
+// BEFORE
+{isProforma
+  ? (isArabic ? 'المجموع' : 'TOTAL')
+  : (isArabic ? 'المجموع الشامل' : 'TOTAL TTC')}
+
+// AFTER
+{isArabic ? 'المجموع الشامل' : 'TOTAL TTC'}
+```
+
+## Result
+
+Proforma invoices will now show the same TVA 9% line (on agency fees) and TOTAL TTC as Final invoices do. No backend or translation changes needed.
