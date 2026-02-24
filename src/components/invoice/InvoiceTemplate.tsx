@@ -108,7 +108,7 @@ const InvoiceTemplate = forwardRef<HTMLDivElement, InvoiceTemplateProps>(
     const amount = Number(data.totalAmount) || 0;
     const ticket = Number(data.ticketPrice) || 0;
     const fees = Number(data.agencyFees) || 0;
-    const tva = !isProforma && fees > 0 ? Math.round(fees * 0.09 * 100) / 100 : 0;
+    const tva = fees > 0 ? Math.round(fees * 0.09 * 100) / 100 : 0;
     const totalTTC = ticket + fees + tva;
 
     const accent = isProforma ? '#1E3A5F' : '#1B4332';
@@ -345,7 +345,7 @@ const InvoiceTemplate = forwardRef<HTMLDivElement, InvoiceTemplateProps>(
                     </td>
                     <td style={{ padding: '7px 12px', textAlign: 'right' }}>{fmt(fees)} DA</td>
                   </tr>
-                  {!isProforma && tva > 0 && (
+                  {tva > 0 && (
                     <tr style={{ borderBottom: '1px solid #e2e8f0', backgroundColor: '#fffbeb' }}>
                       <td style={{ padding: '7px 12px', fontStyle: 'italic', color: '#92400e' }} dir={isArabic ? 'rtl' : undefined}>
                         {isArabic ? 'ضريبة القيمة المضافة 9%' : "TVA 9%"}
@@ -361,12 +361,10 @@ const InvoiceTemplate = forwardRef<HTMLDivElement, InvoiceTemplateProps>(
                 <td style={{ padding: '9px 12px', fontWeight: 700, color: '#ffffff', fontSize: '13px' }}
                   dir={isArabic ? 'rtl' : undefined}
                 >
-                  {isProforma
-                    ? (isArabic ? 'المجموع' : 'TOTAL')
-                    : (isArabic ? 'المجموع الشامل' : 'TOTAL TTC')}
+                  {isArabic ? 'المجموع الشامل' : 'TOTAL TTC'}
                 </td>
                 <td style={{ padding: '9px 12px', textAlign: 'right', fontWeight: 700, color: '#ffffff', fontSize: '13px' }}>
-                  {fmt(hasBreakdown && !isProforma ? totalTTC : amount)} DA
+                  {fmt(hasBreakdown ? totalTTC : amount)} DA
                 </td>
               </tr>
             </tbody>
