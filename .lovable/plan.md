@@ -1,65 +1,170 @@
 
 
-# Add TVA to Proforma Invoices
+# Unseen Task Notification Badge for Employees
 
-## Summary
+## Overview
 
-Currently, the 9% TVA (calculated on agency fees) only appears on Final invoices. This change makes it appear on Proforma invoices as well, using the same calculation and styling.
+Add a `seen` boolean field to internal tasks. When an admin assigns a task, it starts as `seen: false`. When the employee views the task list, their unseen tasks are automatically marked as seen. A notification badge on the "Missions Internes" sidebar item shows the count of unseen tasks.
 
-## Changes — Single File
+## Backend Changes
 
-**`src/components/invoice/InvoiceTemplate.tsx`** — 3 small edits:
+### 1. New Migration — Add `seen` column
 
-### 1. TVA Calculation (line 111)
+```sql
+ALTER TABLE internal_tasks ADD COLUMN "seen" BOOLEAN NOT NULL DEFAULT false;
+```
 
-Remove the `!isProforma` guard so TVA is calculated for both invoice types:
+Existing tasks will default to `false` (unseen). This is safe since admins won't see the badge anyway.
+
+### 2. Entity — `server/src/internal-tasks/entities/internal-task.entity.ts`
+
+Add a `seen` boolean column defaulting to `false`:
 
 ```typescript
-// BEFORE
-const tva = !isProforma && fees > 0 ? Math.round(fees * 0.09 * 100) / 100 : 0;
-
-// AFTER
-const tva = fees > 0 ? Math.round(fees * 0.09 * 100) / 100 : 0;
+@Column({ type: 'boolean', default: false })
+seen: boolean;
 ```
 
-### 2. TVA Row Display (line 348)
+### 3. Service — `server/src/internal-tasks/internal-tasks.service.ts`
 
-Remove the `!isProforma &&` condition so the TVA row renders for both types:
+- In `create()`: tasks are created with `seen: false` by default (column default handles this).
+- Add a new method `markAsSeen(userId: string)`: marks all unseen tasks for this employee as `seen: true`.
+- Add a new method `getUnseenCount(userId: string): Promise<number>`: returns count of unseen tasks for the employee.
+
+```typescript
+async markAsSeen(userId: string): Promise<void> {
+  await this.taskRepository.update(
+    { assignedTo: userId, seen: false },
+    { seen: true },
+  );
+}
+
+async getUnseenCount(userId: string): Promise<number> {
+  return this.taskRepository.count({
+    where: { assignedTo: userId, seen: false },
+  });
+}
+```
+
+### 4. Controller — `server/src/internal-tasks/internal-tasks.controller.ts`
+
+Add two new endpoints:
+
+```typescript
+@Get('unseen-count')
+getUnseenCount(@CurrentUser() user: User): Promise<{ count: number }> {
+  return this.tasksService.getUnseenCount(user.id).then(count => ({ count }));
+}
+
+@Patch('mark-seen')
+markAsSeen(@CurrentUser() user: User): Promise<void> {
+  return this.tasksService.markAsSeen(user.id);
+}
+```
+
+**Important**: These routes must be placed BEFORE the `:id` routes to avoid NestJS interpreting "unseen-count" and "mark-seen" as an `id` parameter.
+
+### 5. DTO — `server/src/internal-tasks/dto/update-internal-task.dto.ts`
+
+No change needed — `seen` is managed by dedicated endpoints, not the general update flow. When admin reassigns or creates a task, the `create()` method already defaults to `seen: false`.
+
+## Frontend Changes
+
+### 6. Types — `src/types/index.ts`
+
+Add `seen` to the `InternalTask` interface:
+
+```typescript
+export interface InternalTask {
+  // ... existing fields
+  seen: boolean;
+}
+```
+
+### 7. API — `src/lib/api.ts`
+
+Add two new API methods:
+
+```typescript
+getUnseenTaskCount = (): Promise<{ count: number }> =>
+  this.request('/internal-tasks/unseen-count');
+
+markTasksAsSeen = (): Promise<void> =>
+  this.request('/internal-tasks/mark-seen', { method: 'PATCH' });
+```
+
+### 8. Hooks — `src/hooks/useInternalTasks.ts`
+
+Add two new hooks:
+
+```typescript
+export function useUnseenTaskCount(enabled: boolean = true) {
+  return useQuery({
+    queryKey: ['internal-tasks', 'unseen-count'],
+    queryFn: () => api.getUnseenTaskCount(),
+    enabled,
+    refetchInterval: 30000, // Poll every 30s for new tasks
+  });
+}
+
+export function useMarkTasksSeen() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => api.markTasksAsSeen(),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['internal-tasks', 'unseen-count'] });
+    },
+  });
+}
+```
+
+### 9. Sidebar — `src/components/layout/AppSidebar.tsx`
+
+For the "Missions Internes" menu item (employees only), show a red badge with the unseen count:
+
+- Import `useUnseenTaskCount` and `Badge`
+- Call `useUnseenTaskCount(!isAdmin)` — only for employees
+- Render a small red badge next to the "Missions Internes" label when `count > 0`
 
 ```tsx
-// BEFORE
-{!isProforma && tva > 0 && (
-
-// AFTER
-{tva > 0 && (
+<NavLink to="/missions-internes" className="flex items-center gap-3">
+  <ClipboardCheck className="h-4 w-4" />
+  <span>{t(item.titleKey)}</span>
+  {unseenCount > 0 && (
+    <Badge variant="destructive" className="ml-auto h-5 min-w-5 px-1 text-xs">
+      {unseenCount}
+    </Badge>
+  )}
+</NavLink>
 ```
 
-### 3. Total Row (line 369)
+### 10. InternalTasksPage — `src/pages/InternalTasksPage.tsx`
 
-Use `totalTTC` for proforma invoices too when a breakdown exists:
+When the page loads (for employees), call `markTasksAsSeen`:
 
-```tsx
-// BEFORE
-{fmt(hasBreakdown && !isProforma ? totalTTC : amount)} DA
+```typescript
+const markSeen = useMarkTasksSeen();
 
-// AFTER
-{fmt(hasBreakdown ? totalTTC : amount)} DA
+useEffect(() => {
+  if (!isAdmin && tasks && tasks.some(t => !t.seen)) {
+    markSeen.mutate();
+  }
+}, [isAdmin, tasks]);
 ```
 
-### 4. Total Label (lines 364-366)
+This automatically clears the badge when the employee visits the tasks page.
 
-Update the proforma total label to also say "TOTAL TTC":
+## Files Changed Summary
 
-```tsx
-// BEFORE
-{isProforma
-  ? (isArabic ? 'المجموع' : 'TOTAL')
-  : (isArabic ? 'المجموع الشامل' : 'TOTAL TTC')}
+| File | Change |
+|---|---|
+| `server/src/database/migrations/177XXXXXXX-AddSeenToInternalTasks.ts` | New migration: add `seen` boolean column |
+| `server/src/internal-tasks/entities/internal-task.entity.ts` | Add `seen` column |
+| `server/src/internal-tasks/internal-tasks.service.ts` | Add `markAsSeen()` and `getUnseenCount()` methods |
+| `server/src/internal-tasks/internal-tasks.controller.ts` | Add `GET unseen-count` and `PATCH mark-seen` endpoints |
+| `src/types/index.ts` | Add `seen: boolean` to `InternalTask` |
+| `src/lib/api.ts` | Add `getUnseenTaskCount()` and `markTasksAsSeen()` |
+| `src/hooks/useInternalTasks.ts` | Add `useUnseenTaskCount` and `useMarkTasksSeen` hooks |
+| `src/components/layout/AppSidebar.tsx` | Show unseen count badge on sidebar item |
+| `src/pages/InternalTasksPage.tsx` | Auto-mark tasks as seen on page visit |
 
-// AFTER
-{isArabic ? 'المجموع الشامل' : 'TOTAL TTC'}
-```
-
-## Result
-
-Proforma invoices will now show the same TVA 9% line (on agency fees) and TOTAL TTC as Final invoices do. No backend or translation changes needed.
