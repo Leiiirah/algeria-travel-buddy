@@ -20,7 +20,9 @@ import {
 } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/contexts/AuthContext';
+import { useUnseenTaskCount } from '@/hooks/useInternalTasks';
 import {
   Sidebar,
   SidebarContent,
@@ -43,6 +45,8 @@ export function AppSidebar() {
   const { state } = useSidebar();
   const isCollapsed = state === 'collapsed';
   const isRtl = i18n.language === 'ar';
+  const { data: unseenData } = useUnseenTaskCount(!isAdmin);
+  const unseenCount = unseenData?.count || 0;
 
   const mainMenuItems = [
     {
@@ -188,6 +192,11 @@ export function AppSidebar() {
                     >
                       <item.icon className="h-4 w-4" />
                       <span>{t(item.titleKey)}</span>
+                      {item.url === '/missions-internes' && unseenCount > 0 && (
+                        <Badge variant="destructive" className="ml-auto h-5 min-w-5 px-1 text-xs flex items-center justify-center">
+                          {unseenCount}
+                        </Badge>
+                      )}
                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>

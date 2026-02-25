@@ -92,3 +92,22 @@ export function useDeleteInternalTask() {
     },
   });
 }
+
+export function useUnseenTaskCount(enabled: boolean = true) {
+  return useQuery({
+    queryKey: ['internal-tasks', 'unseen-count'],
+    queryFn: () => api.getUnseenTaskCount(),
+    enabled,
+    refetchInterval: 30000,
+  });
+}
+
+export function useMarkTasksSeen() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => api.markTasksAsSeen(),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['internal-tasks', 'unseen-count'] });
+    },
+  });
+}
