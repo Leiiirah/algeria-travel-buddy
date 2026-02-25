@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { format } from 'date-fns';
 import { fr, ar } from 'date-fns/locale';
@@ -58,6 +58,7 @@ import {
   useCreateInternalTask,
   useUpdateInternalTask,
   useDeleteInternalTask,
+  useMarkTasksSeen,
 } from '@/hooks/useInternalTasks';
 import { InternalTasksSkeleton } from '@/components/skeletons/InternalTasksSkeleton';
 import { InternalTask, TaskPriority, TaskStatus, TaskVisibility } from '@/types';
@@ -96,6 +97,14 @@ export default function InternalTasksPage() {
   const createTask = useCreateInternalTask();
   const updateTask = useUpdateInternalTask();
   const deleteTask = useDeleteInternalTask();
+  const markSeen = useMarkTasksSeen();
+
+  // Auto-mark tasks as seen when employee visits the page
+  useEffect(() => {
+    if (!isAdmin && tasks && tasks.some(t => !t.seen)) {
+      markSeen.mutate();
+    }
+  }, [isAdmin, tasks]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);

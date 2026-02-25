@@ -149,6 +149,19 @@ export class InternalTasksService {
     return this.taskRepository.save(task);
   }
 
+  async getUnseenCount(userId: string): Promise<number> {
+    return this.taskRepository.count({
+      where: { assignedTo: userId, seen: false },
+    });
+  }
+
+  async markAsSeen(userId: string): Promise<void> {
+    await this.taskRepository.update(
+      { assignedTo: userId, seen: false },
+      { seen: true },
+    );
+  }
+
   async remove(id: string): Promise<void> {
     const task = await this.taskRepository.findOne({ where: { id } });
     if (!task) {

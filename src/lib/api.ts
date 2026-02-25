@@ -1441,6 +1441,12 @@ class ApiClient {
   deleteInternalTask = (id: string): Promise<void> =>
     this.request(`/internal-tasks/${id}`, { method: 'DELETE' });
 
+  getUnseenTaskCount = (): Promise<{ count: number }> =>
+    this.request('/internal-tasks/unseen-count');
+
+  markTasksAsSeen = (): Promise<void> =>
+    this.request('/internal-tasks/mark-seen', { method: 'PATCH' });
+
   // ==================== CLIENT INVOICES ====================
 
   getClientInvoices = (filters?: ClientInvoiceFilters): Promise<ClientInvoice[]> => {

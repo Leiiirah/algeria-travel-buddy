@@ -28,6 +28,16 @@ export class InternalTasksController {
     return this.tasksService.findAll(user);
   }
 
+  @Get('unseen-count')
+  getUnseenCount(@CurrentUser() user: User): Promise<{ count: number }> {
+    return this.tasksService.getUnseenCount(user.id).then(count => ({ count }));
+  }
+
+  @Patch('mark-seen')
+  markAsSeen(@CurrentUser() user: User): Promise<void> {
+    return this.tasksService.markAsSeen(user.id);
+  }
+
   @Get('stats')
   @UseGuards(RolesGuard)
   @Roles('admin')

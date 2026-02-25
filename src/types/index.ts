@@ -464,6 +464,7 @@ export interface InternalTask {
   createdBy: string;
   creator?: User;
   dueDate?: Date;
+  seen: boolean;
   createdAt: Date;
   updatedAt: Date;
 }

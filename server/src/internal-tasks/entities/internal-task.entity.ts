@@ -71,6 +71,9 @@ export class InternalTask {
   @JoinColumn({ name: 'createdBy' })
   creator: User;
 
+  @Column({ type: 'boolean', default: false })
+  seen: boolean;
+
   @Column({ type: 'date', nullable: true })
   dueDate: Date;
 
