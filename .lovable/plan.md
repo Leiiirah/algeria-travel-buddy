@@ -1,26 +1,31 @@
 
 
-# Fix "Ajouter Paiement" Button in Unpaid Tab
+# Fix Revenue Display in Reports Chart
 
 ## Problem
-
-The `<Dialog>` for adding a payment is nested inside `<TabsContent value="payments">` (lines 270-382). When the user clicks "Ajouter Paiement" from the **unpaid** tab (line 493-495), it sets `isDialogOpen = true`, but the dialog is not rendered because the payments tab content is hidden.
+The chart currently calculates "Revenus" from payment records (`allPayments`), which are filtered by the search/filter state at the top of the payments tab. This means the chart data is affected by active filters and may show 0 when filters exclude payments. Additionally, revenue should reflect command selling prices grouped by month, not individual payment amounts.
 
 ## Solution
-
-Extract the payment Dialog out of the `<TabsContent value="payments">` and place it after the closing `</Tabs>` tag (before the closing `</DashboardLayout>`). This way the dialog renders regardless of which tab is active.
+Change the revenue calculation in the `monthlyData` memo to use `commands` (selling prices) grouped by their `commandDate` or `createdAt`, instead of using `allPayments`. This matches how the stats cards calculate total revenue and ensures the chart always shows complete data regardless of payment filters.
 
 ### File: `src/pages/AccountingPage.tsx`
 
-1. **Cut** the `<Dialog open={isDialogOpen} ...>...</Dialog>` block (lines 270-382) out of the payments tab header.
-2. **Keep** only the filter and a standalone "Ajouter Paiement" `<Button>` that opens the dialog in the payments tab header.
-3. **Paste** the `<Dialog>` block after `</Tabs>` (after line 544), so it's always rendered regardless of active tab.
+**Change in `monthlyData` useMemo (lines 128-145):**
+- Replace the `revenus` calculation from filtering `allPayments` to filtering `commands` by their date (`commandDate ?? createdAt`) and summing `sellingPrice`
+- Update the dependency array to include `commands` instead of `allPayments`
 
-The button in the unpaid tab (lines 491-499) already correctly sets `selectedCommand` and `isDialogOpen` — no changes needed there.
+```typescript
+const revenus = commands
+  .filter((cmd) => {
+    const cd = new Date(cmd.commandDate ?? cmd.createdAt);
+    return cd.getFullYear() === year && cd.getMonth() === month;
+  })
+  .reduce((sum, cmd) => sum + Number(cmd.sellingPrice || 0), 0);
+```
 
 ### Files Changed
 
 | File | Change |
 |---|---|
-| `src/pages/AccountingPage.tsx` | Move `<Dialog>` outside of `<TabsContent>` so it renders on any tab |
+| `src/pages/AccountingPage.tsx` | Use command selling prices for revenue in chart instead of filtered payments |
 
