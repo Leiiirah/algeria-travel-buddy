@@ -16,7 +16,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from '@/components/ui/dialog';
 import {
   Select,
@@ -267,119 +266,10 @@ const AccountingPage = () => {
                       ]}
                     />
                   </div>
-                  <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                    <DialogTrigger asChild>
-                      <Button>
+                  <Button onClick={() => setIsDialogOpen(true)}>
                         <Plus className="ltr:mr-2 rtl:ml-2 h-4 w-4" />
                         {t('actions.newPayment')}
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent className="bg-card">
-                      <DialogHeader>
-                        <DialogTitle>{t('dialog.title')}</DialogTitle>
-                        <DialogDescription>
-                          {t('dialog.subtitle')}
-                        </DialogDescription>
-                      </DialogHeader>
-                      <div className="space-y-4 py-4">
-                        <div className="space-y-2">
-                          <Label>{t('dialog.form.command')}</Label>
-                          <Select
-                            value={selectedCommand}
-                            onValueChange={setSelectedCommand}
-                          >
-                            <SelectTrigger>
-                              <SelectValue placeholder={t('dialog.form.selectCommand')} />
-                            </SelectTrigger>
-                            <SelectContent className="bg-popover">
-                              {unpaidCommands.length === 0 ? (
-                                <div className="flex flex-col items-center justify-center p-4 space-y-2">
-                                  <p className="text-sm text-muted-foreground text-center">
-                                    {t('dialog.form.noUnpaidCommands')}
-                                  </p>
-                                  <Button
-                                    variant="secondary"
-                                    size="sm"
-                                    className="w-full"
-                                    onClick={() => {
-                                      setIsDialogOpen(false);
-                                      navigate('/commandes');
-                                    }}
-                                  >
-                                    {t('dialog.form.addCommand')}
-                                  </Button>
-                                </div>
-                              ) : (
-                                unpaidCommands.map((command) => {
-                                  const remaining = calculateRemainingBalance(command.sellingPrice, command.amountPaid);
-                                  return (
-                                    <SelectItem key={command.id} value={command.id}>
-                                      <div className="flex items-center justify-between gap-4">
-                                        <span>{getCommandLabel(command.id)}</span>
-                                        <span className="text-muted-foreground">
-                                          {t('dialog.form.remaining')}: {formatDZD(remaining)}
-                                        </span>
-                                      </div>
-                                    </SelectItem>
-                                  );
-                                })
-                              )}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                          <div className="space-y-2">
-                            <Label>{t('dialog.form.amount')}</Label>
-                            <Input
-                              type="number"
-                              value={newPayment.amount}
-                              onChange={(e) =>
-                                setNewPayment({ ...newPayment, amount: e.target.value })
-                              }
-                              placeholder="25000"
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <Label>{t('dialog.form.method')}</Label>
-                            <Select
-                              value={newPayment.method}
-                              onValueChange={(value: PaymentMethod) =>
-                                setNewPayment({ ...newPayment, method: value })
-                              }
-                            >
-                              <SelectTrigger>
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent className="bg-popover">
-                                <SelectItem value="especes">{tCommon('paymentMethods.especes')}</SelectItem>
-                                <SelectItem value="virement">{tCommon('paymentMethods.virement')}</SelectItem>
-                                <SelectItem value="cheque">{tCommon('paymentMethods.cheque')}</SelectItem>
-                                <SelectItem value="carte">{tCommon('paymentMethods.carte')}</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-                        </div>
-                        <div className="space-y-2">
-                          <Label>{t('dialog.form.notes')}</Label>
-                          <Input
-                            value={newPayment.notes}
-                            onChange={(e) =>
-                              setNewPayment({ ...newPayment, notes: e.target.value })
-                            }
-                            placeholder={t('dialog.form.notesPlaceholder')}
-                          />
-                        </div>
-                      </div>
-                      <DialogFooter>
-                        <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
-                          {tCommon('actions.cancel')}
-                        </Button>
-                        <Button onClick={handleAddPayment} disabled={createPayment.isPending}>
-                          {createPayment.isPending ? t('actions.saving') : tCommon('actions.save')}
-                        </Button>
-                      </DialogFooter>
-                    </DialogContent>
-                  </Dialog>
+                  </Button>
                 </div>
               </div>
             </CardHeader>
@@ -542,6 +432,75 @@ const AccountingPage = () => {
           </TabsContent>
         )}
       </Tabs>
+
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent className="bg-card">
+          <DialogHeader>
+            <DialogTitle>{t('dialog.title')}</DialogTitle>
+            <DialogDescription>{t('dialog.subtitle')}</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>{t('dialog.form.command')}</Label>
+              <Select value={selectedCommand} onValueChange={setSelectedCommand}>
+                <SelectTrigger>
+                  <SelectValue placeholder={t('dialog.form.selectCommand')} />
+                </SelectTrigger>
+                <SelectContent className="bg-popover">
+                  {unpaidCommands.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center p-4 space-y-2">
+                      <p className="text-sm text-muted-foreground text-center">
+                        {t('dialog.form.noUnpaidCommands')}
+                      </p>
+                      <Button variant="secondary" size="sm" className="w-full" onClick={() => { setIsDialogOpen(false); navigate('/commandes'); }}>
+                        {t('dialog.form.addCommand')}
+                      </Button>
+                    </div>
+                  ) : (
+                    unpaidCommands.map((command) => {
+                      const remaining = calculateRemainingBalance(command.sellingPrice, command.amountPaid);
+                      return (
+                        <SelectItem key={command.id} value={command.id}>
+                          <div className="flex items-center justify-between gap-4">
+                            <span>{getCommandLabel(command.id)}</span>
+                            <span className="text-muted-foreground">{t('dialog.form.remaining')}: {formatDZD(remaining)}</span>
+                          </div>
+                        </SelectItem>
+                      );
+                    })
+                  )}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>{t('dialog.form.amount')}</Label>
+                <Input type="number" value={newPayment.amount} onChange={(e) => setNewPayment({ ...newPayment, amount: e.target.value })} placeholder="25000" />
+              </div>
+              <div className="space-y-2">
+                <Label>{t('dialog.form.method')}</Label>
+                <Select value={newPayment.method} onValueChange={(value: PaymentMethod) => setNewPayment({ ...newPayment, method: value })}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent className="bg-popover">
+                    <SelectItem value="especes">{tCommon('paymentMethods.especes')}</SelectItem>
+                    <SelectItem value="virement">{tCommon('paymentMethods.virement')}</SelectItem>
+                    <SelectItem value="cheque">{tCommon('paymentMethods.cheque')}</SelectItem>
+                    <SelectItem value="carte">{tCommon('paymentMethods.carte')}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label>{t('dialog.form.notes')}</Label>
+              <Input value={newPayment.notes} onChange={(e) => setNewPayment({ ...newPayment, notes: e.target.value })} placeholder={t('dialog.form.notesPlaceholder')} />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsDialogOpen(false)}>{tCommon('actions.cancel')}</Button>
+            <Button onClick={handleAddPayment} disabled={createPayment.isPending}>{createPayment.isPending ? t('actions.saving') : tCommon('actions.save')}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </DashboardLayout>
   );
 };
