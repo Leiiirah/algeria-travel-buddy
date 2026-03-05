@@ -782,12 +782,7 @@ const CommandsPage = () => {
                       key: 'status',
                       label: t('filters.status'),
                       type: 'select',
-                      options: [
-                        { label: t('status.en_attente'), value: 'en_attente' },
-                        { label: t('status.en_cours'), value: 'en_cours' },
-                        { label: t('status.termine'), value: 'termine' },
-                        { label: t('status.annule'), value: 'annule' },
-                      ],
+                      options: statusOptions.map(s => ({ label: s.label, value: s.value })),
                     },
                     {
                       key: 'serviceId',
