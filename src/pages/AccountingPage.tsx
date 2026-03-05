@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
@@ -143,15 +143,45 @@ const AccountingPage = () => {
     return months;
   }, [allPayments, allExpenses, i18n.language]);
 
+  const dialogOpenRequestedAtRef = useRef<number>(0);
+
   const openPaymentDialog = (commandId?: string) => {
     if (commandId) {
       setSelectedCommand(commandId);
     }
 
-    requestAnimationFrame(() => {
-      setIsDialogOpen(true);
+    dialogOpenRequestedAtRef.current = Date.now();
+    console.log('[AccountingPage] openPaymentDialog requested', {
+      commandId: commandId ?? null,
+      at: dialogOpenRequestedAtRef.current,
     });
+
+    window.setTimeout(() => {
+      console.log('[AccountingPage] setting dialog open=true');
+      setIsDialogOpen(true);
+    }, 0);
   };
+
+  const handleDialogOpenChange = (open: boolean) => {
+    const elapsedSinceOpenRequest = Date.now() - dialogOpenRequestedAtRef.current;
+
+    if (!open && elapsedSinceOpenRequest < 250) {
+      console.log('[AccountingPage] ignored immediate dialog close', {
+        elapsedSinceOpenRequest,
+      });
+      return;
+    }
+
+    console.log('[AccountingPage] onOpenChange', { open, elapsedSinceOpenRequest });
+    setIsDialogOpen(open);
+  };
+
+  useEffect(() => {
+    console.log('[AccountingPage] dialog state changed', {
+      isDialogOpen,
+      selectedCommand,
+    });
+  }, [isDialogOpen, selectedCommand]);
 
   const handleAddPayment = () => {
     if (!selectedCommand || !newPayment.amount) {
@@ -440,7 +470,7 @@ const AccountingPage = () => {
         )}
       </Tabs>
 
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+      <Dialog open={isDialogOpen} onOpenChange={handleDialogOpenChange}>
         <DialogContent className="bg-card">
           <DialogHeader>
             <DialogTitle>{t('dialog.title')}</DialogTitle>
