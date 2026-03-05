@@ -133,16 +133,16 @@ const AccountingPage = () => {
       const year = d.getFullYear();
       const month = d.getMonth();
       const label = d.toLocaleDateString(i18n.language === 'ar' ? 'ar-DZ' : 'fr-FR', { month: 'short' });
-      const revenus = allPayments
-        .filter((p) => { const pd = new Date(p.createdAt); return pd.getFullYear() === year && pd.getMonth() === month; })
-        .reduce((sum, p) => sum + Number(p.amount || 0), 0);
+      const revenus = commands
+        .filter((c) => { const cd = new Date(c.commandDate || c.createdAt); return cd.getFullYear() === year && cd.getMonth() === month; })
+        .reduce((sum, c) => sum + Number(c.sellingPrice || 0), 0);
       const depenses = allExpenses
         .filter((e) => { const ed = new Date(e.date); return ed.getFullYear() === year && ed.getMonth() === month; })
         .reduce((sum, e) => sum + Number(e.amount || 0), 0);
       months.push({ mois: label, revenus, depenses });
     }
     return months;
-  }, [allPayments, allExpenses, i18n.language]);
+  }, [commands, allExpenses, i18n.language]);
 
   const handleAddPayment = () => {
     if (!selectedCommand || !newPayment.amount) {
