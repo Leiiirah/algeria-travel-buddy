@@ -143,6 +143,16 @@ const AccountingPage = () => {
     return months;
   }, [allPayments, allExpenses, i18n.language]);
 
+  const openPaymentDialog = (commandId?: string) => {
+    if (commandId) {
+      setSelectedCommand(commandId);
+    }
+
+    requestAnimationFrame(() => {
+      setIsDialogOpen(true);
+    });
+  };
+
   const handleAddPayment = () => {
     if (!selectedCommand || !newPayment.amount) {
       return;
@@ -266,7 +276,7 @@ const AccountingPage = () => {
                       ]}
                     />
                   </div>
-                  <Button onClick={() => setIsDialogOpen(true)}>
+                  <Button onClick={() => openPaymentDialog()}>
                         <Plus className="ltr:mr-2 rtl:ml-2 h-4 w-4" />
                         {t('actions.newPayment')}
                   </Button>
@@ -380,10 +390,7 @@ const AccountingPage = () => {
                           <TableCell className="text-right">
                             <Button
                               size="sm"
-                              onClick={() => {
-                                setSelectedCommand(command.id);
-                                setIsDialogOpen(true);
-                              }}
+                              onClick={() => openPaymentDialog(command.id)}
                             >
                               {t('unpaidCommands.addPayment')}
                             </Button>
