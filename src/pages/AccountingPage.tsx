@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef, useEffect } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
@@ -74,6 +74,7 @@ const AccountingPage = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [filters, setFilters] = useState<PaymentFilters>({});
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<'payments' | 'unpaid' | 'reports' | 'caisses'>('payments');
   const [selectedCommand, setSelectedCommand] = useState<string>('');
   const [newPayment, setNewPayment] = useState({
     amount: '',
@@ -143,45 +144,44 @@ const AccountingPage = () => {
     return months;
   }, [allPayments, allExpenses, i18n.language]);
 
-  const dialogOpenRequestedAtRef = useRef<number>(0);
-
   const openPaymentDialog = (commandId?: string) => {
+    console.warn('[AccountingPage][dialog-debug] openPaymentDialog click', {
+      commandId: commandId ?? null,
+      fromTab: activeTab,
+      at: Date.now(),
+    });
+
     if (commandId) {
       setSelectedCommand(commandId);
     }
 
-    dialogOpenRequestedAtRef.current = Date.now();
-    console.log('[AccountingPage] openPaymentDialog requested', {
-      commandId: commandId ?? null,
-      at: dialogOpenRequestedAtRef.current,
-    });
+    if (activeTab !== 'payments') {
+      setActiveTab('payments');
+    }
 
     window.setTimeout(() => {
-      console.log('[AccountingPage] setting dialog open=true');
+      console.warn('[AccountingPage][dialog-debug] setIsDialogOpen(true)');
       setIsDialogOpen(true);
     }, 0);
   };
 
   const handleDialogOpenChange = (open: boolean) => {
-    const elapsedSinceOpenRequest = Date.now() - dialogOpenRequestedAtRef.current;
-
-    if (!open && elapsedSinceOpenRequest < 250) {
-      console.log('[AccountingPage] ignored immediate dialog close', {
-        elapsedSinceOpenRequest,
-      });
-      return;
-    }
-
-    console.log('[AccountingPage] onOpenChange', { open, elapsedSinceOpenRequest });
+    console.warn('[AccountingPage][dialog-debug] onOpenChange', {
+      open,
+      activeTab,
+      selectedCommand,
+      at: Date.now(),
+    });
     setIsDialogOpen(open);
   };
 
   useEffect(() => {
-    console.log('[AccountingPage] dialog state changed', {
+    console.warn('[AccountingPage][dialog-debug] state', {
+      activeTab,
       isDialogOpen,
       selectedCommand,
     });
-  }, [isDialogOpen, selectedCommand]);
+  }, [activeTab, isDialogOpen, selectedCommand]);
 
   const handleAddPayment = () => {
     if (!selectedCommand || !newPayment.amount) {
@@ -265,7 +265,10 @@ const AccountingPage = () => {
         />
       </div>
 
-      <Tabs defaultValue="payments" className="mt-6">
+      <Tabs value={activeTab} onValueChange={(value) => {
+        console.warn('[AccountingPage][dialog-debug] tab changed', { value });
+        setActiveTab(value as 'payments' | 'unpaid' | 'reports' | 'caisses');
+      }} className="mt-6">
         <TabsList className="bg-muted w-full overflow-x-auto justify-start">
           <TabsTrigger value="payments">{t('tabs.payments')}</TabsTrigger>
           <TabsTrigger value="unpaid">{t('tabs.unpaid')}</TabsTrigger>
@@ -306,7 +309,12 @@ const AccountingPage = () => {
                       ]}
                     />
                   </div>
-                  <Button onClick={() => openPaymentDialog()}>
+                  <Button onClick={(event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    console.warn('[AccountingPage][dialog-debug] payments header button click');
+                    openPaymentDialog();
+                  }}>
                         <Plus className="ltr:mr-2 rtl:ml-2 h-4 w-4" />
                         {t('actions.newPayment')}
                   </Button>
@@ -420,7 +428,14 @@ const AccountingPage = () => {
                           <TableCell className="text-right">
                             <Button
                               size="sm"
-                              onClick={() => openPaymentDialog(command.id)}
+                              onClick={(event) => {
+                                event.preventDefault();
+                                event.stopPropagation();
+                                console.warn('[AccountingPage][dialog-debug] unpaid table button click', {
+                                  commandId: command.id,
+                                });
+                                openPaymentDialog(command.id);
+                              }}
                             >
                               {t('unpaidCommands.addPayment')}
                             </Button>
