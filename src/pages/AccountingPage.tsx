@@ -452,7 +452,7 @@ const AccountingPage = () => {
                   </TableBody>
                 </Table>
                 {/* Pagination */}
-                {unpaidCommands.length > UNPAID_PAGE_SIZE && (
+                {unpaidCommands.length > 0 && (
                   <div className="flex items-center justify-between border-t pt-4 mt-4">
                     <span className="text-sm text-muted-foreground">
                       {(unpaidPage - 1) * UNPAID_PAGE_SIZE + 1}-{Math.min(unpaidPage * UNPAID_PAGE_SIZE, unpaidCommands.length)} / {unpaidCommands.length}
