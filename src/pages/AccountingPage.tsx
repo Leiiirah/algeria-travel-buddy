@@ -66,6 +66,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import EmployeeCaisseTable from '@/components/accounting/EmployeeCaisseTable';
 import { useExpenses } from '@/hooks/useExpenses';
 
+const UNPAID_PAGE_SIZE = 10;
+
 const AccountingPage = () => {
   const { t, i18n } = useTranslation('accounting');
   const { t: tCommon } = useTranslation('common');
