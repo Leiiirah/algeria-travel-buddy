@@ -66,6 +66,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import EmployeeCaisseTable from '@/components/accounting/EmployeeCaisseTable';
 import { useExpenses } from '@/hooks/useExpenses';
 
+const UNPAID_PAGE_SIZE = 10;
+
 const AccountingPage = () => {
   const { t, i18n } = useTranslation('accounting');
   const { t: tCommon } = useTranslation('common');
@@ -81,6 +83,7 @@ const AccountingPage = () => {
     method: 'especes' as PaymentMethod,
     notes: '',
   });
+  const [unpaidPage, setUnpaidPage] = useState(1);
 
   const formatDate = (dateString: string | Date) => {
     const date = typeof dateString === 'string' ? new Date(dateString) : dateString;
@@ -390,6 +393,7 @@ const AccountingPage = () => {
                   icon={CreditCard}
                 />
               ) : (
+                <>
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -403,7 +407,9 @@ const AccountingPage = () => {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {unpaidCommands.map((command) => {
+                    {unpaidCommands
+                      .slice((unpaidPage - 1) * UNPAID_PAGE_SIZE, unpaidPage * UNPAID_PAGE_SIZE)
+                      .map((command) => {
                       const service = services?.find((s) => s.id === command.serviceId);
                       const remaining = calculateRemainingBalance(command.sellingPrice, command.amountPaid);
                       const paymentInfo = getPaymentStatusFromAmounts(command.sellingPrice, command.amountPaid);
@@ -445,6 +451,36 @@ const AccountingPage = () => {
                     })}
                   </TableBody>
                 </Table>
+                {/* Pagination */}
+                {unpaidCommands.length > UNPAID_PAGE_SIZE && (
+                  <div className="flex items-center justify-between border-t pt-4 mt-4">
+                    <span className="text-sm text-muted-foreground">
+                      {(unpaidPage - 1) * UNPAID_PAGE_SIZE + 1}-{Math.min(unpaidPage * UNPAID_PAGE_SIZE, unpaidCommands.length)} / {unpaidCommands.length}
+                    </span>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        disabled={unpaidPage <= 1}
+                        onClick={() => setUnpaidPage((p) => p - 1)}
+                      >
+                        {tCommon('previous', 'Précédent')}
+                      </Button>
+                      <span className="text-sm text-muted-foreground">
+                        {unpaidPage} / {Math.ceil(unpaidCommands.length / UNPAID_PAGE_SIZE)}
+                      </span>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        disabled={unpaidPage >= Math.ceil(unpaidCommands.length / UNPAID_PAGE_SIZE)}
+                        onClick={() => setUnpaidPage((p) => p + 1)}
+                      >
+                        {tCommon('next', 'Suivant')}
+                      </Button>
+                    </div>
+                  </div>
+                )}
+                </>
               )}
             </CardContent>
           </Card>
