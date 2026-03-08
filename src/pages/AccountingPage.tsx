@@ -83,6 +83,7 @@ const AccountingPage = () => {
     method: 'especes' as PaymentMethod,
     notes: '',
   });
+  const [unpaidPage, setUnpaidPage] = useState(1);
 
   const formatDate = (dateString: string | Date) => {
     const date = typeof dateString === 'string' ? new Date(dateString) : dateString;
