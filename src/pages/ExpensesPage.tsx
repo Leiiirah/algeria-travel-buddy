@@ -483,9 +483,9 @@ export default function ExpensesPage() {
               <CardContent className="pt-6 space-y-4">
                 <AdvancedFilter
                   searchQuery={searchQuery}
-                  onSearchChange={setSearchQuery}
+                  onSearchChange={handleSearchChange}
                   filters={filters}
-                  onFilterChange={setFilters}
+                  onFilterChange={handleFilterChange}
                   filterConfig={filterConfig}
                   placeholder={tCommon('search.placeholder')}
                 />
