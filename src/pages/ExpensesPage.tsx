@@ -503,14 +503,14 @@ export default function ExpensesPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredExpenses.length === 0 ? (
+                    {paginatedExpenses.length === 0 ? (
                       <TableRow>
                         <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
                           {t('empty')}
                         </TableCell>
                       </TableRow>
                     ) : (
-                      filteredExpenses.map((expense) => (
+                      paginatedExpenses.map((expense) => (
                         <TableRow key={expense.id}>
                           <TableCell>
                             {format(new Date(expense.date), 'dd/MM/yyyy', { locale: dateLocale })}
@@ -578,6 +578,36 @@ export default function ExpensesPage() {
                   </TableBody>
                 </Table>
                 </div>
+
+                {/* Pagination */}
+                {filteredExpenses.length > 0 && (
+                  <div className="flex items-center justify-between pt-4 border-t">
+                    <span className="text-sm text-muted-foreground">
+                      {filteredExpenses.length} {i18n.language === 'ar' ? 'نتيجة' : 'résultat(s)'}
+                    </span>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                        disabled={currentPage <= 1}
+                      >
+                        {i18n.language === 'ar' ? 'السابق' : 'Précédent'}
+                      </Button>
+                      <span className="text-sm font-medium text-foreground">
+                        {currentPage} / {totalPages}
+                      </span>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                        disabled={currentPage >= totalPages}
+                      >
+                        {i18n.language === 'ar' ? 'التالي' : 'Suivant'}
+                      </Button>
+                    </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
