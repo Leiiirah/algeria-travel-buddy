@@ -89,9 +89,11 @@ export default function ExpensesPage() {
     note: '',
   });
 
-  // Filter state
+  // Filter & pagination state
   const [searchQuery, setSearchQuery] = useState('');
   const [filters, setFilters] = useState<Record<string, any>>({});
+  const [currentPage, setCurrentPage] = useState(1);
+  const LIST_PAGE_SIZE = 10;
   const debouncedSearch = useDebounce(searchQuery, 300);
 
   const isLoading = loadingExpenses || loadingStats;
