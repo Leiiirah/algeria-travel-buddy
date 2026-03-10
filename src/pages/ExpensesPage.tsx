@@ -179,6 +179,23 @@ export default function ExpensesPage() {
     });
   }, [expenses, debouncedSearch, filters]);
 
+  // Reset page when filters change
+  const totalPages = Math.max(1, Math.ceil(filteredExpenses.length / LIST_PAGE_SIZE));
+  const paginatedExpenses = filteredExpenses.slice(
+    (currentPage - 1) * LIST_PAGE_SIZE,
+    currentPage * LIST_PAGE_SIZE
+  );
+
+  // Reset to page 1 when filters change
+  const handleFilterChange = (newFilters: Record<string, any>) => {
+    setFilters(newFilters);
+    setCurrentPage(1);
+  };
+  const handleSearchChange = (q: string) => {
+    setSearchQuery(q);
+    setCurrentPage(1);
+  };
+
   const resetForm = () => {
     setFormData({
       category: 'fournitures',
