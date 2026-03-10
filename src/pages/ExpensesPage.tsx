@@ -89,9 +89,11 @@ export default function ExpensesPage() {
     note: '',
   });
 
-  // Filter state
+  // Filter & pagination state
   const [searchQuery, setSearchQuery] = useState('');
   const [filters, setFilters] = useState<Record<string, any>>({});
+  const [currentPage, setCurrentPage] = useState(1);
+  const LIST_PAGE_SIZE = 10;
   const debouncedSearch = useDebounce(searchQuery, 300);
 
   const isLoading = loadingExpenses || loadingStats;
@@ -176,6 +178,23 @@ export default function ExpensesPage() {
       return true;
     });
   }, [expenses, debouncedSearch, filters]);
+
+  // Reset page when filters change
+  const totalPages = Math.max(1, Math.ceil(filteredExpenses.length / LIST_PAGE_SIZE));
+  const paginatedExpenses = filteredExpenses.slice(
+    (currentPage - 1) * LIST_PAGE_SIZE,
+    currentPage * LIST_PAGE_SIZE
+  );
+
+  // Reset to page 1 when filters change
+  const handleFilterChange = (newFilters: Record<string, any>) => {
+    setFilters(newFilters);
+    setCurrentPage(1);
+  };
+  const handleSearchChange = (q: string) => {
+    setSearchQuery(q);
+    setCurrentPage(1);
+  };
 
   const resetForm = () => {
     setFormData({
@@ -464,9 +483,9 @@ export default function ExpensesPage() {
               <CardContent className="pt-6 space-y-4">
                 <AdvancedFilter
                   searchQuery={searchQuery}
-                  onSearchChange={setSearchQuery}
+                  onSearchChange={handleSearchChange}
                   filters={filters}
-                  onFilterChange={setFilters}
+                  onFilterChange={handleFilterChange}
                   filterConfig={filterConfig}
                   placeholder={tCommon('search.placeholder')}
                 />
@@ -484,14 +503,14 @@ export default function ExpensesPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredExpenses.length === 0 ? (
+                    {paginatedExpenses.length === 0 ? (
                       <TableRow>
                         <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
                           {t('empty')}
                         </TableCell>
                       </TableRow>
                     ) : (
-                      filteredExpenses.map((expense) => (
+                      paginatedExpenses.map((expense) => (
                         <TableRow key={expense.id}>
                           <TableCell>
                             {format(new Date(expense.date), 'dd/MM/yyyy', { locale: dateLocale })}
@@ -559,6 +578,36 @@ export default function ExpensesPage() {
                   </TableBody>
                 </Table>
                 </div>
+
+                {/* Pagination */}
+                {filteredExpenses.length > 0 && (
+                  <div className="flex items-center justify-between pt-4 border-t">
+                    <span className="text-sm text-muted-foreground">
+                      {filteredExpenses.length} {i18n.language === 'ar' ? 'نتيجة' : 'résultat(s)'}
+                    </span>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                        disabled={currentPage <= 1}
+                      >
+                        {i18n.language === 'ar' ? 'السابق' : 'Précédent'}
+                      </Button>
+                      <span className="text-sm font-medium text-foreground">
+                        {currentPage} / {totalPages}
+                      </span>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                        disabled={currentPage >= totalPages}
+                      >
+                        {i18n.language === 'ar' ? 'التالي' : 'Suivant'}
+                      </Button>
+                    </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
