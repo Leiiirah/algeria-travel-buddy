@@ -1,7 +1,7 @@
 import { User, Service, Supplier, Command, Payment, SupplierTransaction, DocumentNode, OmraHotel, OmraOrder, OmraVisa, OmraProgram, OmraProgramInventory, OmraRoomType, OmraStatus, OmraOrderType, EmployeeTransaction, EmployeeBalance, EmployeeTransactionType, Expense, ExpenseStats, ExpenseCategory, PaymentMethod, SupplierOrder, SupplierOrderStatus, SupplierReceipt, SupplierInvoice, SupplierInvoiceStatus, ServiceTypeEntity, InternalTask, TaskStats, TaskPriority, TaskStatus, TaskVisibility, ClientInvoice, ClientInvoiceStats, ClientInvoiceType, ClientInvoiceStatus, CaisseSettlement, Company, PaymentType } from '@/types';
 
-// API base URL - includes /api prefix to match nginx proxy configuration
-const API_URL = (import.meta.env.VITE_API_URL || 'http://69.62.127.134:8080/api')
+// API base URL - UPDATE THIS to your new backend URL before deploying
+const API_URL = (import.meta.env.VITE_API_URL || 'http://localhost:8080/api')
   .trim()
   .replace(/\/+$/, '');
 
