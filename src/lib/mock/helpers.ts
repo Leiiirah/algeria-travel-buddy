@@ -1,7 +1,29 @@
 // Mock-store helper utilities. Used internally by the mocked ApiClient
 // to simulate latency and produce ApiError-compatible failures.
+//
+// NOTE: ApiError is intentionally re-declared here (instead of imported from
+// '@/lib/api') to break the seed -> helpers -> api -> seed circular import,
+// which would otherwise cause "Cannot access X before initialization"
+// errors under Node/CJS bundling. The ApiError class shape is identical.
 
-import { ApiError } from '@/lib/api';
+export class MockApiError extends Error {
+  constructor(
+    public status: number,
+    message: string,
+    public type:
+      | 'unauthorized'
+      | 'forbidden'
+      | 'not_found'
+      | 'validation'
+      | 'server'
+      | 'network'
+      | 'unknown' = 'unknown',
+    public details?: unknown,
+  ) {
+    super(message);
+    this.name = 'ApiError';
+  }
+}
 
 export const delay = (ms = 200): Promise<void> =>
   new Promise((resolve) => setTimeout(resolve, ms));
@@ -19,11 +41,11 @@ export const uid = (): string => {
 };
 
 export function notFound(label: string): never {
-  throw new ApiError(404, `${label} not found`, 'not_found');
+  throw new MockApiError(404, `${label} not found`, 'not_found');
 }
 
 export function unauthorized(message = 'Unauthorized'): never {
-  throw new ApiError(401, message, 'unauthorized');
+  throw new MockApiError(401, message, 'unauthorized');
 }
 
 export function paginate<T>(items: T[], page = 1, limit = 50) {

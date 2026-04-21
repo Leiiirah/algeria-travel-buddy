@@ -1,14 +1,13 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Eye, EyeOff, AlertCircle } from 'lucide-react';
+import { Eye, EyeOff, AlertCircle, Plane } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import logoElHikma from '@/assets/logo-elhikma.png';
 import { LanguageSwitcher } from '@/components/layout/LanguageSwitcher';
 
 interface FieldErrors {
@@ -119,12 +118,8 @@ const LoginPage = () => {
       
       <Card className="w-full max-w-md shadow-soft">
         <CardHeader className="space-y-4 text-center">
-          <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-2xl bg-primary/10 p-2">
-            <img
-              src={logoElHikma}
-              alt="El Hikma Tourisme Logo"
-              className="h-full w-full object-contain"
-            />
+          <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-2xl bg-primary/10">
+            <Plane className="h-10 w-10 text-primary" aria-label="Demo Travel Agency" />
           </div>
           <div>
             <CardTitle className="text-2xl font-bold">{tCommon('company.name')}</CardTitle>
@@ -201,6 +196,14 @@ const LoginPage = () => {
             </Button>
           </form>
 
+          <div className="mt-6 rounded-lg border border-border bg-muted/40 p-3 text-xs">
+            <p className="mb-2 font-bold text-foreground">{t('login.demoAccounts')}</p>
+            <div className="space-y-1 font-mono text-muted-foreground">
+              <div><span className="font-bold text-foreground">{t('login.admin')}:</span> admin@demo.com</div>
+              <div><span className="font-bold text-foreground">{t('login.employee')}:</span> employee@demo.com</div>
+              <div className="pt-1 italic">{t('login.passwordHint')}</div>
+            </div>
+          </div>
         </CardContent>
       </Card>
     </div>

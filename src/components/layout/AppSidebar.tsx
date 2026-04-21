@@ -36,7 +36,7 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from '@/components/ui/sidebar';
-import logoElHikma from '@/assets/logo-elhikma.png';
+
 
 export function AppSidebar() {
   const { t, i18n } = useTranslation();
@@ -151,12 +151,8 @@ export function AppSidebar() {
     <Sidebar collapsible="icon" side={isRtl ? 'right' : 'left'} className="border-sidebar-border ltr:border-r rtl:border-l">
       <SidebarHeader className="border-b border-sidebar-border p-4">
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl overflow-hidden bg-primary/10">
-            <img 
-              src={logoElHikma} 
-              alt="El Hikma Logo" 
-              className="h-10 w-10 object-contain"
-            />
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10">
+            <Plane className="h-5 w-5 text-primary" aria-label="Demo Travel Agency" />
           </div>
           {!isCollapsed && (
             <div className="flex flex-col">

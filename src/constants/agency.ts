@@ -1,21 +1,20 @@
 // Agency information for official documents (used as fallback when API is unavailable)
-// TODO: Update these values with the new agency's information
 export const AGENCY_INFO = {
-  name: 'Nouvelle Agence',
-  legalName: 'NOUVELLE AGENCE TOURISME ET VOYAGE',
-  address: 'Adresse de l\'agence',
-  phone: '000 00 00 00',
-  email: 'contact@nouvelleagence.com',
-  rc: '',
-  nif: '',
-  nis: '',
-  bankName: '',
-  bankAccount: '',
-  mobilePhone: '',
-  licenseNumber: '',
-  articleFiscal: '',
-  arabicName: 'الوكالة الجديدة للسياحة و الاسفار',
-  arabicAddress: 'عنوان الوكالة',
+  name: 'Demo Travel Agency',
+  legalName: 'DEMO TRAVEL AGENCY SARL',
+  address: '12 Rue des Voyageurs, Alger Centre, Alger',
+  phone: '+213 21 00 00 00',
+  email: 'contact@demo-travel.dz',
+  rc: '16/00-1234567 B 24',
+  nif: '000016123456789',
+  nis: '000016987654321',
+  bankName: 'Banque Nationale d\'Algérie',
+  bankAccount: '00400 0123456789 12',
+  mobilePhone: '+213 555 00 00 00',
+  licenseNumber: 'AG-DZ-2024-001',
+  articleFiscal: '16001234567',
+  arabicName: 'وكالة ديمو للسياحة و الأسفار',
+  arabicAddress: '12 شارع المسافرين، الجزائر الوسطى، الجزائر',
 };
 
 // Travel class options
@@ -28,7 +27,7 @@ export const TRAVEL_CLASSES = [
 // Payment methods
 export const PAYMENT_METHODS = [
   { value: 'especes', labelFr: 'Espèces', labelAr: 'نقدي' },
-  { value: 'virement', labelFr: 'Virement', labelAr: 'تحويل بنكي' },
+  { value: 'virement', labelFr: 'Virement', labelAr: 'تحويل bancaire' },
   { value: 'cheque', labelFr: 'Chèque', labelAr: 'شيك' },
   { value: 'carte', labelFr: 'Carte bancaire', labelAr: 'بطاقة بنكية' },
 ];
