@@ -1,5 +1,4 @@
 import React, { forwardRef } from 'react';
-import logoSrc from '@/assets/logo-elhikma.png';
 import { AGENCY_INFO } from '@/constants/agency';
 
 interface ExpenseItem {
@@ -96,7 +95,22 @@ const ExpensesReportTemplate = forwardRef<HTMLDivElement, Props>(({ data }, ref)
         </div>
 
         <div style={{ width: '120px', textAlign: 'center', padding: '0 16px' }}>
-          <img src={logoSrc} alt="Logo" style={{ width: '100px', height: 'auto' }} crossOrigin="anonymous" />
+          <div style={{
+            width: '70px',
+            height: '70px',
+            margin: '0 auto',
+            borderRadius: '14px',
+            backgroundColor: ACCENT_LIGHT,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: ACCENT,
+            fontSize: '28px',
+            fontWeight: 700,
+            letterSpacing: '1px',
+          }}>
+            DTA
+          </div>
         </div>
 
         <div style={{ flex: 1, textAlign: 'right' }} dir="rtl">

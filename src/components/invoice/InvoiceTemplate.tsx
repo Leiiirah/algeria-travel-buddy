@@ -1,5 +1,4 @@
 import React, { forwardRef } from 'react';
-import logoSrc from '@/assets/logo-elhikma.png';
 import { numberToWords } from '@/utils/numberToWords';
 import { AGENCY_INFO } from '@/constants/agency';
 
@@ -164,12 +163,22 @@ const InvoiceTemplate = forwardRef<HTMLDivElement, InvoiceTemplateProps>(
 
           {/* Logo center */}
           <div style={{ width: '120px', textAlign: 'center', padding: '0 16px' }}>
-            <img
-              src={logoSrc}
-              alt="Logo"
-              style={{ width: '100px', height: 'auto' }}
-              crossOrigin="anonymous"
-            />
+            <div style={{
+              width: '70px',
+              height: '70px',
+              margin: '0 auto',
+              borderRadius: '14px',
+              backgroundColor: accentLight,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: accent,
+              fontSize: '28px',
+              fontWeight: 700,
+              letterSpacing: '1px',
+            }}>
+              DTA
+            </div>
           </div>
 
           {/* Arabic side */}
