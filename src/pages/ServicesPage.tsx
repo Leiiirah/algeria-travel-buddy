@@ -114,7 +114,7 @@ const ServicesPage = () => {
   };
 
   const handleSaveService = () => {
-    if (!newService.name || !newService.description || !newService.type) {
+    if (!newService.name || !newService.type) {
       return;
     }
 
