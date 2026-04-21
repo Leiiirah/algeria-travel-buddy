@@ -384,7 +384,7 @@ class ApiClient {
       id: uid(),
       serviceId: data.serviceId,
       supplierId: data.supplierId,
-      data: data.data as Command['data'],
+      data: data.data as unknown as Command['data'],
       status: 'dossier_incomplet',
       destination: data.destination,
       sellingPrice: data.sellingPrice,
@@ -403,7 +403,7 @@ class ApiClient {
     await tick();
     const c = store.commands.find((x) => x.id === id); if (!c) notFound('Command');
     Object.assign(c!, {
-      data: data.data ? (data.data as Command['data']) : c!.data,
+      data: data.data ? (data.data as unknown as Command['data']) : c!.data,
       status: data.status ?? c!.status,
       destination: data.destination ?? c!.destination,
       sellingPrice: data.sellingPrice ?? c!.sellingPrice,
@@ -427,13 +427,15 @@ class ApiClient {
     store.payments = store.payments.filter((p) => p.commandId !== id);
   };
   createCommandWithPassport = async (data: CreateCommandDto, _file: File): Promise<Command> => {
+    void _file;
     const created = await this.createCommand(data);
     created.passportUrl = `/mock/passport-${created.id}.pdf`;
     const c = store.commands.find((x) => x.id === created.id); if (c) c.passportUrl = created.passportUrl;
     return created;
   };
-  getCommandPassportBlob = async (_commandId: string): Promise<Blob> => {
+  getCommandPassportBlob = async (_commandId: string, _mode: 'view' | 'download' = 'view'): Promise<Blob> => {
     await tick();
+    void _mode;
     return new Blob([new Uint8Array([0x25, 0x50, 0x44, 0x46])], { type: 'application/pdf' });
   };
 
@@ -508,8 +510,9 @@ class ApiClient {
   };
   getTransactionReceiptUrl = (transactionId: string): string => `#/mock/receipt/${transactionId}/download`;
   getTransactionReceiptViewUrl = (transactionId: string): string => `#/mock/receipt/${transactionId}/view`;
-  getTransactionReceiptBlob = async (_transactionId: string): Promise<Blob> => {
+  getTransactionReceiptBlob = async (_transactionId: string, _mode: 'view' | 'download' = 'view'): Promise<Blob> => {
     await tick();
+    void _mode;
     return new Blob([new Uint8Array([0x25, 0x50, 0x44, 0x46])], { type: 'application/pdf' });
   };
 
