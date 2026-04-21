@@ -18,8 +18,8 @@ interface FieldErrors {
 const LoginPage = () => {
   const { t } = useTranslation('auth');
   const { t: tCommon } = useTranslation('common');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState('admin@demo.com');
+  const [password, setPassword] = useState('demo1234');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
