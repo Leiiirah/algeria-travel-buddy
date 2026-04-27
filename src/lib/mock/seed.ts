@@ -117,7 +117,45 @@ export function seed() {
     createdAt: daysAgo(180),
     updatedAt: daysAgo(180),
   };
-  store.serviceTypes.push(stVisa, stTicket, stResidence, stDossier);
+  const stBilletBateau: ServiceTypeEntity = {
+    id: uid(),
+    code: 'billet_bateau',
+    nameFr: 'Billet bateau',
+    nameAr: 'تذكرة باخرة',
+    icon: 'Ship',
+    isActive: true,
+    createdAt: daysAgo(180),
+    updatedAt: daysAgo(180),
+  };
+  const stBilletTilex: ServiceTypeEntity = {
+    id: uid(),
+    code: 'billet_tilex',
+    nameFr: 'Billet Tilex',
+    nameAr: 'تذكرة تيلكس',
+    icon: 'Train',
+    isActive: true,
+    createdAt: daysAgo(180),
+    updatedAt: daysAgo(180),
+  };
+  const stBillets: ServiceTypeEntity = {
+    id: uid(),
+    code: 'billets',
+    nameFr: 'Billets divers',
+    nameAr: 'تذاكر متنوعة',
+    icon: 'Tickets',
+    isActive: true,
+    createdAt: daysAgo(180),
+    updatedAt: daysAgo(180),
+  };
+  store.serviceTypes.push(
+    stVisa,
+    stTicket,
+    stResidence,
+    stDossier,
+    stBilletBateau,
+    stBilletTilex,
+    stBillets,
+  );
 
   // ==================== SUPPLIERS ====================
   const supVisa: Supplier = {
@@ -755,6 +793,26 @@ export function seed() {
     };
     store.omraVisas.push(v);
   });
+  // Extra OmraVisa with status='reserve' to cover all 5 OmraStatus values.
+  store.omraVisas.push({
+    id: uid(),
+    clientName: 'Salah Eddine Berrada',
+    phone: '0540 99 88 77',
+    visaDate: daysAgo(5),
+    entryDate: daysFromNow(60),
+    hotelId: hHaram.id,
+    hotel: hHaram,
+    status: 'reserve',
+    sellingPrice: 42000,
+    amountPaid: 15000,
+    buyingPrice: 30000,
+    assignedTo: employeeId,
+    assignee: employee,
+    createdBy: adminId,
+    creator: admin,
+    createdAt: daysAgo(7),
+    updatedAt: daysAgo(5),
+  });
 
   // ==================== EMPLOYEE TRANSACTIONS ====================
   // Karim has avances + a salary; Leila has nothing (empty state)
@@ -831,21 +889,24 @@ export function seed() {
   });
 
   // ==================== SUPPLIER ORDERS / RECEIPTS / INVOICES ====================
+  const fmtYMD = (d: Date) =>
+    `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}`;
   const orderStatuses: SupplierOrderStatus[] = ['en_attente', 'livre', 'partiel', 'annule'];
   orderStatuses.forEach((status, i) => {
     const sup = txnSuppliers[i % txnSuppliers.length];
     const qty = 10 + i * 5;
     const unitPrice = 1500 + i * 500;
+    const orderDate = daysAgo(40 - i * 5);
     const so: SupplierOrder = {
       id: uid(),
       supplierId: sup.id,
       supplier: sup,
-      orderNumber: `SO-2025-${String(i + 1).padStart(4, '0')}`,
+      orderNumber: `SO-${fmtYMD(orderDate)}-${String(i + 1).padStart(3, '0')}`,
       description: `Commande lot ${i + 1} pour ${sup.name}`,
       quantity: qty,
       unitPrice,
       totalAmount: qty * unitPrice,
-      orderDate: daysAgo(40 - i * 5),
+      orderDate,
       status,
       deliveredQuantity:
         status === 'livre' ? qty : status === 'partiel' ? Math.floor(qty / 2) : 0,
@@ -881,20 +942,23 @@ export function seed() {
     const sup = txnSuppliers[i];
     const amount = 50000 + i * 15000;
     const paidAmount = status === 'paye' ? amount : status === 'partiel' ? Math.round(amount / 2) : 0;
+    const invoiceDate = daysAgo(30 - i * 5);
+    // For non_paye, set dueDate in the past so the overdue rule (§2.4) is exercised.
+    const dueDate = status === 'non_paye' ? daysAgo(5) : daysFromNow(15 - i * 5);
     const inv: SupplierInvoice = {
       id: uid(),
       supplierId: sup.id,
       supplier: sup,
       invoiceNumber: `F-2025-${String(i + 1).padStart(4, '0')}`,
-      internalRef: `INT-${String(i + 1).padStart(5, '0')}`,
+      internalRef: `INV-${fmtYMD(invoiceDate)}-${String(i + 1).padStart(3, '0')}`,
       description: `Facture mensuelle ${sup.name}`,
       amount,
-      invoiceDate: daysAgo(30 - i * 5),
-      dueDate: daysFromNow(15 - i * 5),
+      invoiceDate,
+      dueDate,
       status,
       paidAmount,
       createdBy: adminId,
-      createdAt: daysAgo(30 - i * 5),
+      createdAt: invoiceDate,
       updatedAt: daysAgo(25 - i * 5),
     };
     store.supplierInvoices.push(inv);
@@ -943,12 +1007,20 @@ export function seed() {
   const invoiceStatusList: ClientInvoiceStatus[] = ['brouillon', 'envoyee', 'payee', 'annulee'];
 
   // Build invoices from existing commands so command-based references resolve.
+  // Per-(prefix+date) sequence counter so numbering follows {PRO|FAC}-YYYYMMDD-NNN with
+  // a sequence that resets per day per type, padded to 3 digits.
+  const ciSeq: Record<string, number> = {};
   store.commands.slice(0, 8).forEach((cmd, i) => {
     const type = invoiceTypes[i % invoiceTypes.length];
     const status = invoiceStatusList[i % invoiceStatusList.length];
+    const invoiceDate = daysAgo(15 - i);
+    const prefix = type === 'proforma' ? 'PRO' : 'FAC';
+    const ymd = fmtYMD(invoiceDate);
+    const key = `${prefix}-${ymd}`;
+    ciSeq[key] = (ciSeq[key] ?? 0) + 1;
     const inv: ClientInvoice = {
       id: uid(),
-      invoiceNumber: `${type === 'proforma' ? 'PROF' : 'FACT'}-2025-${String(i + 1).padStart(4, '0')}`,
+      invoiceNumber: `${prefix}-${ymd}-${String(ciSeq[key]).padStart(3, '0')}`,
       type,
       status,
       commandId: cmd.id,
@@ -961,7 +1033,7 @@ export function seed() {
       destination: cmd.destination,
       totalAmount: cmd.sellingPrice,
       paidAmount: status === 'payee' ? cmd.sellingPrice : status === 'envoyee' ? Math.round(cmd.sellingPrice * 0.5) : 0,
-      invoiceDate: daysAgo(15 - i),
+      invoiceDate,
       dueDate: daysFromNow(15 - i),
       ticketPrice: cmd.buyingPrice,
       agencyFees: cmd.sellingPrice - cmd.buyingPrice,
@@ -975,6 +1047,25 @@ export function seed() {
       updatedAt: daysAgo(15 - i),
     };
     store.clientInvoices.push(inv);
+  });
+
+  // ==================== CAISSE SETTLEMENTS (history) ====================
+  // One past settlement for Karim so the "Historique des règlements" UI is not empty.
+  store.caisseSettlements.push({
+    id: uid(),
+    employeeId,
+    caisseAmount: 145000,
+    impayesAmount: 32000,
+    beneficesAmount: 58000,
+    commandCount: 9,
+    newCaisse: 0,
+    newImpayes: 12000,
+    newBenefices: 0,
+    adminId,
+    admin: { firstName: admin.firstName, lastName: admin.lastName },
+    notes: 'Règlement mensuel — clôture mois précédent',
+    resetDate: daysAgo(30),
+    createdAt: daysAgo(30),
   });
 
   // ==================== AGENCY SETTINGS ====================
