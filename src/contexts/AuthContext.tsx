@@ -137,14 +137,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (context === undefined) {
-    // In dev, fail fast to catch wrong provider hierarchy.
-    // In production, avoid a blank screen if a bad deploy/caching causes the
-    // provider to be missing temporarily.
-    if (import.meta.env.DEV) {
-      throw new Error('useAuth must be used within an AuthProvider');
-    }
+    // Avoid throwing — during Vite HMR the AuthContext identity can momentarily
+    // change, which would otherwise crash the whole tree with a blank screen.
+    // Fall back to a logged-out state; the next render (with the real provider)
+    // will restore the correct context value.
+    console.warn('useAuth was called outside AuthProvider. Falling back to logged-out state.');
 
-    console.error('useAuth was called outside AuthProvider. Falling back to logged-out state.');
 
     const fallback: AuthContextType = {
       user: null,
