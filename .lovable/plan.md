@@ -1,54 +1,31 @@
-# Make Dummy Data Fully Compliant with Logic Document
+## Goal
+Remove all Lovable branding from social-media link previews and the published site.
 
-Apply targeted edits to `src/lib/mock/seed.ts` to resolve every FAIL and coverage gap from the previous audit, then deliver a fresh verification report confirming all rules pass.
+## Changes
 
-## Scope
-**Single file edited:** `src/lib/mock/seed.ts`
-**No changes to:** types, hooks, API surface, components, routes, store shape.
+### 1. Badge (done)
+Already hidden the "Edit with Lovable" badge on published deployments via publish settings.
 
-## Fixes
+### 2. `index.html` — strip Lovable og:image and replace with your own branding
+Currently the file references Lovable's preview image, which is what shows on WhatsApp/Twitter/LinkedIn/Facebook when sharing the link:
 
-### 1. FAIL #1 — Add 3 missing default ServiceTypes (§1.2)
-Add `billet_bateau`, `billet_tilex`, `billets` to the seeded `serviceTypes` array. All inactive-by-default? No — spec says default seed, so `isActive: true`.
-
-### 2. FAIL #2 — Fix `SupplierOrder.orderNumber` format
-Change `SO-2025-NNNN` → `SO-{YYYYMMDD}-{NNN}` using each order's `orderDate`. Use a small helper to format the date and pad the suffix to 3 digits.
-
-### 3. FAIL #3 — Fix `SupplierInvoice.internalRef` format
-Change `INT-NNNNN` → `INV-{YYYYMMDD}-{NNN}` using each invoice's `invoiceDate`.
-
-### 4. FAIL #4 — Fix `ClientInvoice.invoiceNumber` format
-Change `PROF-2025-NNNN` / `FACT-2025-NNNN` → `PRO-{YYYYMMDD}-{NNN}` / `FAC-{YYYYMMDD}-{NNN}` per `invoiceDate` and `type`. Sequence resets per (type+date) per spec.
-
-### 5. Coverage gap — Missing `OmraVisa` with `status='reserve'`
-Add a 5th `OmraVisa` record with `status: 'reserve'`, valid hotelId (`hHaram.id`), valid prices, assigned to employee.
-
-### 6. Coverage gap — No `CaisseSettlement` records
-Add 1–2 `CaisseSettlement` (caisse_history) entries for Karim with realistic snapshot values (caisseAmount, impayesAmount, beneficesAmount, commandCount, carry-overs, adminId, resetDate ~30 days ago) so the "Historique des règlements" UI is no longer empty.
-
-### 7. Coverage gap — No overdue `SupplierInvoice`
-Adjust the `non_paye` invoice's `dueDate` to a date in the past (e.g., `daysAgo(5)`) so it satisfies `status != 'paye' AND dueDate < today` and the overdue logic (§2.4) is exercised.
-
-### 8. (Optional polish) Coverage gap — Default ServiceType coverage
-After adding the 3 missing types, no new Service records are required — the existing 6 services already cover the most-used codes, and the new types just appear in the ServiceType management screen.
-
-## Helpers added inline (not exported)
-```ts
-const fmtYMD = (d: Date) => 
-  `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}`;
+```html
+<meta property="og:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
+<meta name="twitter:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
 ```
-Used for the 3 numbering format fixes.
 
-## After changes — re-run verification
-Re-read `seed.ts`, then deliver an updated **Final Report** with:
-- Updated PASS / FAIL / SKIP counts
-- Confirmation each prior FAIL is resolved
-- Confirmation each coverage gap is closed
-- Confirmation no new issues introduced (FK integrity, enum values, sum invariants still hold)
+Remove both lines. Two options for what to put instead:
 
-## Files Changed
-| File | Type of change |
-|---|---|
-| `src/lib/mock/seed.ts` | 7 in-place edits (no structural change) |
+- **Option A (recommended): no og:image at all.** Social platforms will fall back to a plain text preview (title + description) with no Lovable logo. Cleanest if you don't have a custom share image yet.
+- **Option B: use your own image.** Add a 1200×630 PNG/JPG to `public/` (e.g. `public/og-image.png`) and reference it as `https://algeria-travel-buddy.lovable.app/og-image.png`.
 
-No types, hooks, components, or routes touched. Mock store schema unchanged.
+### 3. Favicon — confirm it's already yours
+`index.html` already points to `/favicon.png` (your own file in `public/`), not a Lovable favicon. No change needed unless you want a different icon — in that case upload the new image and I'll wire it up.
+
+### 4. Optional polish while we're in `index.html`
+- Add `<link rel="canonical" href="https://algeria-travel-buddy.lovable.app/" />` so shared links normalize to your domain.
+- Add `<meta property="og:url" content="https://algeria-travel-buddy.lovable.app/" />`.
+
+## What I need from you
+1. Confirm Option A (no share image) or Option B (upload an image now).
+2. Confirm the current `public/favicon.png` is yours and should stay, or upload a replacement.
